@@ -1,0 +1,121 @@
+{
+  "fonte": "Rastro.png",
+  "dominantes": [
+    {
+      "hex": "#FCFCFC",
+      "fracao": 0.1195
+    },
+    {
+      "hex": "#011314",
+      "fracao": 0.1101
+    },
+    {
+      "hex": "#042021",
+      "fracao": 0.0953
+    },
+    {
+      "hex": "#FCFBFC",
+      "fracao": 0.0919
+    },
+    {
+      "hex": "#011B1B",
+      "fracao": 0.0756
+    },
+    {
+      "hex": "#093532",
+      "fracao": 0.0704
+    },
+    {
+      "hex": "#373E41",
+      "fracao": 0.0679
+    },
+    {
+      "hex": "#030F11",
+      "fracao": 0.0617
+    },
+    {
+      "hex": "#152022",
+      "fracao": 0.0606
+    },
+    {
+      "hex": "#FAFAFA",
+      "fracao": 0.0504
+    },
+    {
+      "hex": "#538279",
+      "fracao": 0.0456
+    },
+    {
+      "hex": "#020508",
+      "fracao": 0.0424
+    },
+    {
+      "hex": "#071315",
+      "fracao": 0.0318
+    },
+    {
+      "hex": "#9FE2D4",
+      "fracao": 0.0303
+    },
+    {
+      "hex": "#FEFEFE",
+      "fracao": 0.0256
+    },
+    {
+      "hex": "#001314",
+      "fracao": 0.0208
+    }
+  ],
+  "verdes_da_marca": [
+    {
+      "hex": "#05312E",
+      "fracao": 0.2217
+    },
+    {
+      "hex": "#134B43",
+      "fracao": 0.2216
+    },
+    {
+      "hex": "#1BDAAC",
+      "fracao": 0.17
+    },
+    {
+      "hex": "#0B3D38",
+      "fracao": 0.156
+    },
+    {
+      "hex": "#43E0BD",
+      "fracao": 0.143
+    },
+    {
+      "hex": "#1B816A",
+      "fracao": 0.0878
+    }
+  ],
+  "comparacao_com_brand_board": {
+    "verde_principal": {
+      "declarada": "#00D1A0",
+      "mais_proxima_extraida": "#1BDAAC",
+      "distancia_rgb": 30.9,
+      "pixel_do_circulo_no_board": "#016654"
+    },
+    "verde_secundario": {
+      "declarada": "#4EE6B7",
+      "mais_proxima_extraida": "#43E0BD",
+      "distancia_rgb": 13.9,
+      "pixel_do_circulo_no_board": "#48DFBB"
+    },
+    "grafite": {
+      "declarada": "#0F172A",
+      "mais_proxima_extraida": "#152022",
+      "distancia_rgb": 13.5,
+      "pixel_do_circulo_no_board": "#0D121B"
+    },
+    "cinza_claro": {
+      "declarada": "#E5E7EB",
+      "mais_proxima_extraida": "#FAFAFA",
+      "distancia_rgb": 32.0,
+      "pixel_do_circulo_no_board": "#E0E3E8"
+    }
+  }
+}
