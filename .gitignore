@@ -1,0 +1,43 @@
+# dependências
+node_modules/
+.pnp
+.pnp.*
+
+# build
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+
+# segredos: nunca vão para o git
+.env
+.env.*
+!.env.example
+*.env
+*.pem
+*.key
+
+# Vercel / Supabase
+.vercel/
+supabase/.temp/
+supabase/.branches/
+
+# testes
+coverage/
+playwright-report/
+test-results/
+blob-report/
+.lighthouseci/
+
+# protótipo Flask
+__pycache__/
+*.pyc
+.venv/
+*.db
+
+# sistema
+.DS_Store
+Thumbs.db
+npm-debug.log*
