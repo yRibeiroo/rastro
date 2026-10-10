@@ -11,6 +11,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover", // conteúdo até a borda; a barra inferior usa env(safe-area-inset-bottom)
+  interactiveWidget: "resizes-content",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#f4f7f6" },
     { media: "(prefers-color-scheme: dark)", color: "#071315" },

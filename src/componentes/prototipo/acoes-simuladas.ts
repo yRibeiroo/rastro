@@ -8,6 +8,7 @@
  * Gatilhos de teste: e-mail com "erro" falha, com "limite" estoura o rate limit;
  * nome de arquivo com "falha" falha no upload.
  */
+import { redirect } from "next/navigation";
 import { anexos, categorias, centrosDeCusto, conexoes, EMPRESA_ID, regras, transacoes } from "./dados-de-exemplo";
 import { normalizarTexto } from "./fonte-de-dados";
 import type {
@@ -39,6 +40,11 @@ export async function enviarLinkMagico(email: string): Promise<ResultadoDaAcao<n
   if (email.includes("erro")) return falha("inesperado", "Não conseguimos enviar agora. Tente de novo em instantes.");
   // E-mail fora da allowlist recebe a MESMA resposta (contratos §9): nada é revelado.
   return ok(null);
+}
+
+/** Encerra a sessão e volta para /entrar (RF-03). O real chama acesso.sair() antes do redirect. */
+export async function sair(): Promise<void> {
+  redirect("/entrar");
 }
 
 // ── Extrato e categorização ─────────────────────────────────────────────────

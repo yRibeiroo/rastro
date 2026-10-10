@@ -65,3 +65,73 @@ h3 {
   background: var(--cor-primaria-suave);
   color: var(--cor-texto);
 }
+
+/* Cores de série dos gráficos (validadas com o validador da skill dataviz: faixa de luminosidade,
+ * croma, separação para daltonismo ΔE ≥ 8 e contraste ≥ 3:1 contra a superfície, nos dois temas).
+ * Os tokens --cor-entrada/--cor-saida são de TEXTO; estes são de PREENCHIMENTO. */
+:root {
+  --grafico-entrada: light-dark(#0a9e7c, #1aac85);
+  --grafico-saida: light-dark(#b5452c, #cc5a41);
+}
+
+/* Camada de plataforma no celular (skill mobile-native). */
+html {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior: none;
+}
+
+input,
+textarea,
+select {
+  font-size: max(16px, 1em); /* abaixo de 16 px o iOS dá zoom no foco */
+}
+
+button,
+a,
+summary,
+select,
+[role="button"] {
+  touch-action: manipulation;
+}
+
+button,
+summary,
+[role="button"] {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Linhas novas do extrato e mensagens entram com um fade curto de 4 px. */
+@keyframes surgir {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .surgir {
+    animation: surgir var(--duracao-padrao) var(--curva-saida) both;
+  }
+}
+
+/* Popover nativo (menu "Mais" no celular). */
+[popover].folha {
+  transition:
+    opacity var(--duracao-rapida) var(--curva-saida),
+    transform var(--duracao-rapida) var(--curva-saida),
+    display var(--duracao-rapida) allow-discrete,
+    overlay var(--duracao-rapida) allow-discrete;
+  opacity: 0;
+  transform: translateY(8px);
+}
+[popover].folha:popover-open {
+  opacity: 1;
+  transform: translateY(0);
+}
+@starting-style {
+  [popover].folha:popover-open {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}

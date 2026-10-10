@@ -1,0 +1,40 @@
+{
+  "page": 1,
+  "total": 3,
+  "totalPages": 1,
+  "results": [
+    {
+      "id": "0b4d6f3a-91c2-4e6a-8d7f-5a2c1b3e9f10",
+      "itemId": "7c1d9a52-4c3e-4f8b-9a3e-2b6f0d1e5a01",
+      "type": "BANK",
+      "subtype": "CHECKING_ACCOUNT",
+      "number": "0731/12345-6",
+      "balance": 15234.56,
+      "name": "Conta Corrente PJ",
+      "marketingName": "Sicredi Empresas",
+      "currencyCode": "BRL"
+    },
+    {
+      "id": "5e8a2c1d-3f4b-4a6c-9d8e-7f1a2b3c4d5e",
+      "itemId": "7c1d9a52-4c3e-4f8b-9a3e-2b6f0d1e5a01",
+      "type": "BANK",
+      "subtype": "SAVINGS_ACCOUNT",
+      "number": "0731/98765-4",
+      "balance": 1000,
+      "name": "Poupança",
+      "marketingName": null,
+      "currencyCode": "BRL"
+    },
+    {
+      "id": "6f9b3d2e-4a5c-4b7d-8e9f-0a1b2c3d4e5f",
+      "itemId": "7c1d9a52-4c3e-4f8b-9a3e-2b6f0d1e5a01",
+      "type": "CREDIT",
+      "subtype": "CREDIT_CARD",
+      "number": "5502",
+      "balance": -321.4,
+      "name": "Cartão Empresarial",
+      "marketingName": null,
+      "currencyCode": "BRL"
+    }
+  ]
+}

@@ -107,7 +107,11 @@ delete from public.categorias where empresa_id = 'bbbbbbbb-0000-4000-a000-000000
 delete from public.centros_de_custo where empresa_id = 'bbbbbbbb-0000-4000-a000-0000000000e0';
 delete from public.regras_categorizacao where empresa_id = 'bbbbbbbb-0000-4000-a000-0000000000e0';
 delete from public.anexos where empresa_id = 'bbbbbbbb-0000-4000-a000-0000000000e0';
+-- O trigger storage.protect_delete barra DELETE direto; a Storage API liga esta flag e deleta com o papel
+-- do usuário (RLS vale). Fazemos o mesmo para exercitar a policy de remoção.
+select set_config('storage.allow_delete_query', 'true', true);
 delete from storage.objects where name like 'bbbbbbbb%';
+select set_config('storage.allow_delete_query', 'false', true);
 -- Mover uma linha própria para B também é barrado (with check).
 select throws_ok($$update public.categorias set empresa_id = 'bbbbbbbb-0000-4000-a000-0000000000e0' where id = 'aaaaaaaa-0000-4000-a000-0000000000ca'$$, '42501', null, 'A não move categoria para B');
 

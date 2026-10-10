@@ -49,10 +49,10 @@ create index transacoes_pendentes_categorizacao_idx on public.transacoes (empres
 -- Busca ilike no extrato.
 create index transacoes_descricao_trgm_idx on public.transacoes using gin (descricao extensions.gin_trgm_ops);
 create index transacoes_contraparte_trgm_idx on public.transacoes using gin (contraparte extensions.gin_trgm_ops);
--- Chaves estrangeiras.
-create index transacoes_conta_id_idx on public.transacoes (conta_id);
-create index transacoes_conexao_id_idx on public.transacoes (conexao_id);
-create index transacoes_regra_id_idx on public.transacoes (regra_id);
+-- Chaves estrangeiras compostas: índices cobrindo a FK inteira (advisor 0001).
+create index transacoes_empresa_conta_idx on public.transacoes (empresa_id, conta_id);
+create index transacoes_empresa_conexao_idx on public.transacoes (empresa_id, conexao_id);
+create index transacoes_empresa_regra_idx on public.transacoes (empresa_id, regra_id);
 
 create trigger transacoes_atualizado_em
   before update on public.transacoes

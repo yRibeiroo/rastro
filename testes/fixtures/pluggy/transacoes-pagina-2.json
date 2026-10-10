@@ -1,0 +1,25 @@
+{
+  "results": [
+    {
+      "id": "d5e6f708-192a-43b4-c5d6-e7f8091a2b3c",
+      "accountId": "0b4d6f3a-91c2-4e6a-8d7f-5a2c1b3e9f10",
+      "date": "2026-10-05T13:00:00.000Z",
+      "description": "COMPRA CARTAO DEB ELETRICA TOTAL",
+      "descriptionRaw": null,
+      "type": "DEBIT",
+      "amount": 430.0,
+      "balance": 13745.36,
+      "currencyCode": "BRL",
+      "category": "Shopping",
+      "status": "POSTED",
+      "merchant": {
+        "name": "Elétrica Total",
+        "businessName": "ELETRICA TOTAL COMERCIO LTDA",
+        "cnpj": "11222333000144"
+      },
+      "createdAt": "2026-10-05T14:00:00.000Z",
+      "updatedAt": "2026-10-05T14:00:00.000Z"
+    }
+  ],
+  "next": null
+}
