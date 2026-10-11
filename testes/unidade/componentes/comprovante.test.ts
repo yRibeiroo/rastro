@@ -1,11 +1,23 @@
 import { describe, expect, it } from "vitest";
-import { lerValorEmCentavos, mascararDocumento } from "@/componentes/comprovantes/comprovante";
-import { dimensoesReduzidas, reduzirImagem } from "@/componentes/comprovantes/reduzir-imagem";
+import {
+  lerValorEmCentavos,
+  mascararDocumento,
+} from "@/componentes/comprovantes/comprovante";
+import {
+  dimensoesReduzidas,
+  reduzirImagem,
+} from "@/componentes/comprovantes/reduzir-imagem";
 
 describe("dimensoesReduzidas (RNF-24)", () => {
   it("limita o lado maior a 2576 px mantendo a proporção", () => {
-    expect(dimensoesReduzidas(4032, 3024)).toEqual({ largura: 2576, altura: 1932 });
-    expect(dimensoesReduzidas(3024, 4032)).toEqual({ largura: 1932, altura: 2576 });
+    expect(dimensoesReduzidas(4032, 3024)).toEqual({
+      largura: 2576,
+      altura: 1932,
+    });
+    expect(dimensoesReduzidas(3024, 4032)).toEqual({
+      largura: 1932,
+      altura: 2576,
+    });
   });
   it("nunca amplia imagens menores", () => {
     expect(dimensoesReduzidas(800, 600)).toEqual({ largura: 800, altura: 600 });

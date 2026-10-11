@@ -44,7 +44,9 @@ describe("formatar-data (America/Araguaina)", () => {
     expect(formatarTempoRelativo(menos(4), agora)).toBe("há 4 minutos");
     expect(formatarTempoRelativo(menos(120), agora)).toBe("há 2 horas");
     expect(formatarTempoRelativo(menos(60 * 20), agora)).toBe("ontem às 18:00");
-    expect(formatarTempoRelativo(menos(60 * 24 * 3), agora)).toBe("06/10/2026 às 14:00");
+    expect(formatarTempoRelativo(menos(60 * 24 * 3), agora)).toBe(
+      "06/10/2026 às 14:00",
+    );
   });
 
   it("mês curto e longo", () => {

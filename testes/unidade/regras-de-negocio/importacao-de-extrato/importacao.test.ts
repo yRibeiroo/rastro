@@ -22,9 +22,14 @@ import {
 } from "../falsos";
 
 const bytes = (nome: string) =>
-  new Uint8Array(readFileSync(new URL(`../../../fixtures/ofx/${nome}`, import.meta.url)));
-const arquivo = (nome: string, conteudo: Uint8Array | string = bytes(nome), tipo = "") =>
-  new File([conteudo as BlobPart], nome, { type: tipo });
+  new Uint8Array(
+    readFileSync(new URL(`../../../fixtures/ofx/${nome}`, import.meta.url)),
+  );
+const arquivo = (
+  nome: string,
+  conteudo: Uint8Array | string = bytes(nome),
+  tipo = "",
+) => new File([conteudo as BlobPart], nome, { type: tipo });
 
 const leitor = new LeitorDeExtratoOfx();
 
@@ -62,37 +67,74 @@ describe("datas e codificação do OFX", () => {
   });
 
   it("windows-1252 pelo CHARSET, UTF-8 pelo ENCODING/XML, e cabeçalho mentiroso cai em 1252", () => {
-    const latin = new Uint8Array([...new TextEncoder().encode("CHARSET:1252\n<MEMO>JOS"), 0xc9]);
+    const latin = new Uint8Array([
+      ...new TextEncoder().encode("CHARSET:1252\n<MEMO>JOS"),
+      0xc9,
+    ]);
     expect(decodificarOfx(latin)).toContain("JOSÉ");
     const utf8 = new TextEncoder().encode("ENCODING:UTF-8\n<MEMO>JOSÉ");
     expect(decodificarOfx(utf8)).toContain("JOSÉ");
-    const mentiroso = new Uint8Array([...new TextEncoder().encode("ENCODING:UTF-8\nJOS"), 0xc9]);
+    const mentiroso = new Uint8Array([
+      ...new TextEncoder().encode("ENCODING:UTF-8\nJOS"),
+      0xc9,
+    ]);
     expect(decodificarOfx(mentiroso)).toContain("JOSÉ");
-    const usascii = new Uint8Array([...new TextEncoder().encode("ENCODING:USASCII\nJOS"), 0xc9]);
+    const usascii = new Uint8Array([
+      ...new TextEncoder().encode("ENCODING:USASCII\nJOS"),
+      0xc9,
+    ]);
     expect(decodificarOfx(usascii)).toContain("JOSÉ");
   });
 });
 
 describe("LeitorDeExtratoOfx (fixtures do Sicredi)", () => {
   const esperadas = [
-    { data: "2026-10-02", valorCentavos: -25090, descricao: "PAGAMENTO PIX JOSÉ DA CONCEIÇÃO", contraparte: "PIX ENVIADO" },
-    { data: "2026-10-03", valorCentavos: 150000, descricao: "RECEBIMENTO PIX CLIENTE AÇAÍ LTDA", contraparte: null },
-    { data: "2026-10-05", valorCentavos: -1250, descricao: "TARIFA CESTA DE SERVIÇOS", metodoDePagamento: "TARIFA" },
-    { data: "2026-10-07", valorCentavos: -80000, descricao: "CHEQUE COMPENSADO", descricaoOriginal: "CHEQUE COMPENSADO | Cheque 000123" },
+    {
+      data: "2026-10-02",
+      valorCentavos: -25090,
+      descricao: "PAGAMENTO PIX JOSÉ DA CONCEIÇÃO",
+      contraparte: "PIX ENVIADO",
+    },
+    {
+      data: "2026-10-03",
+      valorCentavos: 150000,
+      descricao: "RECEBIMENTO PIX CLIENTE AÇAÍ LTDA",
+      contraparte: null,
+    },
+    {
+      data: "2026-10-05",
+      valorCentavos: -1250,
+      descricao: "TARIFA CESTA DE SERVIÇOS",
+      metodoDePagamento: "TARIFA",
+    },
+    {
+      data: "2026-10-07",
+      valorCentavos: -80000,
+      descricao: "CHEQUE COMPENSADO",
+      descricaoOriginal: "CHEQUE COMPENSADO | Cheque 000123",
+    },
   ];
 
   it("SGML latin1, SGML com vírgula e XML 2.x dão o mesmo resultado (acentos preservados)", () => {
-    const lidos = ["sicredi-sgml-latin1.ofx", "sicredi-sgml-virgula.ofx", "sicredi-xml.ofx"].map((n) =>
-      leitor.ler(bytes(n)),
-    );
+    const lidos = [
+      "sicredi-sgml-latin1.ofx",
+      "sicredi-sgml-virgula.ofx",
+      "sicredi-xml.ofx",
+    ].map((n) => leitor.ler(bytes(n)));
     for (const lido of lidos) {
       expect(lido.periodo).toEqual({ de: "2026-10-01", ate: "2026-10-08" });
-      expect(lido.conta).toMatchObject({ tipo: "corrente", numeroFinal: "3456", saldoCentavos: 1523456 });
+      expect(lido.conta).toMatchObject({
+        tipo: "corrente",
+        numeroFinal: "3456",
+        saldoCentavos: 1523456,
+      });
       expect(lido.conta.idExterno).toMatch(/^ofx:[0-9a-f]{32}$/);
       expect(lido.conta.nome).toMatch(/•••• 3456$/);
       expect(JSON.stringify(lido)).not.toContain("12345-6"); // número completo nunca sai
       expect(lido.transacoes).toHaveLength(4); // o cheque repetido no arquivo entra uma vez
-      expect(lido.transacoes.map((t) => t.idExterno)).toEqual(lidos[0].transacoes.map((t) => t.idExterno));
+      expect(lido.transacoes.map((t) => t.idExterno)).toEqual(
+        lidos[0].transacoes.map((t) => t.idExterno),
+      );
       esperadas.forEach((e, i) => expect(lido.transacoes[i]).toMatchObject(e));
     }
     expect(lidos[0].banco).toBe("Sicredi");
@@ -109,7 +151,11 @@ describe("LeitorDeExtratoOfx (fixtures do Sicredi)", () => {
       <STMTTRN><TRNTYPE>OTHER<DTPOSTED>20261003<TRNAMT>0.00<FITID>Z</STMTTRN></OFX>`;
     const lido = leitor.ler(ofx);
     expect(lido.banco).toBe("Banco 999");
-    expect(lido.conta).toMatchObject({ tipo: "poupanca", numeroFinal: "99", saldoCentavos: 0 });
+    expect(lido.conta).toMatchObject({
+      tipo: "poupanca",
+      numeroFinal: "99",
+      saldoCentavos: 0,
+    });
     expect(lido.periodo).toEqual({ de: "2026-10-01", ate: "2026-10-02" });
     expect(lido.transacoes.map((t) => [t.valorCentavos, t.descricao])).toEqual([
       [-500, "X & Y"],
@@ -135,13 +181,18 @@ describe("LeitorDeExtratoOfx (fixtures do Sicredi)", () => {
       "<OFX><BANKACCTFROM><ACCTID>1</BANKACCTFROM><LEDGERBAL><BALAMT>x</LEDGERBAL></OFX>",
     ];
     for (const c of casos)
-      expect(() => leitor.ler(c)).toThrow(expect.objectContaining({ codigo: "arquivo_invalido" }));
+      expect(() => leitor.ler(c)).toThrow(
+        expect.objectContaining({ codigo: "arquivo_invalido" }),
+      );
   });
 });
 
 class ImportacoesEmMemoria implements RepositorioDeImportacoes {
   linhas: ImportacaoDeExtrato[] = [];
-  async criar(empresaId: string, dados: Omit<ImportacaoDeExtrato, "id" | "empresaId" | "criadaEm">) {
+  async criar(
+    empresaId: string,
+    dados: Omit<ImportacaoDeExtrato, "id" | "empresaId" | "criadaEm">,
+  ) {
     const linha = { id: novoId(), empresaId, criadaEm: new Date(), ...dados };
     this.linhas.unshift(linha);
     return linha;
@@ -150,7 +201,9 @@ class ImportacoesEmMemoria implements RepositorioDeImportacoes {
     return this.linhas.filter((l) => l.empresaId === empresaId);
   }
   async ultimoFimDePeriodo(empresaId: string, contaId: string) {
-    const fins = this.linhas.filter((l) => l.empresaId === empresaId && l.contaId === contaId).map((l) => l.periodo.ate);
+    const fins = this.linhas
+      .filter((l) => l.empresaId === empresaId && l.contaId === contaId)
+      .map((l) => l.periodo.ate);
     return fins.sort().at(-1) ?? null;
   }
 }
@@ -174,7 +227,16 @@ function montar() {
     consumirLimite,
     agora: () => new Date("2026-10-09T12:00:00Z"),
   });
-  return { servico, conexoes, contas, transacoes, importacoes, categorizacao, comprovantes, consumirLimite };
+  return {
+    servico,
+    conexoes,
+    contas,
+    transacoes,
+    importacoes,
+    categorizacao,
+    comprovantes,
+    consumirLimite,
+  };
 }
 
 describe("ServicoDeImportacao", () => {
@@ -190,15 +252,31 @@ describe("ServicoDeImportacao", () => {
       comprovantesConciliados: 1,
     });
     expect(m.conexoes.linhas).toEqual([
-      expect.objectContaining({ provedor: "arquivo", idExterno: EMPRESA, status: "atualizada", banco: "Sicredi" }),
+      expect.objectContaining({
+        provedor: "arquivo",
+        idExterno: EMPRESA,
+        status: "atualizada",
+        banco: "Sicredi",
+      }),
     ]);
-    expect(m.conexoes.marcarSincronizada).toHaveBeenCalledWith(EMPRESA, m.conexoes.linhas[0].id, new Date("2026-10-09T12:00:00Z"));
+    expect(m.conexoes.marcarSincronizada).toHaveBeenCalledWith(
+      EMPRESA,
+      m.conexoes.linhas[0].id,
+      new Date("2026-10-09T12:00:00Z"),
+    );
     expect(m.contas.linhas).toHaveLength(1);
     expect(m.transacoes.linhas).toHaveLength(4);
-    expect(m.importacoes.linhas[0]).toMatchObject({ nomeDoArquivo: "sicredi-sgml-latin1.ofx", novas: 4, atualizadas: 0 });
+    expect(m.importacoes.linhas[0]).toMatchObject({
+      nomeDoArquivo: "sicredi-sgml-latin1.ofx",
+      novas: 4,
+      atualizadas: 0,
+    });
     expect(m.categorizacao.categorizarPendentes).toHaveBeenCalledWith(EMPRESA);
     expect(m.comprovantes.reconciliarPendentes).toHaveBeenCalledWith(EMPRESA);
-    expect(m.consumirLimite).toHaveBeenCalledWith(`importacao:usuario:${ctx.usuarioId}`, { maximo: 20, janelaEmSegundos: 3600 });
+    expect(m.consumirLimite).toHaveBeenCalledWith(
+      `importacao:usuario:${ctx.usuarioId}`,
+      { maximo: 20, janelaEmSegundos: 3600 },
+    );
     expect(await m.servico.listarImportacoes(ctx)).toHaveLength(1);
   });
 
@@ -207,7 +285,11 @@ describe("ServicoDeImportacao", () => {
     const m = montar();
     await m.servico.importar(ctx, arquivo("sicredi-sgml-latin1.ofx"));
     const categoriaId = novoId();
-    Object.assign(m.transacoes.linhas[0], { categoriaId, categoriaOrigem: "usuario", categoriaDefinidaPeloUsuario: true });
+    Object.assign(m.transacoes.linhas[0], {
+      categoriaId,
+      categoriaOrigem: "usuario",
+      categoriaDefinidaPeloUsuario: true,
+    });
     for (const nome of ["sicredi-sgml-latin1.ofx", "sicredi-xml.ofx"]) {
       const r = await m.servico.importar(ctx, arquivo(nome));
       expect(r).toMatchObject({ novas: 0, atualizadas: 4 });
@@ -215,7 +297,10 @@ describe("ServicoDeImportacao", () => {
     expect(m.transacoes.linhas).toHaveLength(4);
     expect(m.conexoes.linhas).toHaveLength(1);
     expect(m.contas.linhas).toHaveLength(1);
-    expect(m.transacoes.linhas[0]).toMatchObject({ categoriaId, categoriaDefinidaPeloUsuario: true });
+    expect(m.transacoes.linhas[0]).toMatchObject({
+      categoriaId,
+      categoriaDefinidaPeloUsuario: true,
+    });
     expect(m.importacoes.linhas).toHaveLength(3);
   });
 
@@ -254,9 +339,20 @@ describe("ServicoDeImportacao", () => {
       arquivo("corrompido.ofx"),
     ];
     for (const a of casos)
-      await expect(m.servico.importar(ctx, a)).rejects.toMatchObject({ codigo: "arquivo_invalido" });
+      await expect(m.servico.importar(ctx, a)).rejects.toMatchObject({
+        codigo: "arquivo_invalido",
+      });
     m.consumirLimite.mockResolvedValue(false);
-    await expect(m.servico.importar(ctx, arquivo("sicredi-xml.ofx", bytes("sicredi-xml.ofx"), "application/x-ofx"))).rejects.toMatchObject({
+    await expect(
+      m.servico.importar(
+        ctx,
+        arquivo(
+          "sicredi-xml.ofx",
+          bytes("sicredi-xml.ofx"),
+          "application/x-ofx",
+        ),
+      ),
+    ).rejects.toMatchObject({
       codigo: "limite_excedido",
     });
     expect(m.transacoes.linhas).toHaveLength(0);
@@ -272,16 +368,28 @@ describe("RF-34: situação do extrato", () => {
     ["7 dias → desatualizado", "2026-10-08T00:30:00-03:00", 7, true],
     ["virada do dia pelo fuso de Araguaína", "2026-10-15T02:00:00Z", 1, false],
   ])("%s", (_n, ultima, dias, desatualizado) => {
-    expect(situacaoDoExtrato(new Date(ultima), agora)).toEqual({ ultimaImportacaoEm: new Date(ultima), diasDesdeAUltima: dias, desatualizado });
+    expect(situacaoDoExtrato(new Date(ultima), agora)).toEqual({
+      ultimaImportacaoEm: new Date(ultima),
+      diasDesdeAUltima: dias,
+      desatualizado,
+    });
   });
 
   it("sem importação → nulos; o serviço usa a mais recente", async () => {
-    expect(situacaoDoExtrato(null, agora)).toEqual({ ultimaImportacaoEm: null, diasDesdeAUltima: null, desatualizado: false });
+    expect(situacaoDoExtrato(null, agora)).toEqual({
+      ultimaImportacaoEm: null,
+      diasDesdeAUltima: null,
+      desatualizado: false,
+    });
     vi.spyOn(console, "info").mockImplementation(() => {});
     const m = montar();
-    expect(await m.servico.situacao(ctx)).toMatchObject({ ultimaImportacaoEm: null });
+    expect(await m.servico.situacao(ctx)).toMatchObject({
+      ultimaImportacaoEm: null,
+    });
     await m.servico.importar(ctx, arquivo("sicredi-xml.ofx"));
-    expect(await m.servico.situacao(ctx)).toMatchObject({ diasDesdeAUltima: expect.any(Number) });
+    expect(await m.servico.situacao(ctx)).toMatchObject({
+      diasDesdeAUltima: expect.any(Number),
+    });
   });
 });
 
@@ -290,15 +398,21 @@ describe("RF-32: importação interrompida", () => {
     vi.spyOn(console, "info").mockImplementation(() => {});
     const m = montar();
     const original = m.transacoes.salvarDoProvedor.bind(m.transacoes);
-    m.transacoes.salvarDoProvedor = vi.fn(async (...args: Parameters<typeof original>) => {
-      await original(args[0], args[1], args[2].slice(0, 2)); // grava parte e cai
-      throw new Error("conexão caiu");
-    });
-    await expect(m.servico.importar(ctx, arquivo("sicredi-xml.ofx"))).rejects.toThrow("conexão caiu");
+    m.transacoes.salvarDoProvedor = vi.fn(
+      async (...args: Parameters<typeof original>) => {
+        await original(args[0], args[1], args[2].slice(0, 2)); // grava parte e cai
+        throw new Error("conexão caiu");
+      },
+    );
+    await expect(
+      m.servico.importar(ctx, arquivo("sicredi-xml.ofx")),
+    ).rejects.toThrow("conexão caiu");
     expect(m.importacoes.linhas).toHaveLength(0);
     expect(m.transacoes.linhas).toHaveLength(2);
     m.transacoes.salvarDoProvedor = original;
-    expect(await m.servico.importar(ctx, arquivo("sicredi-xml.ofx"))).toMatchObject({ novas: 2, atualizadas: 2 });
+    expect(
+      await m.servico.importar(ctx, arquivo("sicredi-xml.ofx")),
+    ).toMatchObject({ novas: 2, atualizadas: 2 });
     expect(m.transacoes.linhas).toHaveLength(4);
     expect(m.importacoes.linhas).toHaveLength(1);
   });

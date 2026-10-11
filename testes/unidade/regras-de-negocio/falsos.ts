@@ -57,7 +57,10 @@ export function fixture<T = unknown>(nome: string): T {
 /** Fixture crua (como chega no corpo do webhook). */
 export function fixtureCrua<T = unknown>(nome: string): T {
   return JSON.parse(
-    readFileSync(new URL(`../../fixtures/pluggy/${nome}`, import.meta.url), "utf8"),
+    readFileSync(
+      new URL(`../../fixtures/pluggy/${nome}`, import.meta.url),
+      "utf8",
+    ),
   ) as T;
 }
 
@@ -197,7 +200,8 @@ export class TransacoesEmMemoria implements RepositorioDeTransacoes {
           (t) =>
             t.empresaId === empresaId &&
             Math.abs(t.valorCentavos) === Math.abs(f.valorCentavos) &&
-            Math.abs(Date.parse(t.data) - Date.parse(f.data)) <= f.toleranciaDias * 86_400_000,
+            Math.abs(Date.parse(t.data) - Date.parse(f.data)) <=
+              f.toleranciaDias * 86_400_000,
         )
         .map((t) => ({
           id: t.id,
@@ -254,7 +258,11 @@ export class TransacoesEmMemoria implements RepositorioDeTransacoes {
   }
   async marcarCategorizacaoTentada(empresaId: string, ids: readonly string[]) {
     for (const t of this.linhas)
-      if (t.empresaId === empresaId && ids.includes(t.id) && !t.categoriaDefinidaPeloUsuario)
+      if (
+        t.empresaId === empresaId &&
+        ids.includes(t.id) &&
+        !t.categoriaDefinidaPeloUsuario
+      )
         t.categorizacaoAutomaticaEm = new Date();
   }
   async definirCategoriaPeloUsuario(
@@ -262,7 +270,9 @@ export class TransacoesEmMemoria implements RepositorioDeTransacoes {
     id: string,
     dados: { categoriaId: string | null; centroDeCustoId: string | null },
   ) {
-    const t = this.linhas.find((x) => x.id === id && x.empresaId === empresaId)!;
+    const t = this.linhas.find(
+      (x) => x.id === id && x.empresaId === empresaId,
+    )!;
     Object.assign(t, {
       ...dados,
       categoriaOrigem: "usuario",
@@ -292,7 +302,11 @@ export class TransacoesEmMemoria implements RepositorioDeTransacoes {
 
 export class ConexoesEmMemoria implements RepositorioDeConexoes {
   constructor(public linhas: Conexao[] = []) {}
-  async salvar(empresaId: string, dados: DadosDaConexao, _criadoPor: string | null) {
+  async salvar(
+    empresaId: string,
+    dados: DadosDaConexao,
+    _criadoPor: string | null,
+  ) {
     const provedor = dados.provedor ?? "pluggy";
     const atual = this.linhas.find(
       (c) => c.idExterno === dados.idExterno && c.provedor === provedor,
@@ -305,13 +319,20 @@ export class ConexoesEmMemoria implements RepositorioDeConexoes {
     this.linhas.push(nova);
     return nova;
   }
-  async buscarPorIdExterno(idExterno: string, provedor: Conexao["provedor"] = "pluggy") {
+  async buscarPorIdExterno(
+    idExterno: string,
+    provedor: Conexao["provedor"] = "pluggy",
+  ) {
     return (
-      this.linhas.find((c) => c.idExterno === idExterno && c.provedor === provedor) ?? null
+      this.linhas.find(
+        (c) => c.idExterno === idExterno && c.provedor === provedor,
+      ) ?? null
     );
   }
   async buscarPorId(empresaId: string, id: string) {
-    return this.linhas.find((c) => c.empresaId === empresaId && c.id === id) ?? null;
+    return (
+      this.linhas.find((c) => c.empresaId === empresaId && c.id === id) ?? null
+    );
   }
   async listar(empresaId: string) {
     return this.linhas.filter((c) => c.empresaId === empresaId);
@@ -325,7 +346,10 @@ export class ConexoesEmMemoria implements RepositorioDeConexoes {
       id: string,
       dados: Omit<DadosDaConexao, "idExterno" | "banco">,
     ) => {
-      Object.assign(this.linhas.find((c) => c.id === id)!, dados);
+      Object.assign(
+        this.linhas.find((c) => c.id === id)!,
+        dados,
+      );
     },
   );
   marcarSincronizada = vi.fn(async (_e: string, id: string, em: Date) => {
@@ -335,7 +359,11 @@ export class ConexoesEmMemoria implements RepositorioDeConexoes {
 
 export class ContasEmMemoria implements RepositorioDeContas {
   linhas: Conta[] = [];
-  async salvarVarias(empresaId: string, conexaoId: string, contas: readonly ContaDoProvedor[]) {
+  async salvarVarias(
+    empresaId: string,
+    conexaoId: string,
+    contas: readonly ContaDoProvedor[],
+  ) {
     return contas.map((c) => {
       let conta = this.linhas.find(
         (x) => x.conexaoId === conexaoId && x.idExterno === c.idExterno,
@@ -367,14 +395,20 @@ export class ContasEmMemoria implements RepositorioDeContas {
 }
 
 export class EventosEmMemoria implements RepositorioDeEventosDeWebhook {
-  vistos = new Map<string, { empresaId: string | null; erro: string | null } | null>();
+  vistos = new Map<
+    string,
+    { empresaId: string | null; erro: string | null } | null
+  >();
   async registrar(eventoId: string) {
     if (this.vistos.has(eventoId)) return false;
     this.vistos.set(eventoId, null);
     return true;
   }
   marcarProcessado = vi.fn(
-    async (eventoId: string, r: { empresaId: string | null; erro: string | null }) => {
+    async (
+      eventoId: string,
+      r: { empresaId: string | null; erro: string | null },
+    ) => {
       this.vistos.set(eventoId, r);
     },
   );
@@ -391,7 +425,10 @@ export class RegrasEmMemoria implements RepositorioDeRegras {
   async listar(empresaId: string) {
     return this.linhas.filter((r) => r.empresaId === empresaId);
   }
-  async criar(empresaId: string, dados: Omit<Regra, "id" | "empresaId" | "criadaEm" | "ativa">) {
+  async criar(
+    empresaId: string,
+    dados: Omit<Regra, "id" | "empresaId" | "criadaEm" | "ativa">,
+  ) {
     const regra = umaRegra({ empresaId, ...dados, criadaEm: new Date() });
     this.linhas.push(regra);
     return regra;
@@ -408,23 +445,36 @@ export class CategoriasEmMemoria implements RepositorioDeCategorias {
   constructor(public linhas: Categoria[] = []) {}
   async listar(empresaId: string, opcoes?: { incluirArquivadas?: boolean }) {
     return this.linhas.filter(
-      (c) => c.empresaId === empresaId && (opcoes?.incluirArquivadas || !c.arquivada),
+      (c) =>
+        c.empresaId === empresaId &&
+        (opcoes?.incluirArquivadas || !c.arquivada),
     );
   }
-  criar = vi.fn(async (empresaId: string, dados: { nome: string; tipo: Categoria["tipo"]; entraNoResultado: boolean }) =>
-    umaCategoria({ empresaId, ...dados, padrao: false }),
+  criar = vi.fn(
+    async (
+      empresaId: string,
+      dados: {
+        nome: string;
+        tipo: Categoria["tipo"];
+        entraNoResultado: boolean;
+      },
+    ) => umaCategoria({ empresaId, ...dados, padrao: false }),
   );
-  atualizar = vi.fn(async (_e: string, id: string, dados: Partial<Categoria>) => ({
-    ...umaCategoria({ id }),
-    ...dados,
-  }));
+  atualizar = vi.fn(
+    async (_e: string, id: string, dados: Partial<Categoria>) => ({
+      ...umaCategoria({ id }),
+      ...dados,
+    }),
+  );
 }
 
 export class CentrosEmMemoria implements RepositorioDeCentrosDeCusto {
   constructor(public linhas: CentroDeCusto[] = []) {}
   async listar(empresaId: string, opcoes?: { incluirArquivados?: boolean }) {
     return this.linhas.filter(
-      (c) => c.empresaId === empresaId && (opcoes?.incluirArquivados || !c.arquivado),
+      (c) =>
+        c.empresaId === empresaId &&
+        (opcoes?.incluirArquivados || !c.arquivado),
     );
   }
   criar = vi.fn(async (empresaId: string, dados: { nome: string }) => ({
@@ -434,14 +484,16 @@ export class CentrosEmMemoria implements RepositorioDeCentrosDeCusto {
     padrao: false,
     arquivado: false,
   }));
-  atualizar = vi.fn(async (empresaId: string, id: string, dados: Partial<CentroDeCusto>) => ({
-    id,
-    empresaId,
-    nome: "Elétrica",
-    padrao: false,
-    arquivado: false,
-    ...dados,
-  }));
+  atualizar = vi.fn(
+    async (empresaId: string, id: string, dados: Partial<CentroDeCusto>) => ({
+      id,
+      empresaId,
+      nome: "Elétrica",
+      padrao: false,
+      arquivado: false,
+      ...dados,
+    }),
+  );
 }
 
 /** Provedor falso: conexão, contas e páginas de transações configuráveis. */
@@ -456,17 +508,33 @@ export class ProvedorFalso implements ProvedorBancario {
     identificadorDoUsuario: EMPRESA,
   };
   contas: ContaDoProvedor[] = [
-    { idExterno: CONTA_EXTERNA, nome: "Conta PJ", tipo: "corrente", numeroFinal: "3456", saldoCentavos: 1523456 },
-    { idExterno: "poupanca-1", nome: "Poupança", tipo: "poupanca", numeroFinal: null, saldoCentavos: 100000 },
+    {
+      idExterno: CONTA_EXTERNA,
+      nome: "Conta PJ",
+      tipo: "corrente",
+      numeroFinal: "3456",
+      saldoCentavos: 1523456,
+    },
+    {
+      idExterno: "poupanca-1",
+      nome: "Poupança",
+      tipo: "poupanca",
+      numeroFinal: null,
+      saldoCentavos: 100000,
+    },
   ];
-  paginas: PaginaDeTransacoesDoProvedor[] = [{ itens: [], proximoCursor: null }];
+  paginas: PaginaDeTransacoesDoProvedor[] = [
+    { itens: [], proximoCursor: null },
+  ];
   criarTokenDeConexao = vi.fn(async () => ({ token: "token-curto" }));
   obterConexao = vi.fn(async () => this.conexao);
   listarContas = vi.fn(async () => this.contas);
-  listarTransacoes = vi.fn(async (_conta: string, filtros?: { cursor?: string }) => {
-    const indice = filtros?.cursor ? Number(filtros.cursor) : 0;
-    return this.paginas[indice] ?? { itens: [], proximoCursor: null };
-  });
+  listarTransacoes = vi.fn(
+    async (_conta: string, filtros?: { cursor?: string }) => {
+      const indice = filtros?.cursor ? Number(filtros.cursor) : 0;
+      return this.paginas[indice] ?? { itens: [], proximoCursor: null };
+    },
+  );
   registrarWebhooks = vi.fn(async () => ({ criados: [], atualizados: [] }));
   interpretarWebhook = vi.fn((): EventoDeWebhook | null => null);
 }

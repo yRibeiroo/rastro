@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { descreverMoeda, formatarMoeda, MENOS } from "@/ferramentas-internas/formatar-moeda";
+import {
+  descreverMoeda,
+  formatarMoeda,
+  MENOS,
+} from "@/ferramentas-internas/formatar-moeda";
 
 // Intl usa espaço não separável (U+00A0) entre "R$" e o número.
 const s = (t: string) => t.replace(/ /g, " ");
@@ -23,7 +27,9 @@ describe("formatarMoeda", () => {
 
   it("compacto", () => {
     expect(s(formatarMoeda(1842000, { compacto: true }))).toBe("R$ 18,4 mil");
-    expect(s(formatarMoeda(-512000, { compacto: true, sinal: true }))).toBe(`${MENOS}R$ 5,1 mil`);
+    expect(s(formatarMoeda(-512000, { compacto: true, sinal: true }))).toBe(
+      `${MENOS}R$ 5,1 mil`,
+    );
   });
 
   it("descreve para leitor de tela", () => {

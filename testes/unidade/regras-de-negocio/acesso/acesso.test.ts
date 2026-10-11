@@ -38,15 +38,28 @@ describe("rate limit", () => {
 
   it("exigirLimite: estourou → limite_excedido; banco fora → aberta libera, fechada propaga", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
-    await expect(exigirLimite(async () => true, "k", LIMITES.anexo)).resolves.toBeUndefined();
-    await expect(exigirLimite(async () => false, "k", LIMITES.anexo)).rejects.toMatchObject({ codigo: "limite_excedido" });
+    await expect(
+      exigirLimite(async () => true, "k", LIMITES.anexo),
+    ).resolves.toBeUndefined();
+    await expect(
+      exigirLimite(async () => false, "k", LIMITES.anexo),
+    ).rejects.toMatchObject({ codigo: "limite_excedido" });
     const fora = async () => Promise.reject(new Error("db"));
-    await expect(exigirLimite(fora, "k", LIMITES.anexo)).resolves.toBeUndefined();
-    await expect(exigirLimite(fora, "k", LIMITES.anexo, "fechada")).rejects.toThrow("db");
+    await expect(
+      exigirLimite(fora, "k", LIMITES.anexo),
+    ).resolves.toBeUndefined();
+    await expect(
+      exigirLimite(fora, "k", LIMITES.anexo, "fechada"),
+    ).rejects.toThrow("db");
   });
 });
 
-function montar(usuario: { id: string; email: string | null } | null = { id: USUARIO, email: "davi@hometec.com.br" }) {
+function montar(
+  usuario: { id: string; email: string | null } | null = {
+    id: USUARIO,
+    email: "davi@hometec.com.br",
+  },
+) {
   const autenticacao = {
     usuarioAtual: vi.fn(async () => usuario),
     enviarLinkMagico: vi.fn(async () => {}),
@@ -55,7 +68,10 @@ function montar(usuario: { id: string; email: string | null } | null = { id: USU
   } satisfies PortaDeAutenticacao;
   const empresas = {
     garantirEmpresaDoUsuario: vi.fn(async () => EMPRESA),
-    obterMembershipDoUsuario: vi.fn(async () => ({ empresaId: EMPRESA, papel: "dono" as const })),
+    obterMembershipDoUsuario: vi.fn(async () => ({
+      empresaId: EMPRESA,
+      papel: "dono" as const,
+    })),
     existe: vi.fn(async () => true),
   };
   const consumirLimite = vi.fn(async () => true);
@@ -81,16 +97,27 @@ describe("obterContextoDoUsuario", () => {
   });
 
   it("sem sessão → nao_autenticado; fora da lista ou sem e-mail → email_nao_autorizado", async () => {
-    await expect(montar(null).acesso.obterContextoDoUsuario()).rejects.toMatchObject({ codigo: "nao_autenticado" });
-    await expect(montar({ id: USUARIO, email: "x@y.com" }).acesso.obterContextoDoUsuario()).rejects.toMatchObject({ codigo: "email_nao_autorizado" });
-    await expect(montar({ id: USUARIO, email: null }).acesso.obterContextoDoUsuario()).rejects.toMatchObject({ codigo: "email_nao_autorizado" });
+    await expect(
+      montar(null).acesso.obterContextoDoUsuario(),
+    ).rejects.toMatchObject({ codigo: "nao_autenticado" });
+    await expect(
+      montar({ id: USUARIO, email: "x@y.com" }).acesso.obterContextoDoUsuario(),
+    ).rejects.toMatchObject({ codigo: "email_nao_autorizado" });
+    await expect(
+      montar({ id: USUARIO, email: null }).acesso.obterContextoDoUsuario(),
+    ).rejects.toMatchObject({ codigo: "email_nao_autorizado" });
   });
 
   it("sem empresa ainda (callback interrompido) → garantir_empresa", async () => {
     const { acesso, empresas } = montar();
     empresas.obterMembershipDoUsuario.mockResolvedValue(null as never);
-    expect(await acesso.obterContextoDoUsuario()).toMatchObject({ empresaId: EMPRESA, papel: "dono" });
-    expect(empresas.garantirEmpresaDoUsuario).toHaveBeenCalledWith("Minha empresa");
+    expect(await acesso.obterContextoDoUsuario()).toMatchObject({
+      empresaId: EMPRESA,
+      papel: "dono",
+    });
+    expect(empresas.garantirEmpresaDoUsuario).toHaveBeenCalledWith(
+      "Minha empresa",
+    );
   });
 });
 
@@ -98,14 +125,25 @@ describe("enviarLinkMagico", () => {
   it("e-mail autorizado recebe o link com retorno em /entrar/confirmar; limites por IP e e-mail", async () => {
     const { acesso, autenticacao, consumirLimite } = montar();
     await acesso.enviarLinkMagico(" Davi@Hometec.com.br ", "200.1.2.3");
-    expect(autenticacao.enviarLinkMagico).toHaveBeenCalledWith("davi@hometec.com.br", "https://rastro.app/entrar/confirmar");
-    expect(consumirLimite).toHaveBeenCalledWith(chaveComHash("entrar:ip", "200.1.2.3"), { maximo: 5, janelaEmSegundos: 900 });
-    expect(consumirLimite).toHaveBeenCalledWith(chaveComHash("entrar:email", "davi@hometec.com.br"), { maximo: 3, janelaEmSegundos: 900 });
+    expect(autenticacao.enviarLinkMagico).toHaveBeenCalledWith(
+      "davi@hometec.com.br",
+      "https://rastro.app/entrar/confirmar",
+    );
+    expect(consumirLimite).toHaveBeenCalledWith(
+      chaveComHash("entrar:ip", "200.1.2.3"),
+      { maximo: 5, janelaEmSegundos: 900 },
+    );
+    expect(consumirLimite).toHaveBeenCalledWith(
+      chaveComHash("entrar:email", "davi@hometec.com.br"),
+      { maximo: 3, janelaEmSegundos: 900 },
+    );
   });
 
   it("e-mail fora da allowlist: mesma resposta, nada é enviado", async () => {
     const { acesso, autenticacao } = montar();
-    await expect(acesso.enviarLinkMagico("intruso@x.com", null)).resolves.toBeUndefined();
+    await expect(
+      acesso.enviarLinkMagico("intruso@x.com", null),
+    ).resolves.toBeUndefined();
     expect(autenticacao.enviarLinkMagico).not.toHaveBeenCalled();
   });
 
@@ -113,18 +151,26 @@ describe("enviarLinkMagico", () => {
     const erro = vi.spyOn(console, "error").mockImplementation(() => {});
     const { acesso, autenticacao } = montar();
     autenticacao.enviarLinkMagico.mockRejectedValue(new Error("smtp"));
-    await expect(acesso.enviarLinkMagico("davi@hometec.com.br", null)).resolves.toBeUndefined();
+    await expect(
+      acesso.enviarLinkMagico("davi@hometec.com.br", null),
+    ).resolves.toBeUndefined();
     expect(JSON.stringify(erro.mock.calls)).not.toContain("davi@");
   });
 
   it("e-mail inválido → entrada_invalida; limite estourado → limite_excedido; banco de limites fora → bloqueia", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     const { acesso, consumirLimite, autenticacao } = montar();
-    await expect(acesso.enviarLinkMagico("nao-e-email", null)).rejects.toMatchObject({ codigo: "entrada_invalida" });
+    await expect(
+      acesso.enviarLinkMagico("nao-e-email", null),
+    ).rejects.toMatchObject({ codigo: "entrada_invalida" });
     consumirLimite.mockResolvedValueOnce(false);
-    await expect(acesso.enviarLinkMagico("davi@hometec.com.br", "1.1.1.1")).rejects.toMatchObject({ codigo: "limite_excedido" });
+    await expect(
+      acesso.enviarLinkMagico("davi@hometec.com.br", "1.1.1.1"),
+    ).rejects.toMatchObject({ codigo: "limite_excedido" });
     consumirLimite.mockRejectedValueOnce(new Error("db"));
-    await expect(acesso.enviarLinkMagico("davi@hometec.com.br", null)).rejects.toThrow("db");
+    await expect(
+      acesso.enviarLinkMagico("davi@hometec.com.br", null),
+    ).rejects.toThrow("db");
     expect(autenticacao.enviarLinkMagico).not.toHaveBeenCalled();
   });
 });
@@ -132,14 +178,23 @@ describe("enviarLinkMagico", () => {
 describe("confirmarEntrada e sair", () => {
   it("troca o code, confere a allowlist e garante a empresa", async () => {
     const { acesso, autenticacao, empresas } = montar();
-    expect(await acesso.confirmarEntrada({ code: "abc" })).toEqual({ empresaId: EMPRESA });
+    expect(await acesso.confirmarEntrada({ code: "abc" })).toEqual({
+      empresaId: EMPRESA,
+    });
     expect(autenticacao.trocarPorSessao).toHaveBeenCalledWith({ code: "abc" });
-    expect(empresas.garantirEmpresaDoUsuario).toHaveBeenCalledWith("Minha empresa");
+    expect(empresas.garantirEmpresaDoUsuario).toHaveBeenCalledWith(
+      "Minha empresa",
+    );
   });
 
   it("e-mail fora da lista: signOut e email_nao_autorizado, sem criar empresa", async () => {
-    const { acesso, autenticacao, empresas } = montar({ id: USUARIO, email: "intruso@x.com" });
-    await expect(acesso.confirmarEntrada({ tokenHash: "h", tipo: "magiclink" })).rejects.toMatchObject({ codigo: "email_nao_autorizado" });
+    const { acesso, autenticacao, empresas } = montar({
+      id: USUARIO,
+      email: "intruso@x.com",
+    });
+    await expect(
+      acesso.confirmarEntrada({ tokenHash: "h", tipo: "magiclink" }),
+    ).rejects.toMatchObject({ codigo: "email_nao_autorizado" });
     expect(autenticacao.sair).toHaveBeenCalled();
     expect(empresas.garantirEmpresaDoUsuario).not.toHaveBeenCalled();
   });

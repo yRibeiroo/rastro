@@ -3,7 +3,11 @@
 import { useRef, useState } from "react";
 import { Carregando } from "@/identidade-visual/Carregando";
 import { deixarRastro } from "@/identidade-visual/rastro-movimento";
-import { CHAVE_ABERTURA, definirTema, type Tema } from "@/identidade-visual/tema";
+import {
+  CHAVE_ABERTURA,
+  definirTema,
+  type Tema,
+} from "@/identidade-visual/tema";
 
 const botao =
   "inline-flex h-10 items-center gap-2 rounded-full px-4 text-sm font-medium transition-transform duration-[140ms] ease-saida active:scale-[0.97]";
@@ -12,7 +16,11 @@ export function SeletorDeTema() {
   const [tema, setTema] = useState<Tema>("sistema");
   const opcoes: Tema[] = ["sistema", "claro", "escuro"];
   return (
-    <div role="radiogroup" aria-label="Tema" className="inline-flex rounded-full border border-borda bg-superficie p-1">
+    <div
+      role="radiogroup"
+      aria-label="Tema"
+      className="inline-flex rounded-full border border-borda bg-superficie p-1"
+    >
       {opcoes.map((o) => (
         <button
           key={o}
@@ -24,7 +32,9 @@ export function SeletorDeTema() {
             setTema(o);
           }}
           className={`h-8 rounded-full px-3 text-sm capitalize ${
-            tema === o ? "bg-primaria-suave text-texto font-medium" : "text-texto-suave"
+            tema === o
+              ? "bg-primaria-suave text-texto font-medium"
+              : "text-texto-suave"
           }`}
         >
           {o}
@@ -64,13 +74,24 @@ export function BotaoSincronizar() {
       }}
       className={`${botao} border border-borda-controle bg-superficie text-texto disabled:cursor-wait`}
     >
-      {ocupado ? <Carregando contexto="sincronizando" tamanho="inline" rotulo="Sincronizando" /> : "Sincronizar agora"}
+      {ocupado ? (
+        <Carregando
+          contexto="sincronizando"
+          tamanho="inline"
+          rotulo="Sincronizando"
+        />
+      ) : (
+        "Sincronizar agora"
+      )}
     </button>
   );
 }
 
 const CATEGORIAS = ["Combustível", "Material elétrico", "Ferramentas"];
-const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+const brl = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+});
 
 export function DemoRastro() {
   const origem = useRef<HTMLDivElement>(null);
@@ -85,12 +106,17 @@ export function DemoRastro() {
 
   return (
     <div className="grid gap-10 md:grid-cols-[1fr_auto] md:items-center">
-      <div ref={origem} className="flex items-center justify-between gap-6 rounded-m border border-borda bg-superficie p-4">
+      <div
+        ref={origem}
+        className="flex items-center justify-between gap-6 rounded-m border border-borda bg-superficie p-4"
+      >
         <div>
           <p className="font-medium">POSTO TOCANTINS LTDA</p>
           <p className="text-sm text-texto-suave">08/10 · Pix enviado</p>
         </div>
-        <p className="valor-monetario font-semibold text-saida">{brl.format(-286.4)}</p>
+        <p className="valor-monetario font-semibold text-saida">
+          {brl.format(-286.4)}
+        </p>
       </div>
       <div className="flex flex-wrap gap-2">
         {CATEGORIAS.map((c, i) => (
@@ -113,7 +139,9 @@ export function DemoRastro() {
         ))}
       </div>
       <p aria-live="polite" className="text-sm text-texto-suave md:col-span-2">
-        {categoria ? `Transação movida para ${categoria}.` : "Escolha uma categoria para ver o rastro."}
+        {categoria
+          ? `Transação movida para ${categoria}.`
+          : "Escolha uma categoria para ver o rastro."}
       </p>
     </div>
   );

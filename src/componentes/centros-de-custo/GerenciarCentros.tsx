@@ -4,12 +4,22 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { Anuncio, Sucesso } from "@/componentes/estados/Estados";
 import { Icone } from "@/componentes/estrutura/Icone";
-import { botao, campo, mensagemDeErro, rotulo } from "@/componentes/formulario/classes";
+import {
+  botao,
+  campo,
+  mensagemDeErro,
+  rotulo,
+} from "@/componentes/formulario/classes";
 import type { CentroDeCusto, Id, ResultadoDaAcao } from "@/regras-de-negocio";
 import { Carregando } from "@/identidade-visual/Carregando";
 
-export type AtualizarCentro = (id: Id, dados: Partial<Pick<CentroDeCusto, "nome" | "arquivado">>) => Promise<ResultadoDaAcao<CentroDeCusto>>;
-export type CriarCentro = (dados: { nome: string }) => Promise<ResultadoDaAcao<CentroDeCusto>>;
+export type AtualizarCentro = (
+  id: Id,
+  dados: Partial<Pick<CentroDeCusto, "nome" | "arquivado">>,
+) => Promise<ResultadoDaAcao<CentroDeCusto>>;
+export type CriarCentro = (dados: {
+  nome: string;
+}) => Promise<ResultadoDaAcao<CentroDeCusto>>;
 
 function useAcao() {
   const router = useRouter();
@@ -17,7 +27,10 @@ function useAcao() {
   const [ocupado, setOcupado] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
-  async function executar<T>(acao: () => Promise<ResultadoDaAcao<T>>, sucesso: (dados: T) => string) {
+  async function executar<T>(
+    acao: () => Promise<ResultadoDaAcao<T>>,
+    sucesso: (dados: T) => string,
+  ) {
     setOcupado(true);
     setErro(null);
     setAviso(null);
@@ -43,7 +56,13 @@ export function NovoCentro({ criar }: { criar: CriarCentro }) {
         e.preventDefault();
         const f = e.currentTarget;
         const nome = String(new FormData(f).get("nome") ?? "");
-        if (await executar(() => criar({ nome }), (c) => `Centro ${c.nome} criado.`)) f.reset();
+        if (
+          await executar(
+            () => criar({ nome }),
+            (c) => `Centro ${c.nome} criado.`,
+          )
+        )
+          f.reset();
       }}
       className="grid gap-3 rounded-m border border-borda bg-superficie p-4 sm:grid-cols-[1fr_auto] sm:items-end"
     >
@@ -62,21 +81,41 @@ export function NovoCentro({ criar }: { criar: CriarCentro }) {
           className={campo}
         />
       </div>
-      <button type="submit" disabled={ocupado} aria-busy={ocupado || undefined} className={botao.primario}>
-        {ocupado ? <Carregando tamanho="inline" rotulo="Criando" /> : <><Icone nome="adicionar" className="size-4" />Criar</>}
+      <button
+        type="submit"
+        disabled={ocupado}
+        aria-busy={ocupado || undefined}
+        className={botao.primario}
+      >
+        {ocupado ? (
+          <Carregando tamanho="inline" rotulo="Criando" />
+        ) : (
+          <>
+            <Icone nome="adicionar" className="size-4" />
+            Criar
+          </>
+        )}
       </button>
       {erro && (
         <p id="novo-centro-erro" className={`${mensagemDeErro} sm:col-span-2`}>
           {erro}
         </p>
       )}
-      <Anuncio className="empty:hidden sm:col-span-2">{aviso && <Sucesso>{aviso}</Sucesso>}</Anuncio>
+      <Anuncio className="empty:hidden sm:col-span-2">
+        {aviso && <Sucesso>{aviso}</Sucesso>}
+      </Anuncio>
     </form>
   );
 }
 
 /** Renomear e arquivar, na linha do centro. */
-export function AcoesDoCentro({ centro, atualizar }: { centro: CentroDeCusto; atualizar: AtualizarCentro }) {
+export function AcoesDoCentro({
+  centro,
+  atualizar,
+}: {
+  centro: CentroDeCusto;
+  atualizar: AtualizarCentro;
+}) {
   const { ocupado, erro, aviso, executar } = useAcao();
   const [editando, setEditando] = useState(false);
 
@@ -86,18 +125,40 @@ export function AcoesDoCentro({ centro, atualizar }: { centro: CentroDeCusto; at
         onSubmit={async (e) => {
           e.preventDefault();
           const nome = String(new FormData(e.currentTarget).get("nome") ?? "");
-          if (await executar(() => atualizar(centro.id, { nome }), (c) => `Renomeado para ${c.nome}.`)) setEditando(false);
+          if (
+            await executar(
+              () => atualizar(centro.id, { nome }),
+              (c) => `Renomeado para ${c.nome}.`,
+            )
+          )
+            setEditando(false);
         }}
         className="flex w-full basis-full flex-wrap items-center gap-2"
       >
         <label htmlFor={`nome-${centro.id}`} className="sr-only">
           Novo nome de {centro.nome}
         </label>
-        <input id={`nome-${centro.id}`} name="nome" defaultValue={centro.nome} required maxLength={60} autoFocus className={`${campo} flex-1 sm:max-w-xs`} />
+        <input
+          id={`nome-${centro.id}`}
+          name="nome"
+          defaultValue={centro.nome}
+          required
+          maxLength={60}
+          autoFocus
+          className={`${campo} flex-1 sm:max-w-xs`}
+        />
         <button type="submit" disabled={ocupado} className={botao.primario}>
-          {ocupado ? <Carregando tamanho="inline" rotulo="Salvando" /> : "Salvar"}
+          {ocupado ? (
+            <Carregando tamanho="inline" rotulo="Salvando" />
+          ) : (
+            "Salvar"
+          )}
         </button>
-        <button type="button" onClick={() => setEditando(false)} className={botao.fantasma}>
+        <button
+          type="button"
+          onClick={() => setEditando(false)}
+          className={botao.fantasma}
+        >
           Cancelar
         </button>
         {erro && (
@@ -110,17 +171,31 @@ export function AcoesDoCentro({ centro, atualizar }: { centro: CentroDeCusto; at
 
   return (
     <span className="flex flex-wrap items-center">
-      <button type="button" onClick={() => setEditando(true)} className={botao.fantasma} aria-label={`Renomear ${centro.nome}`}>
+      <button
+        type="button"
+        onClick={() => setEditando(true)}
+        className={botao.fantasma}
+        aria-label={`Renomear ${centro.nome}`}
+      >
         Renomear
       </button>
       <button
         type="button"
         disabled={ocupado}
-        onClick={() => executar(() => atualizar(centro.id, { arquivado: true }), (c) => `${c.nome} arquivado.`)}
+        onClick={() =>
+          executar(
+            () => atualizar(centro.id, { arquivado: true }),
+            (c) => `${c.nome} arquivado.`,
+          )
+        }
         className={botao.fantasma}
         aria-label={`Arquivar ${centro.nome}`}
       >
-        {ocupado ? <Carregando tamanho="inline" rotulo="Arquivando" /> : "Arquivar"}
+        {ocupado ? (
+          <Carregando tamanho="inline" rotulo="Arquivando" />
+        ) : (
+          "Arquivar"
+        )}
       </button>
       <Anuncio className="sr-only">{aviso}</Anuncio>
       {erro && (
@@ -132,7 +207,13 @@ export function AcoesDoCentro({ centro, atualizar }: { centro: CentroDeCusto; at
   );
 }
 
-export function DesarquivarCentro({ centro, atualizar }: { centro: CentroDeCusto; atualizar: AtualizarCentro }) {
+export function DesarquivarCentro({
+  centro,
+  atualizar,
+}: {
+  centro: CentroDeCusto;
+  atualizar: AtualizarCentro;
+}) {
   const { ocupado, erro, executar } = useAcao();
   return (
     <span className="flex items-center gap-2">
@@ -140,11 +221,20 @@ export function DesarquivarCentro({ centro, atualizar }: { centro: CentroDeCusto
       <button
         type="button"
         disabled={ocupado}
-        onClick={() => executar(() => atualizar(centro.id, { arquivado: false }), (c) => `${c.nome} voltou.`)}
+        onClick={() =>
+          executar(
+            () => atualizar(centro.id, { arquivado: false }),
+            (c) => `${c.nome} voltou.`,
+          )
+        }
         className={botao.fantasma}
         aria-label={`Desarquivar ${centro.nome}`}
       >
-        {ocupado ? <Carregando tamanho="inline" rotulo="Desarquivando" /> : "Desarquivar"}
+        {ocupado ? (
+          <Carregando tamanho="inline" rotulo="Desarquivando" />
+        ) : (
+          "Desarquivar"
+        )}
       </button>
     </span>
   );

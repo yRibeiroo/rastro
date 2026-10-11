@@ -12,7 +12,11 @@ type Props = {
 };
 
 /** No detalhe da transação: o comprovante conciliado, com os itens lidos. */
-export function ComprovantesDaTransacao({ comprovantes, anexos, gerarLinkTemporario }: Props) {
+export function ComprovantesDaTransacao({
+  comprovantes,
+  anexos,
+  gerarLinkTemporario,
+}: Props) {
   if (comprovantes.length === 0) return null;
   return (
     <section aria-labelledby="comprovante" className="grid gap-4">
@@ -20,28 +24,40 @@ export function ComprovantesDaTransacao({ comprovantes, anexos, gerarLinkTempora
         <h2 id="comprovante" className="text-xl font-semibold">
           {comprovantes.length === 1 ? "Comprovante" : "Comprovantes"}
         </h2>
-        <Link href="/comprovantes?situacao=conciliado" className="text-sm text-primaria-texto underline underline-offset-4">
+        <Link
+          href="/comprovantes?situacao=conciliado"
+          className="text-sm text-primaria-texto underline underline-offset-4"
+        >
           Ver todos
         </Link>
       </div>
       {comprovantes.map((c) => {
         const documento = mascararDocumento(c.documentoEmissor);
         return (
-          <article key={c.id} className="grid gap-4 rounded-m border border-borda bg-superficie p-4">
+          <article
+            key={c.id}
+            className="grid gap-4 rounded-m border border-borda bg-superficie p-4"
+          >
             <div className="grid grid-cols-[auto_1fr] items-start gap-4">
               <Miniatura
-                anexoId={anexos.find((a) => a.comprovanteId === c.id)?.id ?? null}
+                anexoId={
+                  anexos.find((a) => a.comprovanteId === c.id)?.id ?? null
+                }
                 gerarLinkTemporario={gerarLinkTemporario}
                 tamanho="size-20"
               />
               <dl className="grid gap-1 text-sm">
                 <div className="flex flex-wrap gap-x-2">
                   <dt className="sr-only">Tipo</dt>
-                  <dd className="text-base font-semibold">{c.tipo ? TIPOS[c.tipo] : "Comprovante"}</dd>
+                  <dd className="text-base font-semibold">
+                    {c.tipo ? TIPOS[c.tipo] : "Comprovante"}
+                  </dd>
                   {c.data && (
                     <>
                       <dt className="sr-only">Data</dt>
-                      <dd className="text-texto-suave">{formatarData(c.data)}</dd>
+                      <dd className="text-texto-suave">
+                        {formatarData(c.data)}
+                      </dd>
                     </>
                   )}
                 </div>
@@ -49,7 +65,12 @@ export function ComprovantesDaTransacao({ comprovantes, anexos, gerarLinkTempora
                   <dt className="text-texto-suave">Emissor:</dt>
                   <dd>
                     {c.emissor ?? "Não identificado"}
-                    {documento && <span className="valor-monetario text-texto-suave"> · {documento}</span>}
+                    {documento && (
+                      <span className="valor-monetario text-texto-suave">
+                        {" "}
+                        · {documento}
+                      </span>
+                    )}
                   </dd>
                 </div>
                 {c.valorCentavos !== null && (
@@ -63,7 +84,9 @@ export function ComprovantesDaTransacao({ comprovantes, anexos, gerarLinkTempora
                 {c.chaveDeAcesso && (
                   <div className="grid">
                     <dt className="text-texto-suave">Chave de acesso</dt>
-                    <dd className="font-mono text-xs break-all">{c.chaveDeAcesso}</dd>
+                    <dd className="font-mono text-xs break-all">
+                      {c.chaveDeAcesso}
+                    </dd>
                   </div>
                 )}
               </dl>
@@ -90,7 +113,11 @@ export function ComprovantesDaTransacao({ comprovantes, anexos, gerarLinkTempora
                       <td className="valor-monetario py-1.5 pr-3 text-right whitespace-nowrap text-texto-suave">
                         {item.quantidade !== null ? `${item.quantidade}×` : ""}
                       </td>
-                      <td className="py-1.5 text-right">{item.valorCentavos !== null && <ValorMonetario centavos={item.valorCentavos} />}</td>
+                      <td className="py-1.5 text-right">
+                        {item.valorCentavos !== null && (
+                          <ValorMonetario centavos={item.valorCentavos} />
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

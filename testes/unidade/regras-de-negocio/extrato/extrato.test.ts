@@ -4,14 +4,25 @@ import {
   criarServicoDeExtrato,
   decodificarCursor,
 } from "@/regras-de-negocio/extrato";
-import { ctx, EMPRESA, novoId, TransacoesEmMemoria, umaTransacao } from "../falsos";
+import {
+  ctx,
+  EMPRESA,
+  novoId,
+  TransacoesEmMemoria,
+  umaTransacao,
+} from "../falsos";
 
 describe("ServicoDeExtrato", () => {
   it("valida e aplica os padrões dos filtros", async () => {
     const transacoes = new TransacoesEmMemoria();
     const servico = criarServicoDeExtrato({ transacoes });
     const cursor = codificarCursor({ data: "2026-10-01", id: novoId() });
-    await servico.listar(ctx, { busca: "  posto ", sentido: "saida", cursor, categoriaId: "sem_categoria" });
+    await servico.listar(ctx, {
+      busca: "  posto ",
+      sentido: "saida",
+      cursor,
+      categoriaId: "sem_categoria",
+    });
     expect(transacoes.listar).toHaveBeenCalledWith(EMPRESA, {
       busca: "posto",
       sentido: "saida",
@@ -20,7 +31,10 @@ describe("ServicoDeExtrato", () => {
       limite: 50,
     });
     await servico.listar(ctx, { busca: "   " });
-    expect(transacoes.listar).toHaveBeenLastCalledWith(EMPRESA, { busca: undefined, limite: 50 });
+    expect(transacoes.listar).toHaveBeenLastCalledWith(EMPRESA, {
+      busca: undefined,
+      limite: 50,
+    });
   });
 
   it.each([
@@ -33,17 +47,29 @@ describe("ServicoDeExtrato", () => {
     { categoriaId: "nao-uuid" },
     { sentido: "outro" },
   ])("filtro inválido %o → entrada_invalida", async (filtro) => {
-    const servico = criarServicoDeExtrato({ transacoes: new TransacoesEmMemoria() });
-    await expect(servico.listar(ctx, filtro as never)).rejects.toMatchObject({ codigo: "entrada_invalida" });
+    const servico = criarServicoDeExtrato({
+      transacoes: new TransacoesEmMemoria(),
+    });
+    await expect(servico.listar(ctx, filtro as never)).rejects.toMatchObject({
+      codigo: "entrada_invalida",
+    });
   });
 
   it("obter: só da própria empresa; senão nao_encontrado", async () => {
     const t = umaTransacao();
-    const servico = criarServicoDeExtrato({ transacoes: new TransacoesEmMemoria([t]) });
+    const servico = criarServicoDeExtrato({
+      transacoes: new TransacoesEmMemoria([t]),
+    });
     expect((await servico.obter(ctx, t.id)).id).toBe(t.id);
-    await expect(servico.obter(ctx, novoId())).rejects.toMatchObject({ codigo: "nao_encontrado" });
-    await expect(servico.obter(ctx, "x")).rejects.toMatchObject({ codigo: "nao_encontrado" });
-    await expect(servico.obter({ ...ctx, empresaId: novoId() }, t.id)).rejects.toMatchObject({ codigo: "nao_encontrado" });
+    await expect(servico.obter(ctx, novoId())).rejects.toMatchObject({
+      codigo: "nao_encontrado",
+    });
+    await expect(servico.obter(ctx, "x")).rejects.toMatchObject({
+      codigo: "nao_encontrado",
+    });
+    await expect(
+      servico.obter({ ...ctx, empresaId: novoId() }, t.id),
+    ).rejects.toMatchObject({ codigo: "nao_encontrado" });
   });
 
   it("cursor opaco: base64url de data|id, ida e volta", () => {
@@ -51,6 +77,10 @@ describe("ServicoDeExtrato", () => {
     const cursor = codificarCursor({ data: "2026-10-06", id });
     expect(cursor).not.toContain("|");
     expect(decodificarCursor(cursor)).toEqual({ data: "2026-10-06", id });
-    expect(decodificarCursor(Buffer.from("2026-10-06|x' or 1=1").toString("base64url"))).toBeNull();
+    expect(
+      decodificarCursor(
+        Buffer.from("2026-10-06|x' or 1=1").toString("base64url"),
+      ),
+    ).toBeNull();
   });
 });

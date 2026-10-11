@@ -10,8 +10,20 @@ export function LinhaTrilha({ className = "" }: { className?: string }) {
       viewBox="0 0 1200 160"
       preserveAspectRatio="none"
     >
-      <path d={caminhoDaTrilha(-20, 150, 1220, 30)} fill="none" stroke="var(--cor-rastro-fraco)" strokeWidth={2} vectorEffect="non-scaling-stroke" />
-      <path d={caminhoDaTrilha(-20, 160, 1220, 90)} fill="none" stroke="var(--cor-rastro-fraco)" strokeWidth={1} vectorEffect="non-scaling-stroke" />
+      <path
+        d={caminhoDaTrilha(-20, 150, 1220, 30)}
+        fill="none"
+        stroke="var(--cor-rastro-fraco)"
+        strokeWidth={2}
+        vectorEffect="non-scaling-stroke"
+      />
+      <path
+        d={caminhoDaTrilha(-20, 160, 1220, 90)}
+        fill="none"
+        stroke="var(--cor-rastro-fraco)"
+        strokeWidth={1}
+        vectorEffect="non-scaling-stroke"
+      />
     </svg>
   );
 }
@@ -24,9 +36,15 @@ export function CabecalhoDaPagina({ titulo, descricao, acoes }: Props) {
       <LinhaTrilha />
       <div className="grid min-w-0 gap-1.5">
         <h1 className="text-2xl font-bold md:text-3xl">{titulo}</h1>
-        {descricao && <p className="max-w-[60ch] text-sm text-texto-suave md:text-base">{descricao}</p>}
+        {descricao && (
+          <p className="max-w-[60ch] text-sm text-texto-suave md:text-base">
+            {descricao}
+          </p>
+        )}
       </div>
-      {acoes && <div className="flex flex-wrap items-center gap-2">{acoes}</div>}
+      {acoes && (
+        <div className="flex flex-wrap items-center gap-2">{acoes}</div>
+      )}
     </header>
   );
 }

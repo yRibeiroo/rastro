@@ -1,5 +1,9 @@
 import type { Ref } from "react";
-import type { Categoria, CentroDeCusto, OrigemDaCategoria } from "@/regras-de-negocio";
+import type {
+  Categoria,
+  CentroDeCusto,
+  OrigemDaCategoria,
+} from "@/regras-de-negocio";
 
 /**
  * Seletores nativos (o mais acessível que existe: teclado, leitor de tela e roda nativa do celular)
@@ -21,8 +25,21 @@ type PropsCategoria = {
   className?: string;
 };
 
-export function SeletorDeCategoria({ categorias, valor, sentido, rotulo, aoMudar, desabilitado, ref, className = "" }: PropsCategoria) {
-  const cabe = categorias.filter((c) => c.id === valor || (!c.arquivada && (c.tipo === "ambos" || c.tipo === sentido)));
+export function SeletorDeCategoria({
+  categorias,
+  valor,
+  sentido,
+  rotulo,
+  aoMudar,
+  desabilitado,
+  ref,
+  className = "",
+}: PropsCategoria) {
+  const cabe = categorias.filter(
+    (c) =>
+      c.id === valor ||
+      (!c.arquivada && (c.tipo === "ambos" || c.tipo === sentido)),
+  );
   return (
     <select
       ref={ref}
@@ -52,7 +69,14 @@ type PropsCentro = {
   className?: string;
 };
 
-export function SeletorDeCentro({ centros, valor, rotulo, aoMudar, desabilitado, className = "" }: PropsCentro) {
+export function SeletorDeCentro({
+  centros,
+  valor,
+  rotulo,
+  aoMudar,
+  desabilitado,
+  className = "",
+}: PropsCentro) {
   return (
     <select
       aria-label={rotulo}
@@ -81,12 +105,21 @@ const ORIGEM: Record<OrigemDaCategoria, string> = {
 };
 
 /** Origem da categoria, discreta (RF-16: "sugerida pela IA" quando a origem é ia). */
-export function OrigemDaCategoriaTexto({ origem, confianca }: { origem: OrigemDaCategoria | null; confianca?: number | null }) {
+export function OrigemDaCategoriaTexto({
+  origem,
+  confianca,
+}: {
+  origem: OrigemDaCategoria | null;
+  confianca?: number | null;
+}) {
   if (!origem) return null;
   return (
     <span className="text-xs text-texto-suave">
       {ORIGEM[origem]}
-      {origem === "ia" && confianca != null && confianca < 0.6 && " (pouca certeza)"}
+      {origem === "ia" &&
+        confianca != null &&
+        confianca < 0.6 &&
+        " (pouca certeza)"}
     </span>
   );
 }

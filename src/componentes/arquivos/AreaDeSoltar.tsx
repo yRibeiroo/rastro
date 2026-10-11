@@ -22,7 +22,17 @@ type Props = {
  * Área para soltar um arquivo (desktop) com um botão que abre o seletor nativo (todos).
  * O <input type="file"> fica dentro do <label>: teclado e leitor de tela usam o controle nativo.
  */
-export function AreaDeSoltar({ rotulo, ajuda, accept, capture, desabilitado, aoEscolher, extra, classeDoBotao, ref }: Props) {
+export function AreaDeSoltar({
+  rotulo,
+  ajuda,
+  accept,
+  capture,
+  desabilitado,
+  aoEscolher,
+  extra,
+  classeDoBotao,
+  ref,
+}: Props) {
   const [sobre, setSobre] = useState(false);
 
   return (
@@ -41,11 +51,15 @@ export function AreaDeSoltar({ rotulo, ajuda, accept, capture, desabilitado, aoE
         if (f && !desabilitado) aoEscolher(f);
       }}
       className={`grid justify-items-center gap-3 rounded-g border-2 border-dashed px-4 py-8 text-center transition-colors duration-[180ms] md:py-12 ${
-        sobre ? "border-primaria bg-primaria-suave" : "border-borda-controle/60 bg-superficie"
+        sobre
+          ? "border-primaria bg-primaria-suave"
+          : "border-borda-controle/60 bg-superficie"
       }`}
     >
       <div className="flex flex-wrap justify-center gap-3">
-        <label className={`${classeDoBotao} cursor-pointer has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-foco ${desabilitado ? "pointer-events-none opacity-60" : ""}`}>
+        <label
+          className={`${classeDoBotao} cursor-pointer has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-foco ${desabilitado ? "pointer-events-none opacity-60" : ""}`}
+        >
           {rotulo}
           <input
             type="file"
@@ -62,7 +76,9 @@ export function AreaDeSoltar({ rotulo, ajuda, accept, capture, desabilitado, aoE
         </label>
         {extra}
       </div>
-      {ajuda && <div className="max-w-[52ch] text-sm text-texto-suave">{ajuda}</div>}
+      {ajuda && (
+        <div className="max-w-[52ch] text-sm text-texto-suave">{ajuda}</div>
+      )}
     </div>
   );
 }

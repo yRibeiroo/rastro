@@ -19,11 +19,22 @@ type Props = {
  * Resultado por centro de custo (RF-26): cada centro é uma trilha com entradas (verde) e saídas
  * (terracota) na mesma escala e a margem no fim. O mais lucrativo é dito em texto, não só na cor.
  */
-export function ResultadoPorCentro({ centros, hrefSemCentro, titulo = "Resultado por centro de custo", acoes }: Props) {
+export function ResultadoPorCentro({
+  centros,
+  hrefSemCentro,
+  titulo = "Resultado por centro de custo",
+  acoes,
+}: Props) {
   const id = useId();
-  const escala = Math.max(...centros.map((c) => Math.max(c.entradasCentavos, c.saidasCentavos)), 1);
+  const escala = Math.max(
+    ...centros.map((c) => Math.max(c.entradasCentavos, c.saidasCentavos)),
+    1,
+  );
   const comCentro = centros.filter((c) => c.centroDeCustoId !== null);
-  const melhor = comCentro.reduce<Centro | null>((m, c) => (c.resultadoCentavos > (m?.resultadoCentavos ?? 0) ? c : m), null);
+  const melhor = comCentro.reduce<Centro | null>(
+    (m, c) => (c.resultadoCentavos > (m?.resultadoCentavos ?? 0) ? c : m),
+    null,
+  );
 
   return (
     <figure aria-labelledby={`${id}-t`} className="grid content-start gap-4">
@@ -34,7 +45,10 @@ export function ResultadoPorCentro({ centros, hrefSemCentro, titulo = "Resultado
         <p className="text-sm text-texto-suave">
           {melhor ? (
             <>
-              <strong className="font-semibold text-texto">{melhor.nome}</strong> é o serviço que mais dá lucro no período.
+              <strong className="font-semibold text-texto">
+                {melhor.nome}
+              </strong>{" "}
+              é o serviço que mais dá lucro no período.
             </>
           ) : (
             "Nenhum serviço teve lucro no período."
@@ -49,24 +63,44 @@ export function ResultadoPorCentro({ centros, hrefSemCentro, titulo = "Resultado
               <span className="flex items-center gap-2 font-medium">
                 {c.nome}
                 {c === melhor && (
-                  <span className="rounded-full bg-primaria-suave px-2 py-0.5 text-xs font-semibold text-primaria-texto">Mais lucrativo</span>
+                  <span className="rounded-full bg-primaria-suave px-2 py-0.5 text-xs font-semibold text-primaria-texto">
+                    Mais lucrativo
+                  </span>
                 )}
               </span>
               <span className="flex items-center gap-3 text-sm">
                 {c.centroDeCustoId === null && (
-                  <Link href={hrefSemCentro} className="font-medium text-primaria-texto underline underline-offset-4">
+                  <Link
+                    href={hrefSemCentro}
+                    className="font-medium text-primaria-texto underline underline-offset-4"
+                  >
                     Classificar
                   </Link>
                 )}
-                <span className={`valor-monetario font-semibold ${c.resultadoCentavos >= 0 ? "text-entrada" : "text-saida"}`}>
+                <span
+                  className={`valor-monetario font-semibold ${c.resultadoCentavos >= 0 ? "text-entrada" : "text-saida"}`}
+                >
                   {formatarMoeda(c.resultadoCentavos, { sinal: true })}
                 </span>
                 {acoes?.(c)}
               </span>
             </div>
             <div aria-hidden="true" className="grid gap-1">
-              <Trilha valor={c.entradasCentavos} escala={escala} cor="var(--grafico-entrada)" rotulo={formatarMoeda(c.entradasCentavos, { sinal: true, compacto: true })} />
-              <Trilha valor={c.saidasCentavos} escala={escala} cor="var(--grafico-saida)" rotulo={formatarMoeda(-c.saidasCentavos, { compacto: true })} />
+              <Trilha
+                valor={c.entradasCentavos}
+                escala={escala}
+                cor="var(--grafico-entrada)"
+                rotulo={formatarMoeda(c.entradasCentavos, {
+                  sinal: true,
+                  compacto: true,
+                })}
+              />
+              <Trilha
+                valor={c.saidasCentavos}
+                escala={escala}
+                cor="var(--grafico-saida)"
+                rotulo={formatarMoeda(-c.saidasCentavos, { compacto: true })}
+              />
             </div>
           </li>
         ))}
@@ -86,13 +120,32 @@ export function ResultadoPorCentro({ centros, hrefSemCentro, titulo = "Resultado
   );
 }
 
-function Trilha({ valor, escala, cor, rotulo }: { valor: number; escala: number; cor: string; rotulo: string }) {
+function Trilha({
+  valor,
+  escala,
+  cor,
+  rotulo,
+}: {
+  valor: number;
+  escala: number;
+  cor: string;
+  rotulo: string;
+}) {
   return (
     <div className="grid grid-cols-[1fr_4.5rem] items-center gap-3">
       <svg width="100%" height="8" className="overflow-visible">
-        <rect x="0" y="0" height="8" rx="4" width={`${Math.max(valor > 0 ? 1 : 0, (valor / escala) * 100)}%`} fill={cor} />
+        <rect
+          x="0"
+          y="0"
+          height="8"
+          rx="4"
+          width={`${Math.max(valor > 0 ? 1 : 0, (valor / escala) * 100)}%`}
+          fill={cor}
+        />
       </svg>
-      <span className="valor-monetario text-right text-xs text-texto-suave">{rotulo}</span>
+      <span className="valor-monetario text-right text-xs text-texto-suave">
+        {rotulo}
+      </span>
     </div>
   );
 }

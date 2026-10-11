@@ -19,22 +19,36 @@ export function AberturaAnimada({ children }: { children: ReactNode }) {
   const [pulada, setPulada] = useState(false);
 
   function aoTerminar(e: AnimationEvent<HTMLDivElement>) {
-    if (e.target === e.currentTarget && FIM.has(e.animationName)) setEncerrada(true);
+    if (e.target === e.currentTarget && FIM.has(e.animationName))
+      setEncerrada(true);
   }
 
   return (
     <>
       {!encerrada && (
-        <div className="abertura" data-pulada={pulada || undefined} onAnimationEnd={aoTerminar}>
+        <div
+          className="abertura"
+          data-pulada={pulada || undefined}
+          onAnimationEnd={aoTerminar}
+        >
           <div className="abertura__veu" aria-hidden="true" />
           <div className="abertura__marca" aria-hidden="true">
             <div className="abertura__logo">
-              <LogoRastro variante="tracada" title="" className="abertura__tracado" espessura={7} />
+              <LogoRastro
+                variante="tracada"
+                title=""
+                className="abertura__tracado"
+                espessura={7}
+              />
               <LogoRastro title="" className="abertura__preenchida" />
             </div>
             <span className="abertura__nome">Rastro</span>
           </div>
-          <button type="button" className="abertura__pular" onClick={() => setPulada(true)}>
+          <button
+            type="button"
+            className="abertura__pular"
+            onClick={() => setPulada(true)}
+          >
             Pular abertura
           </button>
         </div>

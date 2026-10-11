@@ -13,7 +13,12 @@ type PropsCarregando = {
   className?: string;
 };
 
-export function Carregando({ contexto = "generico", tamanho = "tela", rotulo, className = "" }: PropsCarregando) {
+export function Carregando({
+  contexto = "generico",
+  tamanho = "tela",
+  rotulo,
+  className = "",
+}: PropsCarregando) {
   const { estado, texto } = CONTEXTOS[contexto];
   const nome = rotulo ?? texto;
   const tela = tamanho === "tela";
@@ -34,14 +39,26 @@ export function Carregando({ contexto = "generico", tamanho = "tela", rotulo, cl
           <span
             aria-hidden="true"
             className="absolute size-32 rounded-full"
-            style={{ background: "radial-gradient(circle, var(--cor-rastro-fraco) 0%, transparent 68%)" }}
+            style={{
+              background:
+                "radial-gradient(circle, var(--cor-rastro-fraco) 0%, transparent 68%)",
+            }}
           />
         )}
-        <ThinkingOrb state={estado} size={tela ? 64 : 20} theme="auto" aria-label={nome} className="relative" />
+        <ThinkingOrb
+          state={estado}
+          size={tela ? 64 : 20}
+          theme="auto"
+          aria-label={nome}
+          className="relative"
+        />
       </span>
       {visivel && (
         // O nome já está no orbe (role="img"); o texto visível não é lido duas vezes.
-        <span aria-hidden="true" className={tela ? "text-sm" : "text-sm text-texto-suave"}>
+        <span
+          aria-hidden="true"
+          className={tela ? "text-sm" : "text-sm text-texto-suave"}
+        >
           {nome}
           {tela && "…"}
         </span>

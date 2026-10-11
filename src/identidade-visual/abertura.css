@@ -50,7 +50,13 @@ html[data-abertura-vista] .abertura {
   bottom: 0;
   right: 100%;
   width: 28vmax;
-  background: linear-gradient(90deg, transparent 0%, var(--cor-rastro-fraco) 80%, var(--cor-rastro) 99.4%, var(--cor-secundaria) 100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--cor-rastro-fraco) 80%,
+    var(--cor-rastro) 99.4%,
+    var(--cor-secundaria) 100%
+  );
   opacity: 0;
   animation: abertura-luz 1s linear 1.35s forwards;
 }
@@ -80,11 +86,21 @@ html[data-abertura-vista] .abertura {
   stroke-dashoffset: 1;
   animation: abertura-desenho 0.9s var(--curva-entrada-saida) forwards;
 }
-.abertura__tracado path:nth-child(2) { animation-delay: 0.07s; }
-.abertura__tracado path:nth-child(3) { animation-delay: 0.14s; }
-.abertura__tracado path:nth-child(4) { animation-delay: 0.22s; }
-.abertura__tracado path:nth-child(5) { animation-delay: 0.3s; }
-.abertura__tracado path:nth-child(6) { animation-delay: 0.35s; }
+.abertura__tracado path:nth-child(2) {
+  animation-delay: 0.07s;
+}
+.abertura__tracado path:nth-child(3) {
+  animation-delay: 0.14s;
+}
+.abertura__tracado path:nth-child(4) {
+  animation-delay: 0.22s;
+}
+.abertura__tracado path:nth-child(5) {
+  animation-delay: 0.3s;
+}
+.abertura__tracado path:nth-child(6) {
+  animation-delay: 0.35s;
+}
 
 .abertura__preenchida {
   opacity: 0;
@@ -111,7 +127,10 @@ html[data-abertura-vista] .abertura {
   border: 1px solid var(--cor-borda-controle);
   background: var(--cor-superficie);
   color: var(--cor-texto);
-  font: 500 0.875rem/1.25 var(--fonte-texto), system-ui, sans-serif;
+  font:
+    500 0.875rem/1.25 var(--fonte-texto),
+    system-ui,
+    sans-serif;
   cursor: pointer;
   transition: transform var(--duracao-toque) var(--curva-saida);
   animation: abertura-some 0.3s var(--curva-saida) 1.7s forwards; /* sai junto com a marca */
@@ -125,34 +144,63 @@ html[data-abertura-vista] .abertura {
 }
 
 @keyframes abertura-desenho {
-  to { stroke-dashoffset: 0; }
+  to {
+    stroke-dashoffset: 0;
+  }
 }
 @keyframes abertura-acende {
-  to { opacity: 1; }
+  to {
+    opacity: 1;
+  }
 }
 @keyframes abertura-nome {
-  to { opacity: 1; transform: translateY(0); }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 @keyframes abertura-marca-sai {
-  to { opacity: 0; transform: translate(12px, -8px) scale(1.03); }
+  to {
+    opacity: 0;
+    transform: translate(12px, -8px) scale(1.03);
+  }
 }
 @keyframes abertura-veu {
-  to { transform: rotate(-28deg) translateX(160vmax); }
+  to {
+    transform: rotate(-28deg) translateX(160vmax);
+  }
 }
 @keyframes abertura-luz {
-  0% { opacity: 0; }
-  15% { opacity: 1; }
-  100% { opacity: 0; }
+  0% {
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }
 @keyframes abertura-some {
-  to { opacity: 0; visibility: hidden; }
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
 }
 @keyframes abertura-fim {
-  0%, 99% { visibility: visible; }
-  100% { visibility: hidden; }
+  0%,
+  99% {
+    visibility: visible;
+  }
+  100% {
+    visibility: hidden;
+  }
 }
 @keyframes abertura-pular {
-  to { opacity: 0; visibility: hidden; }
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
 }
 
 /* Movimento reduzido: logo estática, só um fade curto do véu inteiro. */

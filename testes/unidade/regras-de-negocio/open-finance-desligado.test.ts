@@ -5,11 +5,18 @@ import { provedorDesligado } from "@/regras-de-negocio/conexao-bancaria";
 const sistema = vi.hoisted(() => ({
   provedor: { interpretarWebhook: vi.fn() },
   eventos: { registrar: vi.fn() },
-  sincronizacao: { ressincronizarTodas: vi.fn(async () => ({ conexoes: 1, falhas: 0 })), processarEvento: vi.fn() },
-  comprovantes: { reconciliarTodas: vi.fn(async () => ({ empresas: 2, conciliados: 3 })) },
+  sincronizacao: {
+    ressincronizarTodas: vi.fn(async () => ({ conexoes: 1, falhas: 0 })),
+    processarEvento: vi.fn(),
+  },
+  comprovantes: {
+    reconciliarTodas: vi.fn(async () => ({ empresas: 2, conciliados: 3 })),
+  },
   limpeza: vi.fn(async () => {}),
 }));
-vi.mock("@/regras-de-negocio/montagem", () => ({ servicosDoSistema: () => sistema }));
+vi.mock("@/regras-de-negocio/montagem", () => ({
+  servicosDoSistema: () => sistema,
+}));
 vi.mock("next/server", () => ({ after: vi.fn() }));
 
 const SEGREDO = "s".repeat(40);
@@ -22,14 +29,24 @@ beforeEach(() => {
 describe("Open Finance desligado", () => {
   it("o provedor desligado recusa tudo com recurso_desligado e ignora webhooks", async () => {
     for (const chamada of [
-      () => provedorDesligado.criarTokenDeConexao({ identificadorDoUsuario: "e" }),
+      () =>
+        provedorDesligado.criarTokenDeConexao({ identificadorDoUsuario: "e" }),
       () => provedorDesligado.obterConexao("i"),
       () => provedorDesligado.listarContas("i"),
       () => provedorDesligado.listarTransacoes("c"),
-      () => provedorDesligado.registrarWebhooks({ url: "https://x", eventos: [], cabecalhos: {} }),
+      () =>
+        provedorDesligado.registrarWebhooks({
+          url: "https://x",
+          eventos: [],
+          cabecalhos: {},
+        }),
     ])
-      await expect(chamada()).rejects.toMatchObject({ codigo: "recurso_desligado" });
-    expect(provedorDesligado.interpretarWebhook({ event: "item/created" })).toBeNull();
+      await expect(chamada()).rejects.toMatchObject({
+        codigo: "recurso_desligado",
+      });
+    expect(
+      provedorDesligado.interpretarWebhook({ event: "item/created" }),
+    ).toBeNull();
   });
 
   it("webhook da Pluggy → 404 sem ler o corpo, mesmo com o Bearer certo", async () => {
@@ -48,10 +65,16 @@ describe("Open Finance desligado", () => {
   it("cron roda a limpeza e reconcilia os comprovantes de todas as empresas, sem chamar a Pluggy", async () => {
     const { GET } = await import("@/app/api/tarefas/ressincronizar/route");
     const resposta = await GET(
-      new Request("https://rastro.local/api/tarefas/ressincronizar", { headers: { authorization: `Bearer ${SEGREDO}` } }),
+      new Request("https://rastro.local/api/tarefas/ressincronizar", {
+        headers: { authorization: `Bearer ${SEGREDO}` },
+      }),
     );
     expect(resposta.status).toBe(200);
-    expect(await resposta.json()).toEqual({ conexoes: 0, falhas: 0, comprovantesConciliados: 3 });
+    expect(await resposta.json()).toEqual({
+      conexoes: 0,
+      falhas: 0,
+      comprovantesConciliados: 3,
+    });
     expect(sistema.comprovantes.reconciliarTodas).toHaveBeenCalled();
     expect(sistema.sincronizacao.ressincronizarTodas).not.toHaveBeenCalled();
     expect(sistema.limpeza).toHaveBeenCalled();

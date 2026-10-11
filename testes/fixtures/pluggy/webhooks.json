@@ -48,9 +48,7 @@
     "itemId": "7c1d9a52-4c3e-4f8b-9a3e-2b6f0d1e5a01",
     "accountId": "0b4d6f3a-91c2-4e6a-8d7f-5a2c1b3e9f10",
     "clientId": "9f8e7d6c-5b4a-4392-8170-6f5e4d3c2b1a",
-    "transactionIds": [
-      "b3c4d5e6-f708-4192-a3b4-c5d6e7f8091a"
-    ]
+    "transactionIds": ["b3c4d5e6-f708-4192-a3b4-c5d6e7f8091a"]
   },
   "connector-status": {
     "event": "connector/status_updated",

@@ -12,18 +12,38 @@ describe("lerFiltros (RF-18)", () => {
   });
 
   it("mês passado atravessa a virada do ano", () => {
-    expect(lerFiltros({ periodo: "mes-passado" }, "2026-01-15").filtros).toMatchObject({ dataDe: "2025-12-01", dataAte: "2025-12-31" });
+    expect(
+      lerFiltros({ periodo: "mes-passado" }, "2026-01-15").filtros,
+    ).toMatchObject({ dataDe: "2025-12-01", dataAte: "2025-12-31" });
   });
 
   it("datas explícitas viram período personalizado e valem mais que ?periodo", () => {
-    const r = lerFiltros({ periodo: "90d", de: "2026-09-01", ate: "2026-09-30" }, hoje);
+    const r = lerFiltros(
+      { periodo: "90d", de: "2026-09-01", ate: "2026-09-30" },
+      hoje,
+    );
     expect(r.periodo).toBe("personalizado");
-    expect(r.filtros).toMatchObject({ dataDe: "2026-09-01", dataAte: "2026-09-30" });
+    expect(r.filtros).toMatchObject({
+      dataDe: "2026-09-01",
+      dataAte: "2026-09-30",
+    });
   });
 
   it("traduz nenhuma/nenhum e ignora valores inválidos", () => {
-    const r = lerFiltros({ categoria: "nenhuma", centro: "nenhum", sentido: "lateral", de: "ontem" }, hoje);
-    expect(r.filtros).toMatchObject({ categoriaId: "sem_categoria", centroDeCustoId: "sem_centro", sentido: undefined });
+    const r = lerFiltros(
+      {
+        categoria: "nenhuma",
+        centro: "nenhum",
+        sentido: "lateral",
+        de: "ontem",
+      },
+      hoje,
+    );
+    expect(r.filtros).toMatchObject({
+      categoriaId: "sem_categoria",
+      centroDeCustoId: "sem_centro",
+      sentido: undefined,
+    });
     expect(r.periodo).toBe("mes");
     expect(r.ativos).toBe(2);
   });
