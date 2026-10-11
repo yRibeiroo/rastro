@@ -1,20 +1,21 @@
 # Estudo de viabilidade — Rastro v1
 
-> Data da pesquisa: 09/10/2026. Valores em dólar convertidos a **US$ 1 = R$ 5,50** (cotação **estimada**, não consultada em fonte oficial; ver `premissas.md`, P-20).
+> Revisado em **10/10/2026** pela ADR 0016 (extrato OFX + comprovantes lidos por IA; Pluggy desligada por `RECURSO_OPEN_FINANCE`). Pesquisa original: 09/10/2026.
+> Data da pesquisa: 09/10/2026 (custo de imagem no Claude consultado em 10/10/2026). Valores em dólar convertidos a **US$ 1 = R$ 5,50** (cotação **estimada**, não consultada em fonte oficial; ver `premissas.md`, P-20).
 > Fontes: `CONTEXTO.md`, `PROMPT-CLAUDE-CODE.md`, protótipo em `prototipo-flask/` e páginas públicas citadas ao fim de cada seção.
 
 ## 1. Resumo executivo
 
 | Dimensão | Conclusão |
 |---|---|
-| Técnica | **Viável.** O protótipo Flask já validou o fluxo Pluggy Connect → item → webhook → sincronização. A stack (Next.js + Supabase + Vercel + Claude) cobre todos os requisitos sem componentes exóticos. |
-| Econômica | **Viável com ressalva importante.** Supabase, Vercel e Claude custam juntos menos de **US$ 50/mês**. O custo dominante é a **Pluggy em produção: plano "Dados" a partir de R$ 2.500/mês**, sem plano publicado para 1 conta conectada. Para uso interno de uma única empresa, isso é desproporcional. Essa decisão é do Davi (ver §3.5 e o risco R-02). |
-| Operacional | **Viável.** Um único usuário, operação quase toda automática (webhook). O trabalho manual é corrigir categorias, reconectar quando o consentimento expirar e, de vez em quando, anexar uma nota. |
-| Regulatória (LGPD) | **Viável com cuidados.** São dados financeiros da própria empresa, mas incluem dados pessoais de terceiros (nomes e documentos de contrapartes de Pix/TED). Exige RLS, minimização, segredos no servidor e registro de operadores (Pluggy, Supabase, Vercel, Anthropic). |
+| Técnica | **Viável.** O caminho principal da v1 é importar o **OFX** do Sicredi (formato aberto, com `FITID` para idempotência) e ler **comprovantes por visão do Claude** com saída estruturada. O fluxo Pluggy (validado no protótipo Flask) continua no código, desligado por flag. |
+| Econômica | **Viável.** Sem agregador, a produção dentro dos termos custa **≈ US$ 52/mês (≈ R$ 286)**: Vercel Pro + Supabase Pro + IA (~100 comprovantes lidos por visão + ~300 classificações). A Pluggy, que custaria no mínimo R$ 2.500/mês (~90% do total), saiu da v1 (D-03 resolvida). |
+| Operacional | **Viável, com uma tarefa manual nova.** O Davi baixa e envia o OFX uma vez por semana ou por mês e, se quiser, fotografa comprovantes. O risco é esquecer (R-15), mitigado pelo aviso "última importação há X dias" (RF-34). |
+| Regulatória (LGPD) | **Viável com cuidados.** Além dos dados de contrapartes do extrato, as **imagens de comprovantes** (CPF/CNPJ, endereço) vão à Anthropic para leitura. Exige RLS, minimização (redução da imagem e remoção de EXIF, RNF-24), segredos no servidor e registro dos operadores (Supabase, Vercel, Anthropic). |
 
 ## 2. Viabilidade técnica
 
-### 2.1 O que já está provado (protótipo Flask)
+### 2.1 O que já está provado (protótipo Flask — fluxo Pluggy, hoje atrás de `RECURSO_OPEN_FINANCE`)
 - Autenticação na Pluggy (`client_id` + `client_secret` → API Key de ~2 h, com cache).
 - Connect Token criado no servidor, **sem `webhookUrl`** (por ali o evento chegaria sem o header secreto).
 - Validação no servidor de que o `itemId` pertence à aplicação (`GET /items/{id}` → 404 se não pertencer).
@@ -34,13 +35,25 @@
 | Falha no processamento após responder 200 | Médio | A Pluggy não reenvia o que recebeu 2XX. O protótipo só registra no log. A v1 guarda o estado do evento e oferece "Sincronizar agora" (RF-30). |
 | `clientUserId` só em eventos `item/*` | Baixo | Eventos de transação não trazem `clientUserId`: a empresa é resolvida pelo `itemId` salvo na conexão. |
 
+### 2.3 Caminho da v1 (ADR 0016): extrato OFX + comprovantes
+
+| Item | Risco técnico | Observação |
+|---|---|---|
+| Leitura de OFX do Sicredi | Médio | OFX 1.x é SGML (tags sem fechamento), 2.x é XML. Variações de codificação, data e decimal são cobertas por fixtures (RNF-28). Sem um arquivo real ainda, há incerteza sobre o formato exato (R-17, P-29). |
+| Idempotência por `FITID` | Baixo/Médio | Upsert por `(empresa_id, id_externo)`, o mesmo do fluxo Pluggy. Risco residual: banco que gera `FITID` diferente para o mesmo lançamento em exportações distintas (R-17). |
+| Leitura de comprovante por visão do Claude | Baixo | Imagens JPEG/PNG/WEBP até 10 MB e PDFs são aceitos pela API. Saída estruturada + Zod. Precisão depende da foto (R-18); por isso a conciliação exige valor exato (R-16). |
+| QR code da NFC-e no navegador | Baixo | `BarcodeDetector` é nativo só em navegadores Chromium do Android e do macOS; sem suporte, a IA lê a chave (P-43). A chave tem dígito verificador (módulo 11), o que permite validar a leitura. |
+| Conciliação automática | Baixo | Regra determinística (valor exato, ±3 dias, desempate por nome), testável por tabela de casos (RF-39). |
+
 **Conclusão técnica:** viável. Nenhum requisito exige tecnologia que a equipe ainda não domine.
 
 Fontes: [Pluggy — Webhooks](https://docs.pluggy.ai/docs/webhooks) · [Pluggy — Consents and expiration](https://docs.pluggy.ai/docs/consents) · [Pluggy — Rate limits](https://docs.pluggy.ai/docs/rate-limits) · [Supabase — SMTP personalizado](https://supabase.com/docs/guides/auth/auth-smtp)
 
 ## 3. Viabilidade econômica
 
-### 3.1 Pluggy (agregador Open Finance)
+### 3.1 Pluggy (agregador Open Finance) — fora da v1
+
+> **Desligada pela ADR 0016** (`RECURSO_OPEN_FINANCE=false`). A tabela fica como registro da decisão e para o caso de o Rastro virar SaaS.
 
 | Plano | Preço | Observações |
 |---|---|---|
@@ -68,7 +81,7 @@ Fontes: [Pluggy — Preços](https://www.pluggy.ai/precos) · [Meu Pluggy](https
 | Backups automáticos | **Não** | 7 dias |
 | Projetos ativos | 2 | sem limite (com custo de compute por projeto) |
 
-**Volume esperado:** cerca de 300 transações/mês, perto de 3.600/ano. Mesmo com 5 anos de histórico, a ordem de grandeza é de poucos MB. Anexos (PDF/foto de nota) a ~300 KB cada, mesmo com 50 por mês, dão ~180 MB/ano. **O plano Free cabe no volume.**
+**Volume esperado:** cerca de 300 transações/mês, perto de 3.600/ano. Mesmo com 5 anos de histórico, a ordem de grandeza é de poucos MB. Comprovantes reduzidos no navegador (P-34) ficam em ~0,5–1 MB cada; com ~100 por mês, dão **~0,6–1,2 GB/ano**. O Free (1 GB de Storage) estoura em cerca de um ano; o Pro (100 GB) cabe por décadas.
 
 **Mas:** sem backup automático e com pausa por inatividade, o Free é arriscado para dados financeiros. **Recomendação:** Free em desenvolvimento e Pro em produção quando houver dados reais (decisão D-02).
 
@@ -100,47 +113,63 @@ Modelo: **Claude Opus 5.5 (`claude-opus-5-5`)**, o modelo padrão atual da famí
 | Claude Sonnet 5.5 (alternativa) | US$ 2,00 | US$ 10,00 | US$ 0,10 | US$ 1,00 / US$ 5,00 |
 | Claude Haiku 5.5 (alternativa barata) | US$ 0,10 | US$ 0,50 | US$ 0,01 | US$ 0,05 / US$ 0,25 |
 
-**Estimativa (pior caso: as ~300 transações/mês vão todas para a IA, sem nenhuma regra):**
+**A. Classificação de transações (pior caso: as ~300 transações/mês vão todas para a IA, sem nenhuma regra):**
 
 | Premissa por classificação | Valor |
 |---|---|
 | Entrada: instruções + lista de categorias + transação | ~1.000 tokens |
 | Saída: JSON com categoria e confiança + raciocínio adaptativo em esforço `low` | ~300 tokens |
 | Custo por transação (Opus 5.5) | 1.000 × 4/1M + 300 × 20/1M = **US$ 0,010** |
-| **Custo mensal (300 tx)** | **≈ US$ 3,00 ≈ R$ 16,50** |
+| **Custo mensal (300 tx)** | **≈ US$ 3,00** |
 | Com cache do prompt fixo (~900 tokens lidos a US$ 0,20/MTok) | ≈ US$ 2,00/mês |
-| Carga inicial (backfill de ~12 meses ≈ 3.600 tx, uma vez) | ≈ US$ 36 (≈ US$ 18 via Batch API) |
-| Mesmo cenário com Sonnet 5.5 | ≈ US$ 1,50/mês |
+| Carga inicial (12 meses ≈ 3.600 tx, uma vez, ao importar o histórico em OFX) | ≈ US$ 36 (≈ US$ 18 via Batch API) |
 
-Na prática, as regras devem absorver boa parte do volume ao longo dos meses (as correções viram regras), então o custo real tende a cair abaixo de **US$ 1/mês**. **A IA não é um fator econômico relevante.** O risco é custo fora de controle por bug (laço de reclassificação), mitigado por teto de chamadas (R-05).
+**B. Leitura de comprovantes por visão (~100 comprovantes/mês):**
 
-Fonte: [Anthropic — Pricing](https://platform.claude.com/docs/en/about-claude/pricing) (docs.anthropic.com redireciona para platform.claude.com)
+Como a documentação de visão calcula o custo de uma imagem: o Claude vê a imagem em blocos de 28×28 px, e cada bloco é um token visual: `tokens = ⌈largura/28⌉ × ⌈altura/28⌉`. Os modelos Claude 4.7 em diante (inclui o Opus 5.5) estão no nível de **alta resolução**: lado maior até **2576 px** e no máximo **4.784 tokens por imagem**; acima disso a imagem é reduzida. Exemplos da documentação: 1000×1000 px = 1.296 tokens; 1920×1080 = 2.691; 2000×1500 = 3.888; 3840×2160 → reduzida para 2576×1449 = 4.784. O limite por imagem é 10 MB (API direta).
+
+| Premissa por comprovante | Valor |
+|---|---|
+| Foto do celular (4000×3000) reduzida no navegador para 2576×1932 (P-34) | 92 × 69 = 6.348 → limitada a **4.784 tokens** |
+| Instruções + schema de saída | ~1.200 tokens |
+| Saída: JSON com tipo, valor, data, emissor, chave, itens e confiança | ~800 tokens |
+| Custo por comprovante (Opus 5.5) | ~6.000 × 4/1M + 800 × 20/1M = **≈ US$ 0,04** |
+| PDF de 1 página (texto extraído + imagem da página) | mesma ordem: ≈ US$ 0,04–0,05 |
+| **Custo mensal (100 comprovantes)** | **≈ US$ 4,00** |
+| Teto `IA_LIMITE_COMPROVANTES_MES` = 300 (P-35) | no máximo ≈ US$ 12/mês |
+| Mesmo cenário com Sonnet 5.5 (US$ 2/US$ 10) | ≈ US$ 2,00/mês |
+
+**Total de IA na produção:** ≈ US$ 3,00 (classificação) + US$ 4,00 (comprovantes) = **≈ US$ 7/mês (≈ R$ 39)**. Com regras absorvendo a classificação ao longo dos meses, tende a ≈ US$ 5. **A IA continua não sendo um fator econômico relevante.** O risco é custo fora de controle por bug, mitigado pelos dois tetos (R-05).
+
+Fontes: [Anthropic — Pricing](https://platform.claude.com/docs/en/about-claude/pricing) (docs.anthropic.com redireciona para platform.claude.com) · [Anthropic — Vision (resolução e custo de imagens)](https://platform.claude.com/docs/en/build-with-claude/vision)
 
 ### 3.5 Custo total mensal
 
-| Cenário | Pluggy | Supabase | Vercel | Claude | Total aproximado |
+| Cenário | Agregador | Supabase | Vercel | Claude (IA) | Total aproximado |
 |---|---|---|---|---|---|
-| **A. Desenvolvimento/sandbox** (critério de pronto da v1) | R$ 0 | US$ 0 | US$ 0 (Hobby, sem dados reais) | ~US$ 1 | **≈ R$ 5/mês** |
-| **B. Produção conforme os termos** (dados reais do Sicredi) | R$ 2.500 | US$ 25 | US$ 20 | ~US$ 3 | **≈ R$ 2.765/mês** |
-| C. Produção mínima arriscada (não recomendado) | R$ 2.500 | US$ 0 | US$ 0 | ~US$ 3 | ≈ R$ 2.517/mês, violando os termos da Vercel e sem backup |
+| **A. Desenvolvimento** (fixtures OFX, poucos comprovantes de teste) | R$ 0 | US$ 0 (Free) | US$ 0 (Hobby, sem dados reais) | ~US$ 1 | **≈ US$ 1 ≈ R$ 5/mês** |
+| **B. Produção dentro dos termos (v1, ADR 0016)** | **R$ 0** (OFX manual) | US$ 25 (Pro) | US$ 20 (Pro) | ~US$ 7 (300 tx + 100 comprovantes) | **≈ US$ 52 ≈ R$ 286/mês** |
+| B'. Mesmo cenário com Sonnet 5.5 em `ANTHROPIC_MODELO` | R$ 0 | US$ 25 | US$ 20 | ~US$ 3,50 | ≈ US$ 48,50 ≈ R$ 267/mês |
+| C. Produção mínima arriscada (não recomendado) | R$ 0 | US$ 0 | US$ 0 | ~US$ 7 | ≈ R$ 39/mês, violando os termos da Vercel, sem backup e com o Storage Free esgotando em ~1 ano |
+| *Referência: antigo cenário com Pluggy (descartado)* | *R$ 2.500* | *US$ 25* | *US$ 20* | *~US$ 3* | *≈ R$ 2.765/mês* |
 
-Fora isso: domínio (`.com.br` ≈ R$ 40/ano, conforme a tabela do Registro.br, **estimativa**) e SMTP transacional (Resend tem plano gratuito, **estimativa**, não verificado nesta pesquisa).
+Fora isso: domínio (`.com.br` ≈ R$ 40/ano, conforme a tabela do Registro.br, **estimativa**) e SMTP transacional (Resend tem plano gratuito, **estimativa**, não verificado nesta pesquisa). Carga inicial única de IA ao importar 12 meses de histórico: ≈ US$ 18–36.
 
 **Conclusões econômicas**
-1. A Pluggy responde por cerca de 90% do custo de produção. Para **uma** empresa usando internamente, R$ 2.500/mês só se justifica se o Rastro virar SaaS. Com ~10 clientes pagantes, o custo por cliente cai para ~R$ 250.
-2. Caminhos para o Davi decidir (D-03): (a) negociar com a Pluggy um plano de entrada para 1 CNPJ; (b) confirmar por escrito se o Meu Pluggy pode ser usado na conta PJ da própria empresa; (c) usar o **Plano B (importação OFX)**, gratuito, como ponte, que fica fora da v1 mas é viável graças ao adaptador `ProvedorBancario`; (d) tratar os R$ 2.500 como investimento no produto SaaS.
-3. Supabase Pro e Vercel Pro somam ≈ US$ 45/mês (≈ R$ 250) e são **recomendados** assim que houver dados reais.
-4. A v1 pode ser **entregue e validada a custo quase zero** com o sandbox. A decisão de gastar só precisa ser tomada na hora de conectar a conta real.
+1. Trocar a Pluggy por OFX + comprovantes reduz o custo de produção de ≈ R$ 2.765 para **≈ R$ 286/mês** (−90%).
+2. O custo restante é quase todo infraestrutura (Vercel Pro + Supabase Pro ≈ US$ 45), **recomendada** assim que houver dados reais (D-01, D-02).
+3. A IA (classificação + visão) fica em ≈ US$ 7/mês, com teto rígido de ≈ US$ 32/mês (2.000 classificações + 300 leituras).
+4. A Pluggy volta a ser avaliada só se o Rastro virar SaaS; o código está pronto atrás da flag.
 
 ## 4. Viabilidade operacional
 
-- **Usuário único** (Davi). Sem treinamento formal. A interface é em português, com termos do dia a dia (Conexão, Transação, Categoria, Regra, Centro de custo).
-- **Rotina esperada:** abrir o painel algumas vezes por semana, revisar transações "a confirmar" (classificadas pela IA), corrigir as erradas (as correções viram regras), atribuir centros de custo e anexar notas quando o contador pedir.
-- **Eventos excepcionais:** consentimento expirado ou erro de login no banco. O Rastro mostra um aviso e um botão "Reconectar". Se a Pluggy cair, o botão "Sincronizar agora" recupera o atraso depois.
-- **Manutenção:** dependências atualizadas pelo CI. Segredos trocados quando houver suspeita de vazamento (já aconteceu com o Client Secret da Pluggy num print).
-- **Contingência:** se a integração parar, o Davi exporta o OFX do Sicredi Internet (Plano B do `CONTEXTO.md`).
+- **Usuário único** (Davi). Sem treinamento formal. A interface é em português, com termos do dia a dia (Transação, Categoria, Regra, Centro de custo, Comprovante, Importar).
+- **Rotina esperada:** uma vez por semana (ou por mês), baixar o OFX no Sicredi Internet e enviar em "Importar" (~3 min). Quando quiser, fotografar comprovantes e notas (~20 s cada). Revisar transações "a confirmar" (classificadas pela IA), corrigir as erradas (viram regras), resolver comprovantes ambíguos e atribuir centros de custo.
+- **Eventos excepcionais:** OFX recusado (formato diferente, R-17), foto ilegível (R-18), comprovante sem transação no extrato (RF-42).
+- **Esquecimento:** o maior risco operacional (R-15). O aviso "última importação há X dias" fica em destaque a partir de 7 dias (RF-34).
+- **Manutenção:** dependências atualizadas pelo CI. Segredos trocados quando houver suspeita de vazamento (o Client Secret da Pluggy já apareceu num print; revogá-lo mesmo com a Pluggy desligada).
 
-**Conclusão operacional:** viável. O esforço manual estimado é de 15 a 30 min por semana, caindo à medida que as regras aprendem.
+**Conclusão operacional:** viável. O esforço manual estimado é de 20 a 40 min por semana (importação + comprovantes + revisão), caindo à medida que as regras aprendem e a conciliação automática liga os comprovantes.
 
 ## 5. LGPD e caráter sensível dos dados
 
@@ -148,7 +177,7 @@ Fora isso: domínio (`.com.br` ≈ R$ 40/ano, conforme a tabela do Registro.br, 
 - **Dados da empresa** (extrato da conta PJ): sigilo bancário (LC 105/2001) e segredo de negócio. Não são dados pessoais em si, mas são altamente sensíveis do ponto de vista comercial.
 - **Dados pessoais de terceiros** dentro das transações: nome, às vezes CPF/CNPJ e chave Pix de quem pagou ou recebeu (funcionários, fornecedores pessoa física, clientes). **A LGPD se aplica a esses dados.**
 - **Dados pessoais do usuário:** e-mail do Davi (login).
-- Notas fiscais e comprovantes anexados podem trazer CPF, endereço etc.
+- Notas fiscais e comprovantes (anexados ou lidos por IA) trazem CPF/CNPJ, nome, às vezes endereço e, em fotos de celular, **localização GPS no EXIF**.
 
 Dados financeiros não estão no rol de "dados pessoais sensíveis" do art. 5º, II da LGPD, mas o risco de dano em caso de vazamento (fraude, engenharia social) justifica tratá-los **com o mesmo rigor**.
 
@@ -156,19 +185,19 @@ Dados financeiros não estão no rol de "dados pessoais sensíveis" do art. 5º,
 | Papel | Quem |
 |---|---|
 | Controlador | HOMETEC SERVIÇOS |
-| Operadores (suboperadores) | Pluggy (agregador regulado), Supabase (banco e storage), Vercel (hospedagem), Anthropic (classificação por IA) |
+| Operadores (suboperadores) | Supabase (banco e storage), Vercel (hospedagem), Anthropic (classificação e **leitura de comprovantes** por IA). Pluggy só se `RECURSO_OPEN_FINANCE` for ligado. |
 
 - **Base legal** para tratar dados de contrapartes: execução de contrato e cumprimento de obrigação legal (escrituração contábil e fiscal), art. 7º, II e V, além de legítimo interesse (art. 7º, IX) para a categorização.
 - **Transferência internacional** (art. 33): Supabase, Vercel e Anthropic processam dados fora do Brasil. Deve ficar registrado. Recomendação: região do Supabase em **São Paulo (sa-east-1)** (P-15) e envio **mínimo** à IA (P-12).
 
 ### 5.3 Medidas exigidas (refletidas nos RNF)
-1. **Minimização para a IA:** enviar só descrição, valor, tipo e contraparte. Nunca CPF/CNPJ, `account_id` ou e-mail (RNF-20).
+1. **Minimização para a IA:** na classificação, enviar só descrição, valor, tipo e contraparte, nunca CPF/CNPJ, `account_id` ou e-mail (RNF-20). Na leitura de comprovantes, a imagem é enviada (inevitável, P-40), mas reduzida e **sem EXIF/GPS**, e sem nenhum outro dado junto (RNF-24).
 2. **RLS em todas as tabelas** e bucket de anexos **privado** com URLs assinadas de curta duração (RNF-01, RNF-07).
 3. **Segredos só no servidor**: Pluggy, Anthropic e `service_role` (RNF-02). O vazamento do Client Secret num print mostra que esse risco é real (R-04).
 4. **Logs sem dados sensíveis**: sem descrição, valor, contraparte, tokens ou e-mail (RNF-06).
-5. **Retenção:** manter enquanto houver obrigação contábil (5 anos, prazo de prescrição tributária). Ao desconectar um banco, revogar o item na Pluggy.
+5. **Retenção:** manter transações, comprovantes e OFX importados enquanto houver obrigação contábil (5 anos, prazo de prescrição tributária).
 6. **Direitos do titular e incidentes:** canal de contato (e-mail da HOMETEC) e procedimento de resposta a incidente no guia de operação.
-7. O Open Finance exige consentimento explícito do titular da conta, coletado pelo próprio fluxo regulado (Pluggy Connect + app do Sicredi).
+7. Sem Open Finance na v1, não há consentimento regulado a coletar: o próprio titular (HOMETEC) baixa e envia o extrato.
 
 **Conclusão regulatória:** viável, desde que os RNF de segurança e privacidade sejam cumpridos. Antes de virar SaaS, será preciso política de privacidade, termos de uso, contratos de operador (DPA) e encarregado (DPO).
 
@@ -178,5 +207,6 @@ Dados financeiros não estão no rol de "dados pessoais sensíveis" do art. 5º,
 |---|---|---|
 | D-01 | Vercel Hobby só em desenvolvimento. Produção com dados reais exige Vercel Pro (US$ 20/mês). | Davi (assinatura) |
 | D-02 | Supabase Free em desenvolvimento. Pro (US$ 25/mês) em produção, por causa de backup e da pausa por inatividade. | Davi (assinatura) |
-| D-03 | A v1 é entregue com o **sandbox** da Pluggy. Conectar a conta real exige decidir entre plano Dados (R$ 2.500/mês), negociação, Meu Pluggy (se a Pluggy confirmar por escrito) ou OFX. | Davi |
+| D-03 | **Resolvida (10/10/2026, ADR 0016):** a v1 usa **extrato OFX importado + comprovantes lidos por IA**. A Pluggy fica desligada (`RECURSO_OPEN_FINANCE=false`), com código e testes mantidos. Custo de agregador: R$ 0. | Davi (decidido) |
 | D-04 | IA: `claude-opus-5-5` com esforço `low`, configurável por variável de ambiente (`ANTHROPIC_MODELO`) para trocar por Sonnet/Haiku sem deploy de código. | Equipe |
+| D-05 | Leitura de comprovantes com o modelo de `ANTHROPIC_MODELO` (opcionalmente `ANTHROPIC_MODELO_COMPROVANTES`), imagem reduzida a 2576 px no navegador e teto de 300 leituras/mês. | Equipe |

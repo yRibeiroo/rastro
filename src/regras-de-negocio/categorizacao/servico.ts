@@ -44,7 +44,12 @@ export interface NovaRegra {
 type DadosDaRegra = Partial<
   Pick<
     Regra,
-    "padrao" | "campo" | "prioridade" | "categoriaId" | "centroDeCustoId" | "ativa"
+    | "padrao"
+    | "campo"
+    | "prioridade"
+    | "categoriaId"
+    | "centroDeCustoId"
+    | "ativa"
   >
 >;
 type DadosDaCategoria = Partial<
@@ -59,6 +64,14 @@ export interface ServicoDeCategorizacao {
     empresaId: Id,
     opcoes?: { limite?: number },
   ): Promise<{ categorizadas: number; semSugestao: number }>;
+
+  /** Comprovante conciliado (RF-43): roda a corrente com a descrição enriquecida (emissor, itens),
+   *  então as Regras casam também pelo texto dos itens. Nunca mexe na categoria do usuário. true = aplicou. */
+  categorizarComDica(
+    empresaId: Id,
+    transacaoId: Id,
+    dica: string,
+  ): Promise<boolean>;
 
   /** Define categoria e/ou centro de custo como usuário (categoria_origem = 'usuario', categoria_definida_pelo_usuario = true). */
   corrigirCategoria(
@@ -201,6 +214,42 @@ export function criarServicoDeCategorizacao(deps: {
     };
   }
 
+  /** Regras -> provedor -> IA. Falha da IA nunca quebra: as que sobram ficam em `restantes`. */
+  async function executarCorrente(
+    empresaId: Id,
+    pendentes: readonly Transacao[],
+  ) {
+    const [regras, categorias, centrosDeCusto] = await Promise.all([
+      deps.regras.listarAtivas(empresaId),
+      deps.categorias.listar(empresaId),
+      deps.centrosDeCusto.listar(empresaId),
+    ]);
+    const contexto = { empresaId, regras, categorias, centrosDeCusto };
+    const iaLigada = deps.iaLigada();
+
+    let restantes: readonly Transacao[] = pendentes;
+    const resultados: ResultadoDeCategorizacao[] = [];
+    let iaConcluida = false;
+    for (const estrategia of deps.estrategias) {
+      if (!restantes.length) break;
+      if (estrategia.nome === "ia" && !iaLigada) continue;
+      let obtidos: ResultadoDeCategorizacao[];
+      try {
+        obtidos = await estrategia.categorizar(restantes, contexto);
+      } catch (erro) {
+        // Falha da IA nunca quebra: as que sobraram ficam pendentes (sem marcar).
+        if (estrategia.nome !== "ia") throw erro;
+        registrarFalha("categorização por IA", erro);
+        continue;
+      }
+      if (estrategia.nome === "ia") iaConcluida = true;
+      const resolvidas = new Set(obtidos.map((r) => r.transacaoId));
+      resultados.push(...obtidos);
+      restantes = restantes.filter((t) => !resolvidas.has(t.id));
+    }
+    return { resultados, restantes, iaConcluida };
+  }
+
   return {
     async categorizarPendentes(empresaId, opcoes) {
       const pendentes = await deps.transacoes.listarPendentesDeCategorizacao(
@@ -208,35 +257,10 @@ export function criarServicoDeCategorizacao(deps: {
         opcoes?.limite ?? LIMITE_PADRAO_DE_PENDENTES,
       );
       if (!pendentes.length) return { categorizadas: 0, semSugestao: 0 };
-
-      const [regras, categorias, centrosDeCusto] = await Promise.all([
-        deps.regras.listarAtivas(empresaId),
-        deps.categorias.listar(empresaId),
-        deps.centrosDeCusto.listar(empresaId),
-      ]);
-      const contexto = { empresaId, regras, categorias, centrosDeCusto };
-      const iaLigada = deps.iaLigada();
-
-      let restantes: readonly Transacao[] = pendentes;
-      const resultados: ResultadoDeCategorizacao[] = [];
-      let iaConcluida = false;
-      for (const estrategia of deps.estrategias) {
-        if (!restantes.length) break;
-        if (estrategia.nome === "ia" && !iaLigada) continue;
-        let obtidos: ResultadoDeCategorizacao[];
-        try {
-          obtidos = await estrategia.categorizar(restantes, contexto);
-        } catch (erro) {
-          // Falha da IA nunca quebra: as que sobraram ficam pendentes (sem marcar).
-          if (estrategia.nome !== "ia") throw erro;
-          registrarFalha("categorização por IA", erro);
-          continue;
-        }
-        if (estrategia.nome === "ia") iaConcluida = true;
-        const resolvidas = new Set(obtidos.map((r) => r.transacaoId));
-        resultados.push(...obtidos);
-        restantes = restantes.filter((t) => !resolvidas.has(t.id));
-      }
+      const { resultados, restantes, iaConcluida } = await executarCorrente(
+        empresaId,
+        pendentes,
+      );
 
       const categorizadas = resultados.length
         ? await deps.transacoes.aplicarCategorizacaoAutomatica(
@@ -252,6 +276,32 @@ export function criarServicoDeCategorizacao(deps: {
           restantes.map((t) => t.id),
         );
       return { categorizadas, semSugestao: restantes.length };
+    },
+
+    async categorizarComDica(empresaId, transacaoId, dica) {
+      const transacao = await deps.transacoes.buscarPorId(
+        empresaId,
+        transacaoId,
+      );
+      if (!transacao || transacao.categoriaDefinidaPeloUsuario) return false;
+      const enriquecida = {
+        ...transacao,
+        descricao: `${transacao.descricao} | ${dica}`.slice(0, 1000),
+      };
+      let resultados: ResultadoDeCategorizacao[];
+      try {
+        ({ resultados } = await executarCorrente(empresaId, [enriquecida]));
+      } catch (erro) {
+        registrarFalha("categorização com dica do comprovante", erro);
+        return false;
+      }
+      if (!resultados.length) return false;
+      return (
+        (await deps.transacoes.aplicarCategorizacaoAutomatica(
+          empresaId,
+          resultados,
+        )) > 0
+      );
     },
 
     async corrigirCategoria(ctx, transacaoId, dados) {

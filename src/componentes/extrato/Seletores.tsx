@@ -1,5 +1,5 @@
 import type { Ref } from "react";
-import type { Categoria, CentroDeCusto, OrigemDaCategoria } from "@/componentes/prototipo/tipos-provisorios";
+import type { Categoria, CentroDeCusto, OrigemDaCategoria } from "@/regras-de-negocio";
 
 /**
  * Seletores nativos (o mais acessível que existe: teclado, leitor de tela e roda nativa do celular)

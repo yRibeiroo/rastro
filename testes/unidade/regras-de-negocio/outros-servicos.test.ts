@@ -92,9 +92,11 @@ describe("ServicoDeAnexos", () => {
       listar: vi.fn(async () => linhas),
       buscarPorId: vi.fn(async (_e: string, id: string) => linhas.find((a) => a.id === id) ?? null),
       remover: vi.fn(async () => {}),
+      buscarPorComprovante: vi.fn(async () => null),
     } satisfies RepositorioDeAnexos;
     const armazenamento = {
       enviar: vi.fn(async () => {}),
+      baixar: vi.fn(async () => new Uint8Array()),
       gerarUrlAssinada: vi.fn(async (caminho: string) => `https://sb.local/assinada/${caminho}?token=t`),
       remover: vi.fn(async () => {}),
     } satisfies ArmazenamentoDeArquivos;
@@ -133,13 +135,13 @@ describe("ServicoDeAnexos", () => {
     expect(semTipo.tipoMime).toBe("image/png");
   });
 
-  it("recusa conteúdo que não bate com o MIME, tipo não aceito, vazio ou > 10 MB", async () => {
+  it("recusa conteúdo que não bate com o MIME, tipo não aceito, vazio ou > 4 MB", async () => {
     const { servico, transacao } = montar();
     const casos = [
       new File([new TextEncoder().encode("<html>")], "x.pdf", { type: "application/pdf" }),
       new File([PNG], "x.pdf", { type: "application/pdf" }),
       new File([], "vazio.pdf", { type: "application/pdf" }),
-      new File([new Uint8Array(10 * 1024 * 1024 + 1)], "grande.pdf", { type: "application/pdf" }),
+      new File([new Uint8Array(4 * 1024 * 1024 + 1)], "grande.pdf", { type: "application/pdf" }),
     ];
     for (const arquivo of casos)
       await expect(servico.anexar(ctx, transacao.id, arquivo)).rejects.toMatchObject({ codigo: "anexo_invalido" });
@@ -181,5 +183,13 @@ describe("ServicoDeAnexos", () => {
     await servico.remover(ctx, anexo.id);
     expect(anexos.remover).toHaveBeenCalledWith(EMPRESA, anexo.id);
     expect(armazenamento.remover).toHaveBeenCalledWith([anexo.caminho]);
+  });
+
+  it("o arquivo de um comprovante não é removido pela tela da transação", async () => {
+    const { servico, anexos, transacao } = montar();
+    const anexo = await servico.anexar(ctx, transacao.id, new File([JPG], "r.jpg"));
+    anexo.comprovanteId = novoId();
+    await expect(servico.remover(ctx, anexo.id)).rejects.toMatchObject({ codigo: "entrada_invalida" });
+    expect(anexos.remover).not.toHaveBeenCalled();
   });
 });

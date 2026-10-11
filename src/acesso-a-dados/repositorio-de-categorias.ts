@@ -105,9 +105,7 @@ const MENSAGENS_DO_CENTRO = {
   naoEncontrado: "Centro de custo não encontrado.",
 };
 
-export class RepositorioDeCentrosDeCustoSupabase
-  implements RepositorioDeCentrosDeCusto
-{
+export class RepositorioDeCentrosDeCustoSupabase implements RepositorioDeCentrosDeCusto {
   constructor(private readonly banco: ClienteDoBanco) {}
 
   async listar(empresaId: string, opcoes?: { incluirArquivados?: boolean }) {

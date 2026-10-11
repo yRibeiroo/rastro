@@ -1,4 +1,5 @@
 import "server-only";
+import { ErroDeNegocio } from "../erros";
 import type {
   Centavos,
   DataISO,
@@ -147,3 +148,21 @@ export interface ProvedorBancario {
   /** Valida (Zod) e traduz o corpo do webhook. Retorna null se o corpo for inválido. */
   interpretarWebhook(corpo: unknown): EventoDeWebhook | null;
 }
+
+/** RECURSO_OPEN_FINANCE desligado (ADR 0016): a montagem usa este no lugar da Pluggy. */
+export const provedorDesligado: ProvedorBancario = (() => {
+  const desligado = async (): Promise<never> => {
+    throw new ErroDeNegocio(
+      "recurso_desligado",
+      "A conexão direta com o banco está desligada. Importe o extrato em OFX.",
+    );
+  };
+  return {
+    criarTokenDeConexao: desligado,
+    obterConexao: desligado,
+    listarContas: desligado,
+    listarTransacoes: desligado,
+    registrarWebhooks: desligado,
+    interpretarWebhook: () => null,
+  };
+})();

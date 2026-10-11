@@ -181,6 +181,32 @@ export class TransacoesEmMemoria implements RepositorioDeTransacoes {
     );
     return antes - this.linhas.length;
   }
+  async listarIdsExternosExistentes(empresaId: string, ids: readonly string[]) {
+    return this.linhas
+      .filter((t) => t.empresaId === empresaId && ids.includes(t.idExterno))
+      .map((t) => t.idExterno);
+  }
+  /** Como a RPC: mesmo valor absoluto e data em ± tolerância. */
+  candidatosParaConciliacao = vi.fn(
+    async (
+      empresaId: string,
+      f: { valorCentavos: number; data: string; toleranciaDias: number },
+    ) =>
+      this.linhas
+        .filter(
+          (t) =>
+            t.empresaId === empresaId &&
+            Math.abs(t.valorCentavos) === Math.abs(f.valorCentavos) &&
+            Math.abs(Date.parse(t.data) - Date.parse(f.data)) <= f.toleranciaDias * 86_400_000,
+        )
+        .map((t) => ({
+          id: t.id,
+          data: t.data,
+          valorCentavos: t.valorCentavos,
+          descricao: t.descricao,
+          contraparte: t.contraparte,
+        })),
+  );
   listar = vi.fn(async () => ({ itens: this.linhas, proximoCursor: null }));
   async buscarPorId(empresaId: string, id: string) {
     const t = this.linhas.find((x) => x.empresaId === empresaId && x.id === id);
@@ -267,17 +293,22 @@ export class TransacoesEmMemoria implements RepositorioDeTransacoes {
 export class ConexoesEmMemoria implements RepositorioDeConexoes {
   constructor(public linhas: Conexao[] = []) {}
   async salvar(empresaId: string, dados: DadosDaConexao, _criadoPor: string | null) {
-    const atual = this.linhas.find((c) => c.idExterno === dados.idExterno);
+    const provedor = dados.provedor ?? "pluggy";
+    const atual = this.linhas.find(
+      (c) => c.idExterno === dados.idExterno && c.provedor === provedor,
+    );
     if (atual) {
       Object.assign(atual, dados);
       return atual;
     }
-    const nova = umaConexao({ empresaId, ...dados });
+    const nova = umaConexao({ empresaId, ...dados, provedor });
     this.linhas.push(nova);
     return nova;
   }
-  async buscarPorIdExterno(idExterno: string) {
-    return this.linhas.find((c) => c.idExterno === idExterno) ?? null;
+  async buscarPorIdExterno(idExterno: string, provedor: Conexao["provedor"] = "pluggy") {
+    return (
+      this.linhas.find((c) => c.idExterno === idExterno && c.provedor === provedor) ?? null
+    );
   }
   async buscarPorId(empresaId: string, id: string) {
     return this.linhas.find((c) => c.empresaId === empresaId && c.id === id) ?? null;

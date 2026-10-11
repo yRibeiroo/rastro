@@ -4,7 +4,8 @@
 
 -- Ids fixos para facilitar testes manuais.
 -- empresa:  00000000-0000-4000-a000-000000000001
--- conexão:  00000000-0000-4000-a000-000000000101
+-- conexão:  00000000-0000-4000-a000-000000000101 (arquivo)
+-- importação: ...0301; comprovantes: ...0401 a ...0406
 -- contas:   ...0201 (corrente), ...0202 (poupança)
 
 insert into public.empresas (id, nome)
@@ -13,9 +14,10 @@ on conflict (id) do nothing;
 
 select privado.semear_empresa('00000000-0000-4000-a000-000000000001');
 
-insert into public.conexoes (id, empresa_id, id_externo, banco, status, ultima_sincronizacao_em, consentimento_expira_em)
-values ('00000000-0000-4000-a000-000000000101', '00000000-0000-4000-a000-000000000001',
-        'demo-item-sicoob', 'Sicoob Empresas', 'atualizada', now(), now() + interval '300 days')
+-- Origem = extrato OFX importado (ADR 0016): conexão 'arquivo', id_externo = empresa_id.
+insert into public.conexoes (id, empresa_id, provedor, id_externo, banco, status, ultima_sincronizacao_em)
+values ('00000000-0000-4000-a000-000000000101', '00000000-0000-4000-a000-000000000001', 'arquivo',
+        '00000000-0000-4000-a000-000000000001', 'Sicredi', 'atualizada', now())
 on conflict (id) do nothing;
 
 insert into public.contas (id, empresa_id, conexao_id, id_externo, nome, tipo, numero, saldo)
@@ -127,6 +129,47 @@ left join public.centros_de_custo cc on cc.empresa_id = '00000000-0000-4000-a000
 where t.empresa_id = '00000000-0000-4000-a000-000000000001'
   and strpos(t.descricao, co.trecho) > 0
   and (t.data < date_trunc('month', current_date) or co.trecho = 'TRANSF ENTRE CONTAS');
+
+-- Importação de exemplo (o extrato OFX que "trouxe" as transações acima).
+insert into public.importacoes_de_extrato (id, empresa_id, conexao_id, conta_id, nome_do_arquivo, periodo_de, periodo_ate, novas, atualizadas)
+select '00000000-0000-4000-a000-000000000301', '00000000-0000-4000-a000-000000000001',
+       '00000000-0000-4000-a000-000000000101', '00000000-0000-4000-a000-000000000201',
+       'extrato-sicredi.ofx', min(t.data), max(t.data), count(*), 0
+from public.transacoes t
+where t.conta_id = '00000000-0000-4000-a000-000000000201'
+on conflict (id) do nothing;
+
+-- Comprovantes em situações variadas (sem arquivo no Storage: só os dados lidos).
+-- Conciliados: valor e data (±3 dias) da transação do mês passado.
+insert into public.comprovantes (id, empresa_id, transacao_id, situacao, tipo, valor, data, emissor, documento_emissor, chave_de_acesso, itens, confianca)
+select c.id::uuid, '00000000-0000-4000-a000-000000000001', t.id, 'conciliado', c.tipo, abs(t.valor), t.data + c.desvio,
+       c.emissor, c.documento, c.chave, c.itens::jsonb, c.confianca
+from (values
+  ('00000000-0000-4000-a000-000000000401', 'demo-tx-1-5', 'pix', 0, 'POSTO SAO JOAO LTDA', '12345678000190', null,
+   '[]', 0.97),
+  ('00000000-0000-4000-a000-000000000402', 'demo-tx-1-7', 'nfce', 0, 'ELETRICA TOCANTINS LTDA', '23456789000101',
+   '17260923456789000101650010000123451000123456',
+   '[{"descricao":"CABO FLEXIVEL 2,5MM 100M","quantidade":2,"valor_centavos":null},{"descricao":"DISJUNTOR BIPOLAR 32A","quantidade":4,"valor_centavos":null}]',
+   0.92),
+  ('00000000-0000-4000-a000-000000000403', 'demo-tx-1-14', 'boleto', 1, 'ENERGISA TOCANTINS DISTRIBUIDORA DE ENERGIA', '25086034000171', null,
+   '[]', 0.95)
+) as c (id, id_externo, tipo, desvio, emissor, documento, chave, itens, confianca)
+join public.transacoes t on t.empresa_id = '00000000-0000-4000-a000-000000000001' and t.id_externo = c.id_externo
+on conflict (id) do nothing;
+
+insert into public.comprovantes (id, empresa_id, situacao, tipo, valor, data, emissor, documento_emissor, itens, confianca, erro)
+values
+  -- Ambíguo: aplicação (-2000) e resgate (+2000) no mesmo dia têm o mesmo valor absoluto.
+  ('00000000-0000-4000-a000-000000000404', '00000000-0000-4000-a000-000000000001', 'ambiguo', 'recibo', 2000.00,
+   (date_trunc('month', current_date) - interval '1 month')::date + 24, null, null, '[]', 0.80, null),
+  -- Pendente: o extrato de hoje ainda não foi importado.
+  ('00000000-0000-4000-a000-000000000405', '00000000-0000-4000-a000-000000000001', 'pendente', 'nfce', 156.40,
+   current_date, 'REFRIGERACAO POLAR PECAS', '34567890000112',
+   '[{"descricao":"GAS R410A 750G","quantidade":1,"valor_centavos":12900},{"descricao":"FITA PVC","quantidade":2,"valor_centavos":1370}]',
+   0.88, null),
+  ('00000000-0000-4000-a000-000000000406', '00000000-0000-4000-a000-000000000001', 'erro_de_leitura', null, null,
+   null, null, null, '[]', null, 'Imagem ilegível: envie uma foto mais nítida.')
+on conflict (id) do nothing;
 
 -- Associa um usuário de login local à empresa de demonstração (só existe no seed, nunca em migração).
 -- Uso (Studio SQL editor ou psql, como postgres): select privado.dev_vincular_usuario_a_demo('voce@exemplo.com');

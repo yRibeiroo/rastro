@@ -1,5 +1,5 @@
 import { useId } from "react";
-import type { ResumoDoPainel } from "@/componentes/prototipo/tipos-provisorios";
+import type { ResumoDoPainel } from "@/regras-de-negocio";
 import { formatarMes } from "@/ferramentas-internas/formatar-data";
 import { formatarMoeda } from "@/ferramentas-internas/formatar-moeda";
 import { escalaRedonda } from "./escala";

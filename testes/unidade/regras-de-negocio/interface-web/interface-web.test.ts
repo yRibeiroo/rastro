@@ -54,6 +54,18 @@ function servicosFalsos() {
     centrosDeCusto: { listar: vi.fn(async () => []), criar: f(), atualizar: f() },
     painel: { obterResumo: f() },
     anexos: { anexar: f(), listar: vi.fn(async () => []), gerarLinkTemporario: f(), remover: f() },
+    importacao: { importar: f(), listarImportacoes: vi.fn(async () => []), situacao: f() },
+    comprovantes: {
+      enviar: f(),
+      listar: vi.fn(async () => []),
+      listarCandidatos: vi.fn(async () => []),
+      conciliarManualmente: f(),
+      desfazerConciliacao: f(),
+      lerDeNovo: f(),
+      contarAlertas: vi.fn(async () => ({ comprovantesSemTransacao: 2 })),
+      corrigirDados: f(),
+      remover: f(),
+    },
   };
 }
 
@@ -174,7 +186,65 @@ describe("leituras para Server Components", () => {
   it("recursos (flags) lidos no servidor", async () => {
     vi.stubEnv("RECURSO_ANEXOS", "0");
     vi.stubEnv("PLUGGY_INCLUIR_SANDBOX", "1");
-    expect(await leituras.carregarRecursos()).toEqual({ anexos: false, categorizacaoIa: true, incluirSandbox: true });
+    expect(await leituras.carregarRecursos()).toEqual({
+      anexos: false,
+      categorizacaoIa: true,
+      incluirSandbox: true,
+      openFinance: false,
+      comprovantesIa: true,
+    });
     vi.unstubAllEnvs();
+  });
+});
+
+describe("importar extrato e comprovantes (ADR 0016)", () => {
+  const ofx = () => new File(["<OFX>"], "extrato.ofx");
+
+  it("importarExtrato e enviarComprovante exigem File em 'arquivo'; a chave do QR é opcional", async () => {
+    expect(await acoes.importarExtrato(new FormData())).toMatchObject({ ok: false, erro: { codigo: "arquivo_invalido" } });
+    expect(await acoes.importarExtrato("x" as unknown as FormData)).toMatchObject({ ok: false, erro: { codigo: "arquivo_invalido" } });
+    const f = new FormData();
+    f.set("arquivo", ofx());
+    expect(await acoes.importarExtrato(f)).toMatchObject({ ok: true });
+    expect(s.importacao.importar).toHaveBeenCalledWith(ctx, expect.any(File));
+
+    expect(await acoes.enviarComprovante(new FormData())).toMatchObject({ ok: false, erro: { codigo: "arquivo_invalido" } });
+    const c = new FormData();
+    c.set("arquivo", new File([new Uint8Array([0xff, 0xd8, 0xff])], "r.jpg"));
+    expect(await acoes.enviarComprovante(c)).toMatchObject({ ok: true });
+    expect(s.comprovantes.enviar).toHaveBeenLastCalledWith(ctx, expect.any(File), undefined);
+    c.set("chaveDeAcesso", "https://sefaz/qr?p=123|2");
+    await acoes.enviarComprovante(c);
+    expect(s.comprovantes.enviar).toHaveBeenLastCalledWith(ctx, expect.any(File), { chaveDeAcesso: "https://sefaz/qr?p=123|2" });
+  });
+
+  it("conciliar, desfazer, corrigir e remover chamam o serviço com o ctx e atualizam a tela", async () => {
+    const id = novoId();
+    const t = novoId();
+    refresh.mockClear();
+    expect(await acoes.conciliarComprovante(id, t)).toMatchObject({ ok: true });
+    expect(s.comprovantes.conciliarManualmente).toHaveBeenCalledWith(ctx, id, t);
+    expect(await acoes.desfazerConciliacao(id)).toMatchObject({ ok: true });
+    expect(s.comprovantes.desfazerConciliacao).toHaveBeenCalledWith(ctx, id);
+    expect(await acoes.corrigirComprovante(id, { valorCentavos: 100 })).toMatchObject({ ok: true });
+    expect(s.comprovantes.corrigirDados).toHaveBeenCalledWith(ctx, id, { valorCentavos: 100 });
+    expect(await acoes.lerComprovanteDeNovo(id)).toMatchObject({ ok: true });
+    expect(s.comprovantes.lerDeNovo).toHaveBeenCalledWith(ctx, id);
+    expect(await acoes.removerComprovante(id)).toEqual({ ok: true, dados: null });
+    expect(s.comprovantes.remover).toHaveBeenCalledWith(ctx, id);
+    expect(refresh).toHaveBeenCalledTimes(5);
+  });
+
+  it("leituras: importações, comprovantes com filtro e candidatos", async () => {
+    expect(await leituras.carregarImportacoes()).toEqual([]);
+    expect(await leituras.carregarComprovantes({ situacao: "ambiguo" })).toEqual([]);
+    expect(s.comprovantes.listar).toHaveBeenCalledWith(ctx, { situacao: "ambiguo" });
+    expect(await leituras.carregarCandidatosParaConciliacao("c")).toEqual([]);
+    expect(s.comprovantes.listarCandidatos).toHaveBeenCalledWith(ctx, "c");
+    expect(await leituras.carregarSituacaoDoExtrato()).toEqual({ ok: "dados" });
+    expect(s.importacao.situacao).toHaveBeenCalledWith(ctx);
+    expect(await leituras.contarAlertas()).toEqual({ comprovantesSemTransacao: 2 });
+    await leituras.carregarComprovantes({ comAlerta: true });
+    expect(s.comprovantes.listar).toHaveBeenLastCalledWith(ctx, { comAlerta: true });
   });
 });

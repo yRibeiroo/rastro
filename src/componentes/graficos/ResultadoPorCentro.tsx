@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { useId } from "react";
-import type { ResumoDoPainel } from "@/componentes/prototipo/tipos-provisorios";
+import type { ResumoDoPainel } from "@/regras-de-negocio";
 import { formatarMoeda } from "@/ferramentas-internas/formatar-moeda";
 import { TabelaAlternativa } from "./TabelaAlternativa";
 

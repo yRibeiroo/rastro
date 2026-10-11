@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 import { Erro } from "@/componentes/estados/Estados";
 import { ajuda, botao, campo, mensagemDeErro, rotulo } from "@/componentes/formulario/classes";
-import type { ResultadoDaAcao } from "@/componentes/prototipo/tipos-provisorios";
+import type { ResultadoDaAcao } from "@/regras-de-negocio";
 import { Carregando } from "@/identidade-visual/Carregando";
 
 type Estado =

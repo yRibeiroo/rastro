@@ -24,9 +24,17 @@ export async function GET(requisicao: Request) {
 
   const sistema = servicosDoSistema();
   try {
-    const resultado = await sistema.sincronizacao.ressincronizarTodas();
+    // RF-45: com o Open Finance desligado, o cron não chama a Pluggy.
+    const resultado = ambiente.RECURSO_OPEN_FINANCE
+      ? await sistema.sincronizacao.ressincronizarTodas()
+      : { conexoes: 0, falhas: 0 };
+    // Comprovantes pendentes de todas as empresas (rede de segurança da conciliação pós-importação).
+    const { conciliados } = await sistema.comprovantes.reconciliarTodas();
     await sistema.limpeza();
-    return Response.json(resultado);
+    return Response.json({
+      ...resultado,
+      comprovantesConciliados: conciliados,
+    });
   } catch (erro) {
     registrarFalha("tarefa de ressincronização", erro);
     return Response.json({ erro: "falhou" }, { status: 500 });

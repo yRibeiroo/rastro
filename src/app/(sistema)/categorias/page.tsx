@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { unstable_rethrow } from "next/navigation";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { GerenciarCategorias } from "@/componentes/categorias/GerenciarCategorias";
 import { GerenciarRegras } from "@/componentes/categorias/GerenciarRegras";
@@ -7,8 +9,9 @@ import { Erro, Vazio } from "@/componentes/estados/Estados";
 import { lerEstadoForcado } from "@/componentes/estados/estado-forcado";
 import { CabecalhoDaPagina } from "@/componentes/estrutura/CabecalhoDaPagina";
 import { botao } from "@/componentes/formulario/classes";
-import { atualizarCategoria, atualizarRegra, criarCategoria, criarRegra, removerRegra } from "@/componentes/prototipo/acoes-simuladas";
-import { inicioDoMes, listarCategorias, listarCentrosDeCusto, listarRegras, listarTransacoes } from "@/componentes/prototipo/fonte-de-dados";
+import { hojeISO } from "@/ferramentas-internas/formatar-data";
+import { carregarCategoriasERegras, carregarExtrato } from "@/regras-de-negocio/interface-web";
+import { atualizarCategoria, atualizarRegra, criarCategoria, criarRegra, removerRegra } from "@/regras-de-negocio/interface-web/acoes";
 import { Carregando } from "@/identidade-visual/Carregando";
 
 export const metadata: Metadata = { title: "Categorias" };
@@ -27,20 +30,22 @@ export default function Categorias({ searchParams }: PageProps<"/categorias">) {
 }
 
 async function Conteudo({ searchParams }: Pick<PageProps<"/categorias">, "searchParams">) {
+  // Dados por requisição (sessão e relógio): fora do shell e do prefetch.
+  await connection();
   const forcado = lerEstadoForcado((await searchParams).estado);
   if (forcado === "carregando") return carregando;
 
   let dados;
   try {
     if (forcado === "erro") throw new Error("forçado");
-    const [categorias, centros, regras, doMes] = await Promise.all([
-      listarCategorias({ incluirArquivadas: true }),
-      listarCentrosDeCusto(),
-      listarRegras(),
-      listarTransacoes({ dataDe: inicioDoMes() }),
+    // ponytail: "uso no mês" conta só as 200 primeiras transações do mês; um agregado no backend resolve se passar disso.
+    const [{ categorias, regras, centrosDeCusto: centros }, doMes] = await Promise.all([
+      carregarCategoriasERegras(),
+      carregarExtrato({ dataDe: `${hojeISO().slice(0, 7)}-01`, limite: 200 }),
     ]);
     dados = { categorias, centros, regras, doMes };
-  } catch {
+  } catch (erro) {
+    unstable_rethrow(erro);
     return (
       <Erro
         titulo="Não foi possível carregar as categorias"

@@ -1,17 +1,22 @@
 import "server-only";
 import { notFound, redirect } from "next/navigation";
 import { ambiente } from "@/configuracao/ambiente";
+import type { CandidatoAConciliacao } from "../comprovantes";
 import { ErroDeNegocio } from "../erros";
 import type { FiltrosDoExtrato, PaginaDoExtrato } from "../extrato";
+import type { SituacaoDoExtrato } from "../importacao-de-extrato";
 import { servicosDoUsuario, type ServicosDoUsuario } from "../montagem";
 import type { PeriodoDoPainel, ResumoDoPainel } from "../painel";
 import type {
   Anexo,
   Categoria,
   CentroDeCusto,
+  Comprovante,
   Conexao,
   Id,
+  ImportacaoDeExtrato,
   Regra,
+  SituacaoDoComprovante,
   Transacao,
 } from "../tipos";
 
@@ -93,15 +98,53 @@ export async function carregarConexoes(): Promise<Conexao[]> {
   return comServicos((s) => s.conexoes.listarConexoes(s.ctx));
 }
 
-/** Flags (ADR 0010) que a interface precisa, lidas no servidor e passadas como props. */
+/** Histórico de importações de extrato (mais recentes primeiro). */
+export async function carregarImportacoes(): Promise<ImportacaoDeExtrato[]> {
+  return comServicos((s) => s.importacao.listarImportacoes(s.ctx));
+}
+
+/** Comprovantes (mais recentes primeiro), cada um com `alerta` (RF-42). Filtros: situação e só alertados. */
+export async function carregarComprovantes(filtros?: {
+  situacao?: SituacaoDoComprovante;
+  comAlerta?: boolean;
+}): Promise<Comprovante[]> {
+  return comServicos((s) => s.comprovantes.listar(s.ctx, filtros));
+}
+
+/** Transações com o mesmo valor absoluto em ±10 dias (conciliação manual). Inexistente → notFound(). */
+export async function carregarCandidatosParaConciliacao(
+  comprovanteId: Id,
+): Promise<CandidatoAConciliacao[]> {
+  return comServicos((s) =>
+    s.comprovantes.listarCandidatos(s.ctx, comprovanteId),
+  );
+}
+
+/** RF-34: "Última importação há X dias" (desatualizado a partir de 7). */
+export async function carregarSituacaoDoExtrato(): Promise<SituacaoDoExtrato> {
+  return comServicos((s) => s.importacao.situacao(s.ctx));
+}
+
+/** RF-42: quantos comprovantes estão "sem transação no extrato" (painel e menu). */
+export async function contarAlertas(): Promise<{
+  comprovantesSemTransacao: number;
+}> {
+  return comServicos((s) => s.comprovantes.contarAlertas(s.ctx));
+}
+
+/** Flags (ADR 0010/0016) que a interface precisa, lidas no servidor e passadas como props. */
 export async function carregarRecursos(): Promise<{
   anexos: boolean;
   categorizacaoIa: boolean;
   incluirSandbox: boolean;
+  openFinance: boolean;
+  comprovantesIa: boolean;
 }> {
   return {
     anexos: ambiente.RECURSO_ANEXOS,
     categorizacaoIa: ambiente.RECURSO_CATEGORIZACAO_IA,
     incluirSandbox: ambiente.PLUGGY_INCLUIR_SANDBOX,
+    openFinance: ambiente.RECURSO_OPEN_FINANCE,
+    comprovantesIa: ambiente.RECURSO_COMPROVANTES_IA,
   };
 }

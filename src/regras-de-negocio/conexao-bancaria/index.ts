@@ -10,7 +10,7 @@ export type {
   ProvedorBancario,
   TransacaoDoProvedor,
 } from "./provedor-bancario";
-export { EVENTOS_DO_WEBHOOK } from "./provedor-bancario";
+export { EVENTOS_DO_WEBHOOK, provedorDesligado } from "./provedor-bancario";
 export { webhookAutorizado } from "./webhook";
 export type { ServicoDeConexaoBancaria } from "./servico";
 export { conexaoNaoEncontrada, criarServicoDeConexaoBancaria } from "./servico";

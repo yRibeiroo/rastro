@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { notFound, unstable_rethrow } from "next/navigation";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { BotaoConectarBanco } from "@/componentes/conexao-bancaria/BotaoConectarBanco";
 import { IndicadorDeSituacao } from "@/componentes/conexao-bancaria/IndicadorDeSituacao";
@@ -9,9 +11,9 @@ import { lerEstadoForcado } from "@/componentes/estados/estado-forcado";
 import { CabecalhoDaPagina } from "@/componentes/estrutura/CabecalhoDaPagina";
 import { BotaoSincronizar } from "@/componentes/extrato/BotaoSincronizar";
 import { botao } from "@/componentes/formulario/classes";
-import { iniciarConexao, registrarConexao, sincronizarAgora } from "@/componentes/prototipo/acoes-simuladas";
-import { listarConexoes } from "@/componentes/prototipo/fonte-de-dados";
-import type { Conexao } from "@/componentes/prototipo/tipos-provisorios";
+import type { Conexao } from "@/regras-de-negocio";
+import { carregarConexoes, carregarRecursos } from "@/regras-de-negocio/interface-web";
+import { iniciarConexao, registrarConexao, sincronizarAgora } from "@/regras-de-negocio/interface-web/acoes";
 import { formatarData, formatarDataHora, formatarTempoRelativo } from "@/ferramentas-internas/formatar-data";
 import { Carregando } from "@/identidade-visual/Carregando";
 
@@ -19,28 +21,26 @@ export const metadata: Metadata = { title: "Conexões bancárias" };
 
 const carregando = <Carregando contexto="conectando" rotulo="Verificando a conexão com o banco" className="min-h-[40vh]" />;
 
-// Protótipo: ?status=atualizando|reconectar|erro mostra o cartão em cada situação.
-const STATUS_DE_TESTE: Record<string, Partial<Conexao>> = {
-  atualizando: { status: "atualizando" },
-  reconectar: { status: "erro_de_login" },
-  erro: { status: "erro", erro: { codigo: "ITEM_ERROR", mensagem: "Falha ao acessar o banco." } },
-  conectado: { status: "atualizada", consentimentoExpiraEm: new Date(Date.now() + 300 * 86_400_000) },
-};
-
-const ACOES = { iniciarConexao, registrarConexao, simulado: true } as const;
-
-export default function ConexoesBancarias({ searchParams }: PageProps<"/conexoes-bancarias">) {
+// Só existe com RECURSO_OPEN_FINANCE ligado (ADR 0016); sem a flag, a rota é 404.
+export default async function ConexoesBancarias({ searchParams }: PageProps<"/conexoes-bancarias">) {
+  const { openFinance, incluirSandbox } = await carregarRecursos();
+  if (!openFinance) notFound();
+  const acoes: Acoes = { iniciarConexao, registrarConexao, incluirSandbox };
   return (
     <>
       <CabecalhoDaPagina titulo="Conexões bancárias" descricao="O Rastro lê o extrato pelo Open Finance. Ele nunca movimenta dinheiro." />
       <Suspense fallback={carregando}>
-        <Conteudo searchParams={searchParams} />
+        <Conteudo searchParams={searchParams} acoes={acoes} />
       </Suspense>
     </>
   );
 }
 
-async function Conteudo({ searchParams }: Pick<PageProps<"/conexoes-bancarias">, "searchParams">) {
+type Acoes = Pick<Parameters<typeof BotaoConectarBanco>[0], "iniciarConexao" | "registrarConexao" | "incluirSandbox">;
+
+async function Conteudo({ searchParams, acoes }: Pick<PageProps<"/conexoes-bancarias">, "searchParams"> & { acoes: Acoes }) {
+  // Dados por requisição (sessão e relógio): fora do shell e do prefetch.
+  await connection();
   const sp = await searchParams;
   const forcado = lerEstadoForcado(sp.estado);
   if (forcado === "carregando") return carregando;
@@ -48,8 +48,9 @@ async function Conteudo({ searchParams }: Pick<PageProps<"/conexoes-bancarias">,
   let conexoes: Conexao[];
   try {
     if (forcado === "erro") throw new Error("forçado");
-    conexoes = await listarConexoes();
-  } catch {
+    conexoes = (await carregarConexoes()).filter((c) => c.provedor === "pluggy");
+  } catch (erro) {
+    unstable_rethrow(erro);
     return (
       <Erro
         titulo="Não foi possível ver as conexões"
@@ -63,15 +64,12 @@ async function Conteudo({ searchParams }: Pick<PageProps<"/conexoes-bancarias">,
     );
   }
 
-  const teste = typeof sp.status === "string" ? STATUS_DE_TESTE[sp.status] : undefined;
-  if (teste) conexoes = conexoes.map((c) => ({ ...c, ...teste }));
-
   if (forcado === "vazio" || conexoes.length === 0)
     return (
       <Vazio
         titulo="Nenhum banco conectado"
         descricao="Conecte a conta PJ do Sicredi. A autorização é feita no app do banco e vale por até 12 meses."
-        acao={<BotaoConectarBanco {...ACOES} />}
+        acao={<BotaoConectarBanco {...acoes} />}
       />
     );
 
@@ -79,19 +77,19 @@ async function Conteudo({ searchParams }: Pick<PageProps<"/conexoes-bancarias">,
     <div className="grid gap-8 pb-8">
       <ul className="grid gap-4">
         {conexoes.map((c) => (
-          <CartaoDaConexao key={c.id} conexao={c} />
+          <CartaoDaConexao key={c.id} conexao={c} acoes={acoes} />
         ))}
       </ul>
       <div className="grid justify-items-start gap-2 border-t border-borda pt-6">
         <h2 className="text-base font-semibold">Outra conta</h2>
         <p className="text-sm text-texto-suave">Cada conexão é uma autorização separada no banco.</p>
-        <BotaoConectarBanco {...ACOES} variante="secundario" />
+        <BotaoConectarBanco {...acoes} variante="secundario" />
       </div>
     </div>
   );
 }
 
-function CartaoDaConexao({ conexao: c }: { conexao: Conexao }) {
+function CartaoDaConexao({ conexao: c, acoes }: { conexao: Conexao; acoes: Acoes }) {
   const situacao = situacaoDaConexao(c);
   return (
     <li className="grid gap-5 rounded-g border border-borda bg-superficie p-5 md:p-6">
@@ -128,7 +126,7 @@ function CartaoDaConexao({ conexao: c }: { conexao: Conexao }) {
       {c.erro && c.status === "erro" && <p className="text-sm text-erro">Motivo: {c.erro.mensagem}</p>}
 
       <div className="flex flex-wrap items-center gap-3 border-t border-borda pt-4">
-        {situacao.reconectar && <BotaoConectarBanco {...ACOES} reconectar={{ conexaoId: c.id, idExterno: c.idExterno }} />}
+        {situacao.reconectar && <BotaoConectarBanco {...acoes} reconectar={{ conexaoId: c.id, idExterno: c.idExterno }} />}
         {!situacao.aviso && <BotaoSincronizar conexaoId={c.id} banco={c.banco} sincronizar={sincronizarAgora} />}
       </div>
     </li>

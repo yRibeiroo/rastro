@@ -4,6 +4,7 @@ import type {
   TransacaoDoProvedor,
 } from "@/regras-de-negocio/conexao-bancaria/provedor-bancario";
 import type { ResultadoDeCategorizacao } from "@/regras-de-negocio/categorizacao/estrategias/estrategia";
+import type { CandidatoAConciliacao } from "@/regras-de-negocio/comprovantes/conciliacao";
 import type {
   FiltrosDoExtrato,
   PaginaDoExtrato,
@@ -17,13 +18,16 @@ import type {
   Categoria,
   Centavos,
   CentroDeCusto,
+  Comprovante,
   Conexao,
   Conta,
   DataISO,
   ErroDaConexao,
   Id,
+  ImportacaoDeExtrato,
   PapelNaEmpresa,
   Regra,
+  SituacaoDoComprovante,
   StatusDaConexao,
   TipoDeCategoria,
   Transacao,
@@ -45,6 +49,7 @@ export interface DadosDaConexao {
   status: StatusDaConexao;
   erro: ErroDaConexao | null;
   consentimentoExpiraEm: Date | null;
+  provedor?: Conexao["provedor"]; // padrão 'pluggy'
 }
 
 export interface RepositorioDeConexoes {
@@ -53,7 +58,10 @@ export interface RepositorioDeConexoes {
     dados: DadosDaConexao,
     criadoPor: Id | null,
   ): Promise<Conexao>; // upsert por (provedor, id_externo)
-  buscarPorIdExterno(idExterno: string): Promise<Conexao | null>; // sem filtro de empresa: só o caminho do sistema usa
+  buscarPorIdExterno(
+    idExterno: string,
+    provedor?: Conexao["provedor"], // padrão 'pluggy'
+  ): Promise<Conexao | null>; // sem filtro de empresa: só o caminho do sistema usa
   buscarPorId(empresaId: Id, conexaoId: Id): Promise<Conexao | null>;
   listar(empresaId: Id): Promise<Conexao[]>;
   listarTodas(): Promise<Conexao[]>; // só o cron (service role)
@@ -88,6 +96,16 @@ export interface RepositorioDeTransacoes {
     empresaId: Id,
     idsExternos: readonly string[],
   ): Promise<number>;
+  /** Quais desses id_externo já existem (para contar novas × atualizadas na importação). */
+  listarIdsExternosExistentes(
+    empresaId: Id,
+    idsExternos: readonly string[],
+  ): Promise<string[]>;
+  /** rpc candidatos_para_conciliacao: mesmo valor absoluto, data em ± tolerância. */
+  candidatosParaConciliacao(
+    empresaId: Id,
+    filtro: { valorCentavos: Centavos; data: DataISO; toleranciaDias: number },
+  ): Promise<CandidatoAConciliacao[]>;
   listar(empresaId: Id, filtros: FiltrosDoExtrato): Promise<PaginaDoExtrato>;
   buscarPorId(empresaId: Id, transacaoId: Id): Promise<Transacao | null>;
   listarPendentesDeCategorizacao(
@@ -182,14 +200,17 @@ export interface RepositorioDeAnexos {
     dados: Omit<Anexo, "id" | "empresaId" | "criadoEm">,
     enviadoPor: Id,
   ): Promise<Anexo>;
+  /** Anexos da transação, inclusive os arquivos dos comprovantes conciliados com ela. */
   listar(empresaId: Id, transacaoId: Id): Promise<Anexo[]>;
   buscarPorId(empresaId: Id, anexoId: Id): Promise<Anexo | null>;
+  buscarPorComprovante(empresaId: Id, comprovanteId: Id): Promise<Anexo | null>;
   remover(empresaId: Id, anexoId: Id): Promise<void>;
 }
 
 /** Storage (bucket 'anexos'). */
 export interface ArmazenamentoDeArquivos {
   enviar(caminho: string, conteudo: Blob, tipoMime: string): Promise<void>;
+  baixar(caminho: string): Promise<Uint8Array>;
   gerarUrlAssinada(caminho: string, segundos: number): Promise<string>;
   remover(caminhos: readonly string[]): Promise<void>;
 }
@@ -230,4 +251,52 @@ export interface RepositorioDeLimites {
     janelaEmSegundos: number,
   ): Promise<boolean>; // rpc consumir_limite_de_requisicao
   removerAntigos(antesDe: Date): Promise<number>;
+}
+
+export interface RepositorioDeImportacoes {
+  /** Só o service role insere (histórico imutável). */
+  criar(
+    empresaId: Id,
+    dados: Omit<ImportacaoDeExtrato, "id" | "empresaId" | "criadaEm">,
+  ): Promise<ImportacaoDeExtrato>;
+  listar(empresaId: Id): Promise<ImportacaoDeExtrato[]>; // mais recentes primeiro
+  /** Maior periodo_ate já importado para a conta (para não regredir o saldo). */
+  ultimoFimDePeriodo(empresaId: Id, contaId: Id): Promise<DataISO | null>;
+}
+
+export type DadosDoComprovanteNoBanco = Partial<
+  Omit<Comprovante, "id" | "empresaId" | "criadoEm" | "atualizadoEm" | "alerta">
+>;
+
+export interface RepositorioDeComprovantes {
+  /** Cria em 'lendo'. */
+  criar(empresaId: Id, enviadoPor: Id): Promise<Comprovante>;
+  buscarPorId(empresaId: Id, comprovanteId: Id): Promise<Comprovante | null>;
+  buscarPorChave(
+    empresaId: Id,
+    chaveDeAcesso: string,
+  ): Promise<Comprovante | null>;
+  /** Leituras pela IA desde `desde` (RNF-26): rpc leituras_de_comprovante_desde (envios e releituras). */
+  contarLeiturasDesde(empresaId: Id, desde: Date): Promise<number>;
+  /** Acrescenta `em` a leituras_ia_em (conta para o teto mensal). */
+  registrarLeitura(empresaId: Id, comprovanteId: Id, em: Date): Promise<void>;
+  /** Só service role (cron): empresas com comprovantes 'pendente'. */
+  empresasComPendentes(): Promise<Id[]>;
+  /** Dessas transações, quais já têm comprovante conciliado (RF-39: não são candidatas). */
+  listarTransacoesConciliadas(
+    empresaId: Id,
+    transacaoIds: readonly Id[],
+  ): Promise<Id[]>;
+  listar(
+    empresaId: Id,
+    filtros?: { situacao?: SituacaoDoComprovante },
+  ): Promise<Comprovante[]>; // mais recentes primeiro
+  /** 23505 na chave de acesso → ErroDeNegocio('comprovante_duplicado'). */
+  atualizar(
+    empresaId: Id,
+    comprovanteId: Id,
+    dados: DadosDoComprovanteNoBanco,
+  ): Promise<Comprovante>;
+  /** Apaga também a linha do anexo (cascade); o arquivo no Storage fica com o serviço. */
+  remover(empresaId: Id, comprovanteId: Id): Promise<void>;
 }

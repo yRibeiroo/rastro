@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Fragment, useRef, useState, useTransition } from "react";
 import { Anuncio, Sucesso } from "@/componentes/estados/Estados";
 import { Icone } from "@/componentes/estrutura/Icone";
-import type { Categoria, CentroDeCusto, Id, ResultadoDaAcao, SugestaoDeRegra, Transacao } from "@/componentes/prototipo/tipos-provisorios";
+import type { Categoria, CentroDeCusto, Id, ResultadoDaAcao, SugestaoDeRegra, Transacao } from "@/regras-de-negocio";
 import { formatarDia } from "@/ferramentas-internas/formatar-data";
 import { Carregando } from "@/identidade-visual/Carregando";
 import { deixarRastro } from "@/identidade-visual/rastro-movimento";

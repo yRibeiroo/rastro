@@ -5,7 +5,7 @@ import { useState, useTransition } from "react";
 import { Anuncio, Sucesso } from "@/componentes/estados/Estados";
 import { Icone } from "@/componentes/estrutura/Icone";
 import { botao } from "@/componentes/formulario/classes";
-import type { Id, ResultadoDaAcao } from "@/componentes/prototipo/tipos-provisorios";
+import type { Id, ResultadoDaAcao } from "@/regras-de-negocio";
 import { Carregando } from "@/identidade-visual/Carregando";
 
 type Props = {

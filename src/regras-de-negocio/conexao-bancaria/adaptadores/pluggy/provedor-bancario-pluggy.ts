@@ -388,9 +388,7 @@ let unico: ProvedorBancarioPluggy | undefined;
 export function provedorPluggy(
   credenciais: () => { clientId: string; clientSecret: string },
 ): ProvedorBancarioPluggy {
-  unico ??= new ProvedorBancarioPluggy(
-    () => new PluggyClient(credenciais()),
-  );
+  unico ??= new ProvedorBancarioPluggy(() => new PluggyClient(credenciais()));
   return unico;
 }
 

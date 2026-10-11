@@ -47,8 +47,11 @@ export function paraTransacao(linha: Tables<"transacoes">): Transacao {
     categoriaOrigem: linha.categoria_origem as OrigemDaCategoria | null,
     categoriaDefinidaPeloUsuario: linha.categoria_definida_pelo_usuario,
     regraId: linha.regra_id,
-    confiancaIa: linha.confianca_ia === null ? null : Number(linha.confianca_ia),
-    categorizacaoAutomaticaEm: paraDataOuNulo(linha.categorizacao_automatica_em),
+    confiancaIa:
+      linha.confianca_ia === null ? null : Number(linha.confianca_ia),
+    categorizacaoAutomaticaEm: paraDataOuNulo(
+      linha.categorizacao_automatica_em,
+    ),
     criadaEm: new Date(linha.criado_em),
     atualizadaEm: new Date(linha.atualizado_em),
   };
@@ -65,7 +68,8 @@ const lotes = <T>(itens: readonly T[], tamanho: number): T[][] => {
 };
 
 /** Termo de busca seguro para o filtro `or` do PostgREST (sem curingas nem separadores). */
-const termoDeBusca = (texto: string) => texto.replace(/[%_\\"(),.:*]/g, " ").trim();
+const termoDeBusca = (texto: string) =>
+  texto.replace(/[%_\\"(),.:*]/g, " ").trim();
 
 /**
  * Padrão `ilike` que tolera acento: vogais e C viram `_` (um caractere qualquer).
@@ -112,7 +116,10 @@ export class RepositorioDeTransacoesSupabase implements RepositorioDeTransacoes 
     return gravadas;
   }
 
-  async removerPorIdsExternos(empresaId: string, idsExternos: readonly string[]) {
+  async removerPorIdsExternos(
+    empresaId: string,
+    idsExternos: readonly string[],
+  ) {
     let removidas = 0;
     for (const lote of lotes(idsExternos, LOTE_DE_IDS)) {
       const { count, error } = await this.banco
@@ -126,7 +133,49 @@ export class RepositorioDeTransacoesSupabase implements RepositorioDeTransacoes 
     return removidas;
   }
 
-  async listar(empresaId: string, f: FiltrosDoExtrato): Promise<PaginaDoExtrato> {
+  async listarIdsExternosExistentes(
+    empresaId: string,
+    idsExternos: readonly string[],
+  ) {
+    const existentes: string[] = [];
+    for (const lote of lotes(idsExternos, LOTE_DE_IDS)) {
+      const linhas = dadosOuFalha(
+        await this.banco
+          .from("transacoes")
+          .select("id_externo")
+          .eq("empresa_id", empresaId)
+          .in("id_externo", lote),
+      );
+      existentes.push(...linhas.map((l) => l.id_externo));
+    }
+    return existentes;
+  }
+
+  async candidatosParaConciliacao(
+    empresaId: string,
+    filtro: { valorCentavos: number; data: string; toleranciaDias: number },
+  ) {
+    const linhas = dadosOuFalha(
+      await this.banco.rpc("candidatos_para_conciliacao", {
+        p_empresa: empresaId,
+        p_valor_centavos: filtro.valorCentavos,
+        p_data: filtro.data,
+        p_tolerancia_dias: filtro.toleranciaDias,
+      }),
+    );
+    return linhas.map((l) => ({
+      id: l.id,
+      data: l.data,
+      valorCentavos: Number(l.valor_centavos),
+      descricao: l.descricao,
+      contraparte: l.contraparte,
+    }));
+  }
+
+  async listar(
+    empresaId: string,
+    f: FiltrosDoExtrato,
+  ): Promise<PaginaDoExtrato> {
     const limite = f.limite ?? 50;
     let consulta = this.banco
       .from("transacoes")
@@ -136,7 +185,8 @@ export class RepositorioDeTransacoesSupabase implements RepositorioDeTransacoes 
     if (f.dataAte) consulta = consulta.lte("data", f.dataAte);
     if (f.categoriaId === "sem_categoria")
       consulta = consulta.is("categoria_id", null);
-    else if (f.categoriaId) consulta = consulta.eq("categoria_id", f.categoriaId);
+    else if (f.categoriaId)
+      consulta = consulta.eq("categoria_id", f.categoriaId);
     if (f.centroDeCustoId === "sem_centro")
       consulta = consulta.is("centro_de_custo_id", null);
     else if (f.centroDeCustoId)
@@ -146,12 +196,19 @@ export class RepositorioDeTransacoesSupabase implements RepositorioDeTransacoes 
     if (f.contaId) consulta = consulta.eq("conta_id", f.contaId);
     if (f.busca) {
       // ponytail: sem a extensão unaccent, busca o termo como digitado e sem acento.
-      const termos = [...new Set([termoDeBusca(f.busca), termoDeBusca(normalizarTexto(f.busca))])]
-        .filter(Boolean);
+      const termos = [
+        ...new Set([
+          termoDeBusca(f.busca),
+          termoDeBusca(normalizarTexto(f.busca)),
+        ]),
+      ].filter(Boolean);
       if (termos.length)
         consulta = consulta.or(
           termos
-            .flatMap((t) => [`descricao.ilike."%${t}%"`, `contraparte.ilike."%${t}%"`])
+            .flatMap((t) => [
+              `descricao.ilike."%${t}%"`,
+              `contraparte.ilike."%${t}%"`,
+            ])
             .join(","),
         );
     }
@@ -170,7 +227,9 @@ export class RepositorioDeTransacoesSupabase implements RepositorioDeTransacoes 
     return {
       itens,
       proximoCursor:
-        linhas.length > limite ? codificarCursor(itens[itens.length - 1]) : null,
+        linhas.length > limite
+          ? codificarCursor(itens[itens.length - 1])
+          : null,
     };
   }
 
@@ -220,7 +279,10 @@ export class RepositorioDeTransacoesSupabase implements RepositorioDeTransacoes 
     );
   }
 
-  async marcarCategorizacaoTentada(empresaId: string, transacaoIds: readonly string[]) {
+  async marcarCategorizacaoTentada(
+    empresaId: string,
+    transacaoIds: readonly string[],
+  ) {
     const agora = new Date().toISOString();
     for (const lote of lotes(transacaoIds, LOTE_DE_IDS)) {
       const { error } = await this.banco
@@ -283,7 +345,10 @@ export class RepositorioDeTransacoesSupabase implements RepositorioDeTransacoes 
       .slice(0, opcoes.limite);
   }
 
-  async contarSemCategoria(empresaId: string, periodo?: { de: string; ate: string }) {
+  async contarSemCategoria(
+    empresaId: string,
+    periodo?: { de: string; ate: string },
+  ) {
     let consulta = this.banco
       .from("transacoes")
       .select("id", { count: "exact", head: true })

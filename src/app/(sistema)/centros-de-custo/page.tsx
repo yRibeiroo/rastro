@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { unstable_rethrow } from "next/navigation";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { AcoesDoCentro, DesarquivarCentro, NovoCentro } from "@/componentes/centros-de-custo/GerenciarCentros";
 import { Erro, Vazio } from "@/componentes/estados/Estados";
@@ -7,10 +9,10 @@ import { lerEstadoForcado } from "@/componentes/estados/estado-forcado";
 import { CabecalhoDaPagina } from "@/componentes/estrutura/CabecalhoDaPagina";
 import { botao } from "@/componentes/formulario/classes";
 import { ResultadoPorCentro } from "@/componentes/graficos/ResultadoPorCentro";
-import { atualizarCentroDeCusto, criarCentroDeCusto } from "@/componentes/prototipo/acoes-simuladas";
-import { listarCentrosDeCusto, obterResumoDoPainel, periodoDe, PERIODOS } from "@/componentes/prototipo/fonte-de-dados";
+import { carregarCentrosDeCusto, carregarPainel } from "@/regras-de-negocio/interface-web";
+import { atualizarCentroDeCusto, criarCentroDeCusto } from "@/regras-de-negocio/interface-web/acoes";
 import { Carregando } from "@/identidade-visual/Carregando";
-import { lerPeriodo, SeletorDePeriodo } from "@/componentes/estrutura/SeletorDePeriodo";
+import { lerPeriodo, periodoDe, PERIODOS, SeletorDePeriodo } from "@/componentes/estrutura/SeletorDePeriodo";
 
 export const metadata: Metadata = { title: "Centros de custo" };
 
@@ -28,6 +30,8 @@ export default function CentrosDeCusto({ searchParams }: PageProps<"/centros-de-
 }
 
 async function Conteudo({ searchParams }: Pick<PageProps<"/centros-de-custo">, "searchParams">) {
+  // Dados por requisição (sessão e relógio): fora do shell e do prefetch.
+  await connection();
   const sp = await searchParams;
   const forcado = lerEstadoForcado(sp.estado);
   if (forcado === "carregando") return carregando;
@@ -37,9 +41,10 @@ async function Conteudo({ searchParams }: Pick<PageProps<"/centros-de-custo">, "
   let dados;
   try {
     if (forcado === "erro") throw new Error("forçado");
-    const [centros, resumo] = await Promise.all([listarCentrosDeCusto({ incluirArquivados: true }), obterResumoDoPainel(periodo)]);
+    const [centros, resumo] = await Promise.all([carregarCentrosDeCusto({ incluirArquivados: true }), carregarPainel(periodo)]);
     dados = { centros, resumo };
-  } catch {
+  } catch (erro) {
+    unstable_rethrow(erro);
     return (
       <Erro
         titulo="Não foi possível carregar os centros de custo"

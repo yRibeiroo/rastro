@@ -21,8 +21,7 @@ export interface UsuarioAutenticado {
 
 /** O que o link mágico traz na URL de retorno: `code` (PKCE) ou `token_hash` (template de e-mail). */
 export type CredencialDoLink =
-  | { code: string }
-  | { tokenHash: string; tipo: "magiclink" | "email" };
+  { code: string } | { tokenHash: string; tipo: "magiclink" | "email" };
 
 /** Porta para o Supabase Auth (implementada em src/acesso-a-dados). */
 export interface PortaDeAutenticacao {
@@ -42,7 +41,9 @@ export function emailAutorizado(
 ): boolean {
   const normalizado = email?.trim().toLowerCase();
   if (!normalizado) return false;
-  return lista.some((autorizado) => autorizado.trim().toLowerCase() === normalizado);
+  return lista.some(
+    (autorizado) => autorizado.trim().toLowerCase() === normalizado,
+  );
 }
 
 const esquemaEmail = z.email().max(254);

@@ -50,6 +50,8 @@ const acesso = await import("@/regras-de-negocio/acesso");
 
 beforeEach(() => {
   vi.stubEnv("EMAIL_AUTORIZADO", "davi@hometec.com.br");
+  // Lido uma vez (cache do ambiente): a Pluggy montada neste arquivo; desligada em montagem-sem-open-finance.
+  vi.stubEnv("RECURSO_OPEN_FINANCE", "1");
   estado.respostas = {
     membros_empresa: { data: { empresa_id: EMPRESA, papel: "dono" }, error: null },
   };
@@ -62,7 +64,7 @@ describe("montagem (raiz de composição)", () => {
     const s = await montagem.servicosDoUsuario();
     expect(s.ctx).toEqual({ usuarioId: USUARIO, email: "davi@hometec.com.br", empresaId: EMPRESA, papel: "dono" });
     expect(Object.keys(s).sort()).toEqual(
-      ["anexos", "categorizacao", "centrosDeCusto", "conexoes", "ctx", "extrato", "painel", "sincronizacao"].sort(),
+      ["anexos", "categorizacao", "centrosDeCusto", "comprovantes", "conexoes", "ctx", "extrato", "importacao", "painel", "sincronizacao"].sort(),
     );
     expect(await s.categorizacao.listarRegras(s.ctx)).toEqual([]);
     expect(await s.centrosDeCusto.listar(s.ctx)).toEqual([]);

@@ -10,7 +10,7 @@ export function paraConexao(linha: Tables<"conexoes">): Conexao {
   return {
     id: linha.id,
     empresaId: linha.empresa_id,
-    provedor: "pluggy",
+    provedor: linha.provedor as Conexao["provedor"],
     idExterno: linha.id_externo,
     banco: linha.banco,
     status: linha.status as StatusDaConexao,
@@ -41,7 +41,8 @@ export class RepositorioDeConexoesSupabase implements RepositorioDeConexoes {
     dados: DadosDaConexao,
     criadoPor: string | null,
   ) {
-    const existente = await this.buscarPorIdExterno(dados.idExterno);
+    const provedor = dados.provedor ?? "pluggy";
+    const existente = await this.buscarPorIdExterno(dados.idExterno, provedor);
     // Nunca muda a empresa de uma conexão existente (um upsert cego faria isso).
     if (existente && existente.empresaId !== empresaId)
       throw new ErroDeNegocio(
@@ -62,7 +63,7 @@ export class RepositorioDeConexoesSupabase implements RepositorioDeConexoes {
           .insert({
             ...colunas,
             empresa_id: empresaId,
-            provedor: "pluggy",
+            provedor,
             id_externo: dados.idExterno,
             criado_por: criadoPor,
           })
@@ -71,11 +72,14 @@ export class RepositorioDeConexoesSupabase implements RepositorioDeConexoes {
     return paraConexao(dadosOuFalha(resposta));
   }
 
-  async buscarPorIdExterno(idExterno: string) {
+  async buscarPorIdExterno(
+    idExterno: string,
+    provedor: Conexao["provedor"] = "pluggy",
+  ) {
     const { data, error } = await this.banco
       .from("conexoes")
       .select()
-      .eq("provedor", "pluggy")
+      .eq("provedor", provedor)
       .eq("id_externo", idExterno)
       .maybeSingle();
     if (error) throw falhaDoBanco(error);

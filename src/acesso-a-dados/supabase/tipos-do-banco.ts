@@ -25,17 +25,23 @@ export type Database = {
           Tables: {
             "anexos": {
                   Row: {
-                    "caminho": string,"criado_em": string,"empresa_id": string,"enviado_por": string | null,"id": string,"nome_arquivo": string,"tamanho_bytes": number,"tipo_mime": string,"transacao_id": string
+                    "caminho": string,"comprovante_id": string | null,"criado_em": string,"empresa_id": string,"enviado_por": string | null,"id": string,"nome_arquivo": string,"tamanho_bytes": number,"tipo_mime": string,"transacao_id": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "caminho": string,"criado_em"?: string,"empresa_id": string,"enviado_por"?: string | null,"id"?: string,"nome_arquivo": string,"tamanho_bytes": number,"tipo_mime": string,"transacao_id": string
+                    "caminho": string,"comprovante_id"?: string | null,"criado_em"?: string,"empresa_id": string,"enviado_por"?: string | null,"id"?: string,"nome_arquivo": string,"tamanho_bytes": number,"tipo_mime": string,"transacao_id"?: string | null
                   }
                   Update: {
-                    "caminho"?: string,"criado_em"?: string,"empresa_id"?: string,"enviado_por"?: string | null,"id"?: string,"nome_arquivo"?: string,"tamanho_bytes"?: number,"tipo_mime"?: string,"transacao_id"?: string
+                    "caminho"?: string,"comprovante_id"?: string | null,"criado_em"?: string,"empresa_id"?: string,"enviado_por"?: string | null,"id"?: string,"nome_arquivo"?: string,"tamanho_bytes"?: number,"tipo_mime"?: string,"transacao_id"?: string | null
                   }
                   Relationships: [
                     {
+      foreignKeyName: "anexos_comprovante_fkey"
+      columns: ["empresa_id","comprovante_id"]
+isOneToOne: true
+      referencedRelation: "comprovantes"
+      referencedColumns: ["empresa_id","id"]
+    },{
       foreignKeyName: "anexos_empresa_id_fkey"
       columns: ["empresa_id"]
 isOneToOne: false
@@ -87,6 +93,32 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "empresas"
       referencedColumns: ["id"]
+    }
+                  ]
+                },"comprovantes": {
+                  Row: {
+                    "atualizado_em": string,"campos_corrigidos": (string)[],"chave_de_acesso": string | null,"confianca": number | null,"criado_em": string,"data": string | null,"documento_emissor": string | null,"emissor": string | null,"empresa_id": string,"enviado_por": string | null,"erro": string | null,"id": string,"itens": NonNullable<Json>,"leituras_ia_em": (string)[],"situacao": string,"tipo": string | null,"transacao_id": string | null,"valor": number | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "atualizado_em"?: string,"campos_corrigidos"?: (string)[],"chave_de_acesso"?: string | null,"confianca"?: number | null,"criado_em"?: string,"data"?: string | null,"documento_emissor"?: string | null,"emissor"?: string | null,"empresa_id": string,"enviado_por"?: string | null,"erro"?: string | null,"id"?: string,"itens"?: NonNullable<Json>,"leituras_ia_em"?: (string)[],"situacao"?: string,"tipo"?: string | null,"transacao_id"?: string | null,"valor"?: number | null
+                  }
+                  Update: {
+                    "atualizado_em"?: string,"campos_corrigidos"?: (string)[],"chave_de_acesso"?: string | null,"confianca"?: number | null,"criado_em"?: string,"data"?: string | null,"documento_emissor"?: string | null,"emissor"?: string | null,"empresa_id"?: string,"enviado_por"?: string | null,"erro"?: string | null,"id"?: string,"itens"?: NonNullable<Json>,"leituras_ia_em"?: (string)[],"situacao"?: string,"tipo"?: string | null,"transacao_id"?: string | null,"valor"?: number | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "comprovantes_empresa_id_fkey"
+      columns: ["empresa_id"]
+isOneToOne: false
+      referencedRelation: "empresas"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "comprovantes_empresa_id_transacao_id_fkey"
+      columns: ["empresa_id","transacao_id"]
+isOneToOne: false
+      referencedRelation: "transacoes"
+      referencedColumns: ["empresa_id","id"]
     }
                   ]
                 },"conexoes": {
@@ -163,6 +195,38 @@ isOneToOne: false
                   Relationships: [
                     {
       foreignKeyName: "eventos_webhook_empresa_id_fkey"
+      columns: ["empresa_id"]
+isOneToOne: false
+      referencedRelation: "empresas"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"importacoes_de_extrato": {
+                  Row: {
+                    "atualizadas": number,"conexao_id": string,"conta_id": string,"criado_em": string,"empresa_id": string,"id": string,"nome_do_arquivo": string,"novas": number,"periodo_ate": string,"periodo_de": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "atualizadas"?: number,"conexao_id": string,"conta_id": string,"criado_em"?: string,"empresa_id": string,"id"?: string,"nome_do_arquivo": string,"novas"?: number,"periodo_ate": string,"periodo_de": string
+                  }
+                  Update: {
+                    "atualizadas"?: number,"conexao_id"?: string,"conta_id"?: string,"criado_em"?: string,"empresa_id"?: string,"id"?: string,"nome_do_arquivo"?: string,"novas"?: number,"periodo_ate"?: string,"periodo_de"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "importacoes_de_extrato_empresa_id_conexao_id_fkey"
+      columns: ["empresa_id","conexao_id"]
+isOneToOne: false
+      referencedRelation: "conexoes"
+      referencedColumns: ["empresa_id","id"]
+    },{
+      foreignKeyName: "importacoes_de_extrato_empresa_id_conta_id_fkey"
+      columns: ["empresa_id","conta_id"]
+isOneToOne: false
+      referencedRelation: "contas"
+      referencedColumns: ["empresa_id","id"]
+    },{
+      foreignKeyName: "importacoes_de_extrato_empresa_id_fkey"
       columns: ["empresa_id"]
 isOneToOne: false
       referencedRelation: "empresas"
@@ -294,11 +358,19 @@ isOneToOne: false
             "aplicar_categorizacao_automatica":
 { Args: { "p_empresa": string,"p_resultados": Json }; Returns: number
                            },
+"candidatos_para_conciliacao":
+{ Args: { "p_data": string,"p_empresa": string,"p_tolerancia_dias"?: number,"p_valor_centavos": number }; Returns: {
+              "contraparte": string,"data": string,"descricao": string,"id": string,"valor_centavos": number
+            }[]
+                           },
 "consumir_limite_de_requisicao":
 { Args: { "p_chave": string,"p_janela_segundos": number,"p_maximo": number }; Returns: boolean
                            },
 "garantir_empresa":
 { Args: { "p_nome": string }; Returns: string
+                           },
+"leituras_de_comprovante_desde":
+{ Args: { "p_desde": string,"p_empresa": string }; Returns: number
                            },
 "painel_fluxo_mensal":
 { Args: { "p_ate": string,"p_de": string,"p_empresa": string }; Returns: {

@@ -11,8 +11,12 @@ import { ErroDeNegocio, registrarFalha } from "../erros";
 import type { Anexo, ContextoDoUsuario, Id } from "../tipos";
 
 export interface ServicoDeAnexos {
-  /** Requer RECURSO_ANEXOS. Valida tipo (pelos bytes iniciais, não só pelo MIME declarado) e tamanho ≤ 10 MB. Rate limit 30/h. */
-  anexar(ctx: ContextoDoUsuario, transacaoId: Id, arquivo: File): Promise<Anexo>;
+  /** Requer RECURSO_ANEXOS. Valida tipo (pelos bytes iniciais, não só pelo MIME declarado) e tamanho ≤ 4 MB. Rate limit 30/h. */
+  anexar(
+    ctx: ContextoDoUsuario,
+    transacaoId: Id,
+    arquivo: File,
+  ): Promise<Anexo>;
   listar(ctx: ContextoDoUsuario, transacaoId: Id): Promise<Anexo[]>;
   /** URL assinada válida por 60 s. */
   gerarLinkTemporario(
@@ -22,7 +26,7 @@ export interface ServicoDeAnexos {
   remover(ctx: ContextoDoUsuario, anexoId: Id): Promise<void>;
 }
 
-export const TAMANHO_MAXIMO_DO_ANEXO = 10 * 1024 * 1024;
+export const TAMANHO_MAXIMO_DO_ANEXO = 4 * 1024 * 1024; // limite da Vercel: 4,5 MB por requisição
 export const VALIDADE_DO_LINK_EM_SEGUNDOS = 60;
 
 type TipoMime = Anexo["tipoMime"];
@@ -64,7 +68,7 @@ export function limparNomeDoArquivo(nome: string, tipo: TipoMime): string {
 const anexoInvalido = () =>
   new ErroDeNegocio(
     "anexo_invalido",
-    "Arquivo não permitido (PDF, JPG, PNG ou WEBP de até 10 MB).",
+    "Arquivo não permitido (PDF, JPG, PNG ou WEBP de até 4 MB).",
   );
 const naoEncontrado = (o: string) =>
   new ErroDeNegocio("nao_encontrado", `${o} não encontrado.`);
@@ -120,7 +124,8 @@ export function criarServicoDeAnexos(deps: {
       const bytes = new Uint8Array(await arquivo.slice(0, 16).arrayBuffer());
       const tipo = detectarTipo(bytes);
       // O MIME declarado, se veio, precisa bater com o conteúdo real.
-      if (!tipo || (arquivo.type && arquivo.type !== tipo)) throw anexoInvalido();
+      if (!tipo || (arquivo.type && arquivo.type !== tipo))
+        throw anexoInvalido();
 
       const caminho = `${ctx.empresaId}/${transacaoId}/${randomUUID()}.${EXTENSOES[tipo]}`;
       await deps.armazenamento.enviar(caminho, arquivo, tipo);
@@ -129,6 +134,7 @@ export function criarServicoDeAnexos(deps: {
           ctx.empresaId,
           {
             transacaoId,
+            comprovanteId: null,
             caminho,
             nomeArquivo: limparNomeDoArquivo(
               (arquivo as File).name ?? "",
@@ -167,6 +173,12 @@ export function criarServicoDeAnexos(deps: {
 
     async remover(ctx, anexoId) {
       const anexo = await exigirAnexo(ctx, anexoId);
+      // O arquivo de um comprovante sai junto com ele, na tela de Comprovantes.
+      if (anexo.comprovanteId)
+        throw new ErroDeNegocio(
+          "entrada_invalida",
+          "Esse arquivo é de um comprovante: remova-o na tela de Comprovantes.",
+        );
       await deps.anexos.remover(ctx.empresaId, anexo.id);
       await deps.armazenamento
         .remover([anexo.caminho])

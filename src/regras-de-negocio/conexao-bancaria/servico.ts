@@ -1,11 +1,7 @@
 import "server-only";
 import { z } from "zod";
 import type { RepositorioDeConexoes } from "@/acesso-a-dados/contratos";
-import {
-  exigirLimite,
-  LIMITES,
-  type ConsumirLimite,
-} from "../acesso";
+import { exigirLimite, LIMITES, type ConsumirLimite } from "../acesso";
 import { ErroDeNegocio, entradaInvalida } from "../erros";
 import type { Conexao, ContextoDoUsuario, Id } from "../tipos";
 import type { ProvedorBancario } from "./provedor-bancario";

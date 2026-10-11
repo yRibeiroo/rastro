@@ -48,7 +48,8 @@ const cabecalhosDeSeguranca = [
   {
     key: "Permissions-Policy",
     value:
-      "camera=(), microphone=(), geolocation=(), payment=(), usb=(), browsing-topics=()",
+      // camera=(self): fotografar comprovantes (ADR 0016).
+      "camera=(self), microphone=(), geolocation=(), payment=(), usb=(), browsing-topics=()",
   },
 ];
 
@@ -56,6 +57,10 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
   poweredByHeader: false,
+  experimental: {
+    // Comprovante até 4 MB + sobra do formulário. A Vercel recusa corpos acima de 4,5 MB.
+    serverActions: { bodySizeLimit: "4.5mb" },
+  },
   turbopack: {
     rules: {
       "*.css": {

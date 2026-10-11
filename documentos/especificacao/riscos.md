@@ -1,5 +1,7 @@
 # Análise de riscos — Rastro v1
 
+> Revisada em 10/10/2026 pela ADR 0016 (extrato OFX + comprovantes lidos por IA; Pluggy desligada por `RECURSO_OPEN_FINANCE`). Riscos ligados só à Pluggy foram rebaixados para probabilidade 1 enquanto a flag estiver desligada. Se a flag for ligada, voltam aos valores da coluna "Antes".
+
 ## Escalas
 
 | Nota | Probabilidade | Impacto |
@@ -17,36 +19,42 @@
 | P \ I | 1 | 2 | 3 | 4 | 5 |
 |---|---|---|---|---|---|
 | **5** | | | | | |
-| **4** | | | R-06 | R-02 | |
-| **3** | | R-11 | R-01, R-05b, R-12 | R-03, R-08, R-09 | |
-| **2** | | R-13 | R-05, R-07, R-10 | | R-04 |
-| **1** | | | | | R-14 |
+| **4** | | R-18 | R-06, R-15 | | |
+| **3** | | R-11 | R-05b, R-12, R-16, R-17 | R-08, R-09 | |
+| **2** | | R-13 | R-05, R-21 | R-20 | R-04 |
+| **1** | | | R-01, R-07, R-10 | R-03 | R-14 |
 
-(R-05b = erro de categorização pela IA, separado do custo da IA, R-05.)
+(R-05b = erro de categorização pela IA, separado do custo da IA, R-05. R-02 está encerrado e fora da matriz. Não há R-19: o id foi pulado para evitar confusão com versões de rascunho.)
 
 ## Registro de riscos
 
-| Id | Risco | P | I | Sev. | Mitigação | Gatilho / responsável |
-|---|---|---|---|---|---|---|
-| R-01 | **Consentimento Open Finance expira ou é revogado** (alguns conectores PJ impõem 1 ano). Os endpoints passam a devolver dados vazios e o extrato para sem aviso. | 3 | 3 | 9 | Gravar `consentExpiresAt` e o status do item. Aviso "Precisa reconectar" no cabeçalho a partir de 7 dias antes (RF-07). Reconexão com 1 clique pelo mesmo item, sem duplicar (RF-08). Mostrar "última sincronização" para deixar um atraso visível. | Status `LOGIN_ERROR`/`OUTDATED` ou expiração próxima. Davi reconecta. |
-| R-02 | **Custo da Pluggy em produção (mínimo de R$ 2.500/mês)** desproporcional para uma empresa usando internamente. Não há plano público para 1 conta. | 4 | 4 | **16** | v1 entregue e validada no **sandbox** (custo zero). Decisão D-03 explícita para o Davi: negociar plano de entrada, confirmar por escrito o uso do Meu Pluggy, usar OFX (Plano B, v1.1) ou tratar como investimento no SaaS. O adaptador `ProvedorBancario` deixa a troca de fonte barata. | Antes de conectar a conta real. Davi. |
-| R-03 | **Pluggy indisponível**, ou webhook perdido depois de responder 200 (a Pluggy não reenvia 2XX). | 3 | 4 | **12** | Estado do evento (`recebido/processado/falhou`) (RF-11). Novas tentativas com espera crescente nas chamadas (RNF-19). "Sincronizar agora" com janela de 90 dias (RF-30). Upsert idempotente (RNF-22). Mensagem de erro amigável no Connect. Contingência: OFX. | Eventos `falhou` ou "última sincronização" > 48 h. Equipe e Davi. |
-| R-04 | **Vazamento do Client Secret da Pluggy ou de outro segredo.** *Já aconteceu: o Client Secret apareceu num print.* Permite ler o extrato da empresa pela API. | 2 | 5 | 10 | **Gerar novo Client Secret antes de qualquer uso real** (`PARA-O-DAVI.md`). Segredos só no servidor (RNF-02). gitleaks no pre-commit e no CI (RNF-21). `.env.example` sem valores. Logs mascarados (RNF-06). Webhook com segredo próprio, trocável e registrado de novo pelo script (RF-29). Orientação: nunca tirar print do painel da Pluggy ou da Vercel com valores à mostra. | Qualquer suspeita de exposição. Trocar o segredo na hora. Davi. |
-| R-05 | **Custo da IA fora de controle** (laço de reclassificação, backfill grande, troca para um modelo mais caro). | 2 | 3 | 6 | Estimativa normal de ~US$ 3/mês (viabilidade §3.4). Teto mensal `IA_LIMITE_MENSAL` (RNF-23). Regras primeiro (RF-19). Nunca reclassificar a origem `usuario` (RF-15). Backfill pela Batch API (50% de desconto) se passar de 500 transações. Limite de gasto configurado no Console da Anthropic. | Consumo > 80% do teto. Equipe. |
-| R-05b | **IA categoriza errado**, distorcendo o painel e as decisões. | 3 | 3 | 9 | Saída estruturada restrita às categorias existentes. Confiança mínima de 0,6, senão "Sem categoria" (RF-20). Selo "sugerida pela IA" visível. Filtro "Sem categoria" e revisão. Correção que vira regra (RF-21). Regras iniciais para os padrões mais comuns (posto, tarifa, impostos). | Muitas correções numa mesma categoria. Davi revisa e a equipe ajusta o prompt. |
-| R-06 | **Limites do plano gratuito**: o Supabase Free pausa o projeto após 1 semana sem atividade e não tem backup. O e-mail padrão do Supabase entrega só para membros do time, com 2 por hora. A Vercel Hobby tem cota de CPU. | 4 | 3 | **12** | Supabase Pro (US$ 25) em produção com dados reais (D-02). SMTP próprio para o link mágico (P-08). Monitorar o uso. O volume do Rastro fica muito abaixo das cotas de execução. | Primeiro dado real. Davi assina. |
-| R-07 | **Mudança na API ou no SDK da Pluggy** (o conector Sicredi PJ antigo já foi descontinuado uma vez). | 2 | 3 | 6 | Usar o conector de **Open Finance**. Isolar no adaptador `ProvedorBancario`. Fixtures realistas nos testes de contrato. Fixar a versão do `pluggy-sdk`. | Falha nos testes de contrato ou aviso da Pluggy. Equipe. |
-| R-08 | **Uso comercial na Vercel Hobby** viola os termos (Fair Use Guidelines) e pode levar à suspensão do projeto. | 3 | 4 | **12** | D-01: produção com dados reais só no **Vercel Pro (US$ 20/mês)**. Hobby só para prévias de desenvolvimento. Item no `PARA-O-DAVI.md`. | Antes do go-live real. Davi. |
-| R-09 | **Vazamento de dados financeiros** por falha de RLS ou de autorização (exposição a terceiros, LGPD). | 3 | 4 | **12** | RLS em todas as tabelas, com teste de RLS de 2 Empresas no CI (RNF-01). `service_role` só no servidor, usada só no webhook. Allowlist de e-mail (RF-02). Bucket privado com URLs assinadas de 60 s (RNF-07). CSP e cabeçalhos (RNF-03). Revisão de segurança do QA a cada merge. | Falha no teste de RLS ou achado em revisão. Equipe. |
-| R-10 | **Webhook forjado** (injeção de transações falsas ou DoS) por ser um endpoint público. | 2 | 3 | 6 | Bearer secreto com comparação em tempo constante (RF-09). Rate limit (RNF-04). Zod (RNF-05). Nunca confiar no payload: sempre consultar a Pluggy, e só para itens conhecidos (RF-12, RF-13). | 401 em volume nos logs. Equipe. |
-| R-11 | **Animação ou orbes prejudicam o desempenho e a acessibilidade** (Lighthouse < 90). | 3 | 2 | 6 | A animação não bloqueia o carregamento (RF-04). `prefers-reduced-motion`. Lighthouse CI e axe obrigatórios (RNF-08, RNF-10). | CI vermelho. Designer e frontend. |
-| R-12 | **Erro de fuso ou de sinal** no painel (transação no mês errado, entrada contada como saída). | 3 | 3 | 9 | Toda agregação no fuso America/Araguaina (RNF-12). Regra de sinal testada (RF-14). Testes com transações perto da meia-noite e na virada do mês. | Divergência com o extrato do banco. QA. |
-| R-13 | **Link mágico não chega** (spam ou limite de envio) e o Davi fica sem acesso. | 2 | 2 | 4 | SMTP próprio com domínio verificado (SPF/DKIM). Mensagem orientando a olhar a caixa de spam. Acesso de emergência pelo painel do Supabase. | Reclamação do Davi. Equipe. |
-| R-14 | **Perda de dados** (exclusão acidental, corrupção) sem backup. | 1 | 5 | 5 | Supabase Pro com backup de 7 dias (D-02). Migrações versionadas. `transactions/deleted` apaga só por id e Empresa. Os dados podem ser buscados de novo na Pluggy (fonte primária). | Incidente. Equipe. |
+| Id | Risco | P | I | Sev. | Antes | Mitigação | Gatilho / responsável |
+|---|---|---|---|---|---|---|---|
+| R-01 | **Consentimento Open Finance expira ou é revogado.** *Condicionado a `RECURSO_OPEN_FINANCE`.* | 1 | 3 | 3 | 3×3 | Com a flag desligada não há consentimento. Se ligada: `consentExpiresAt`, aviso "Precisa reconectar" (RF-07), reconexão sem duplicar (RF-08). | Só se a flag for ligada. |
+| R-02 | **Custo da Pluggy em produção (mínimo de R$ 2.500/mês).** **Encerrado** pela ADR 0016: a v1 não usa a Pluggy (D-03 resolvida). | — | — | — | 4×4 | Pluggy desligada por flag (RF-45). Volta a ser avaliado só se o Rastro virar SaaS. | Decisão de ligar a flag. Davi. |
+| R-03 | **Pluggy indisponível ou webhook perdido.** *Condicionado a `RECURSO_OPEN_FINANCE`.* | 1 | 4 | 4 | 3×4 | Com a flag desligada, o webhook responde 404 e o cron não chama a Pluggy. Se ligada: RF-11, RF-30, RNF-19. | Só se a flag for ligada. |
+| R-04 | **Vazamento de segredo** (`ANTHROPIC_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`; o Client Secret da Pluggy já vazou num print). | 2 | 5 | 10 | 2×5 | Segredos só no servidor (RNF-02). gitleaks no pre-commit e no CI (RNF-21). Logs mascarados (RNF-06). **Revogar o Client Secret da Pluggy vazado** mesmo com a flag desligada. Limite de gasto no Console da Anthropic. Nunca tirar print de painéis com valores à mostra. | Qualquer suspeita de exposição. Trocar o segredo na hora. Davi. |
+| R-05 | **Custo da IA fora de controle** (laço de reclassificação, reenvio em massa de comprovantes, troca para modelo mais caro). | 2 | 3 | 6 | 2×3 | Estimativa normal ≈ US$ 7/mês (viabilidade §3.4). Tetos separados: `IA_LIMITE_MENSAL` (RNF-23) e `IA_LIMITE_COMPROVANTES_MES` (RNF-26). Imagem reduzida no navegador (P-34). Rate limit de envio (RNF-04). Limite de gasto no Console da Anthropic. | Consumo > 80% de um teto. Equipe. |
+| R-05b | **IA categoriza errado**, distorcendo o painel. | 3 | 3 | 9 | 3×3 | Saída restrita às categorias existentes, confiança mínima 0,6 (RF-20). Selo "sugerida pela IA". Correção vira regra (RF-21). Itens do comprovante como contexto extra (RF-43). | Muitas correções numa mesma categoria. Davi e equipe. |
+| R-06 | **Limites do plano gratuito** (Supabase Free pausa e não tem backup; e-mail padrão limitado; Hobby com cota). | 4 | 3 | **12** | 4×3 | Supabase Pro e Vercel Pro em produção (D-01, D-02). SMTP próprio (P-08). | Primeiro dado real. Davi assina. |
+| R-07 | **Mudança na API ou no SDK da Pluggy.** *Condicionado a `RECURSO_OPEN_FINANCE`.* | 1 | 3 | 3 | 2×3 | Adaptador `ProvedorBancario`, testes de contrato com fixtures, versão fixa do SDK. | Só se a flag for ligada. |
+| R-08 | **Uso comercial na Vercel Hobby** viola os termos. | 3 | 4 | **12** | 3×4 | D-01: produção com dados reais só no Vercel Pro. | Antes do go-live. Davi. |
+| R-09 | **Vazamento de dados financeiros** por falha de RLS ou de autorização (agora inclui imagens de comprovantes, com CPF/CNPJ e endereço). | 3 | 4 | **12** | 3×4 | RLS em todas as tabelas, incluindo `comprovantes` e `importacoes_de_extrato`, com teste de 2 Empresas no CI (RNF-01). Bucket privado, URL assinada de 60 s (RNF-07). A conciliação manual valida a Empresa da transação (RF-40). | Falha no teste de RLS. Equipe. |
+| R-10 | **Webhook forjado.** *Condicionado a `RECURSO_OPEN_FINANCE`.* | 1 | 3 | 3 | 2×3 | Com a flag desligada, o endpoint responde 404 (RF-45). Se ligada: RF-09, RNF-04, RNF-05. | Só se a flag for ligada. |
+| R-11 | **Animação ou orbes prejudicam desempenho e acessibilidade.** | 3 | 2 | 6 | 3×2 | `prefers-reduced-motion`, Lighthouse CI e axe (RNF-08, RNF-10). | CI vermelho. Designer e frontend. |
+| R-12 | **Erro de fuso ou de sinal** no painel. | 3 | 3 | 9 | 3×3 | Agregação em America/Araguaina (RNF-12). Datas do OFX com e sem fuso testadas (RNF-28). Sinal do `TRNAMT` testado (RF-31). | Divergência com o extrato do banco. QA. |
+| R-13 | **Link mágico não chega.** | 2 | 2 | 4 | 2×2 | SMTP próprio com SPF/DKIM. Acesso de emergência pelo painel do Supabase. | Reclamação do Davi. Equipe. |
+| R-14 | **Perda de dados** sem backup. | 1 | 5 | 5 | 1×5 | Supabase Pro com backup de 7 dias (D-02). Migrações versionadas. Reimportar os OFX recompõe as transações (upsert idempotente, RF-32); o Davi deve guardar os arquivos OFX baixados. | Incidente. Equipe. |
+| R-15 | **Davi esquece de importar o extrato** e o painel fica desatualizado sem ele perceber; decisões com números velhos. | 4 | 3 | **12** | novo | Aviso "Última importação há X dias" no cabeçalho e no painel, em destaque a partir de 7 dias (RF-34, P-33). Data do saldo exibida (RF-27). Comprovantes pendentes acumulando também denunciam o atraso (RF-42). Rotina semanal combinada com o Davi (P-41). | Aviso de 7 dias aceso. Davi importa. |
+| R-16 | **IA lê o valor (ou a data) errado** e o comprovante vai para a transação errada ou não concilia. | 3 | 3 | 9 | novo | Conciliação só por **valor exato** e ±3 dias (P-30): um valor lido errado tende a não conciliar, em vez de conciliar errado. Selo de confiança < 0,7 (P-36). Correção manual que reconcilia (RF-41). Desfazer conciliação (RF-40). Chave de acesso do QR prevalece (RF-37). Alerta de pendente (RF-42). | Muitas correções de valor. Equipe ajusta o prompt ou o modelo (P-45). |
+| R-17 | **Formato do OFX do Sicredi varia** (SGML x XML, codificação, fuso nas datas, vírgula decimal, `FITID` instável entre exportações). | 3 | 3 | 9 | novo | Leitor tolerante com suíte de fixtures (RNF-28). Erro claro `arquivo_invalido` sem gravar nada (RF-31, RF-32). Pedir ao Davi um OFX real anonimizado antes do go-live. Testar dois arquivos do mesmo período exportados em dias diferentes: se o `FITID` mudar (duplicaria), registrar ADR para chave alternativa (data + valor + descrição). | `arquivo_invalido` ou duplicatas visíveis. Equipe. |
+| R-18 | **Foto ruim** (tremida, cortada, papel térmico apagado, reflexo) gera leitura falha ou errada. | 4 | 2 | 8 | novo | `erro_de_leitura` com "Tentar ler de novo" e arquivo preservado (RF-36). Correção manual (RF-41). Orientação na tela de envio ("de frente, com boa luz, documento inteiro"). QR code lido no navegador para NFC-e (RF-37). Preferir o PDF original quando existir. | Taxa de `erro_de_leitura` > 20%. Davi e equipe. |
+| R-20 | **Dados pessoais no comprovante enviados à IA** (CPF, endereço, nomes de terceiros): transferência internacional (LGPD art. 33). | 2 | 4 | 8 | novo | Envio inevitável para ler (ADR 0016), registrado (P-40). Remoção de EXIF/GPS e redução da imagem (RNF-24). Nenhum outro dado vai junto. Documento mascarado na interface. A Anthropic informa não usar imagens da API para treino. | Antes de virar SaaS: DPA com a Anthropic. Davi. |
+| R-21 | **OFX de outra conta importado por engano** (conta pessoal do Davi, outra empresa) mistura dados. | 2 | 3 | 6 | novo | O resultado mostra banco e conta ••••1234 (RF-31). Conta nova cria registro separado e visível. Histórico de importações (RF-33). Desfazer importação fica fora da v1 (ver `fora-do-escopo.md`). | Conta inesperada no histórico. Davi. |
 
 ## Riscos de severidade alta (≥ 12): plano de ação
 
-1. **R-02 (custo da Pluggy):** decisão do Davi antes da conta real. A v1 não depende dela para ser entregue.
-2. **R-03 (Pluggy indisponível / webhook perdido):** RF-11, RF-30 e RNF-19 obrigatórios na v1.
-3. **R-06 e R-08 (planos gratuitos e Hobby comercial):** US$ 45/mês de infraestrutura recomendados no go-live real.
-4. **R-09 (vazamento por RLS):** teste de RLS com duas Empresas bloqueando o merge.
+1. **R-15 (extrato esquecido):** RF-34 obrigatório na v1. Combinar com o Davi um dia fixo na semana para importar.
+2. **R-06 e R-08 (planos gratuitos e Hobby comercial):** ≈ US$ 45/mês de infraestrutura no go-live real.
+3. **R-09 (vazamento por RLS):** teste de RLS com duas Empresas bloqueando o merge, incluindo `comprovantes`, `importacoes_de_extrato` e o Storage de comprovantes.
+4. **R-02 (custo da Pluggy):** encerrado pela ADR 0016.

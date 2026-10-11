@@ -5,9 +5,10 @@ import { useRef, useState, useTransition } from "react";
 import { Anuncio, Sucesso } from "@/componentes/estados/Estados";
 import { Icone } from "@/componentes/estrutura/Icone";
 import { botao } from "@/componentes/formulario/classes";
-import type { Anexo, Id, ResultadoDaAcao } from "@/componentes/prototipo/tipos-provisorios";
+import type { Anexo, Id, ResultadoDaAcao } from "@/regras-de-negocio";
 import { formatarDataHora } from "@/ferramentas-internas/formatar-data";
 import { Carregando } from "@/identidade-visual/Carregando";
+import { TAMANHO_MAXIMO_DO_ARQUIVO } from "@/componentes/comprovantes/comprovante";
 
 type Props = {
   transacaoId: Id;
@@ -18,7 +19,7 @@ type Props = {
 };
 
 const ACEITOS = "application/pdf,image/jpeg,image/png,image/webp";
-const LIMITE = 10 * 1024 * 1024;
+const LIMITE = TAMANHO_MAXIMO_DO_ARQUIVO;
 const tamanho = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 });
 const formatarTamanho = (b: number) => (b < 1024 * 1024 ? `${tamanho.format(b / 1024)} KB` : `${tamanho.format(b / 1024 / 1024)} MB`);
 
@@ -36,7 +37,7 @@ export function Anexos({ transacaoId, anexos, anexar, gerarLinkTemporario, remov
     setAviso(null);
     // Mesma regra do servidor, antes de gastar o envio. O servidor confere de novo.
     if (!ACEITOS.split(",").includes(arquivo.type) || arquivo.size > LIMITE)
-      return setAviso({ ok: false, texto: "Arquivo não permitido (PDF, JPG, PNG ou WEBP de até 10 MB)." });
+      return setAviso({ ok: false, texto: "Arquivo não permitido (PDF, JPG, PNG ou WEBP de até 4 MB)." });
     setEnviando(arquivo.name);
     const dados = new FormData();
     dados.set("arquivo", arquivo);
@@ -79,7 +80,7 @@ export function Anexos({ transacaoId, anexos, anexar, gerarLinkTemporario, remov
           <h2 id="anexos" className="text-xl font-semibold">
             Nota fiscal e comprovantes
           </h2>
-          <p className="text-sm text-texto-suave">Opcional. PDF, JPG, PNG ou WEBP de até 10 MB.</p>
+          <p className="text-sm text-texto-suave">Opcional. PDF, JPG, PNG ou WEBP de até 4 MB.</p>
         </div>
         <label className={`${botao.secundario} cursor-pointer has-focus-visible:outline-2 has-focus-visible:outline-foco`}>
           <Icone nome="clipe" className="size-4" />

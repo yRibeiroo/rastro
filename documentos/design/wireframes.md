@@ -2,7 +2,7 @@
 
 Mobile (360 px) primeiro, depois desktop (≥ 1024 px). Linguagem: **trilhas, não cartões**. Listas são linhas com divisória; o único "cartão" é o que flutua ou agrupa de verdade. `◌` = `<Carregando>` (thinking-orbs), `▒` = esqueleto, `╭─╮` = trilha decorativa, `[ ]` = botão, `( )` = chip.
 
-Navegação: mobile com barra inferior (Painel, Extrato, Categorias, Mais); desktop com trilho lateral estreito à esquerda (logo + 6 itens), conteúdo até 1152 px.
+Navegação: mobile com barra inferior (Painel, Extrato, Comprovantes, Importar, Mais → Categorias, Centros de custo e, só com `RECURSO_OPEN_FINANCE`, Conexões); desktop com trilho lateral à esquerda (logo + 6 itens, 7 com Open Finance), conteúdo até 1152 px. No rodapé do trilho e no topo do celular: "Última importação há X dias" (alerta acima de 7 dias).
 
 ---
 
@@ -162,7 +162,7 @@ MOBILE                                  DESKTOP
 
 ---
 
-## 6. Conexões bancárias (`/conexoes-bancarias`)
+## 6. Conexões bancárias (`/conexoes-bancarias`, só com `RECURSO_OPEN_FINANCE`)
 
 ```
 MOBILE                                  DESKTOP
@@ -186,3 +186,60 @@ MOBILE                                  DESKTOP
 | Vazio | Trilha pontilhada até o ícone do banco: "Nenhum banco conectado. A conexão é feita pelo Open Finance: o Rastro só lê o extrato, nunca movimenta dinheiro." `[Conectar banco]` + "Importar OFX". |
 | Erro | Cartão com status `alerta` "Precisa reconectar: a autorização expirou." `[Reconectar]`. Erro do widget: faixa com o motivo legível e `[Tentar de novo]`. |
 | Sucesso | "Sicredi conectado. Buscando as transações dos últimos 90 dias." (aria-live) e o cartão aparece com status "Conectado agora". |
+
+---
+
+## 7. Importar extrato (`/importar`)
+
+```
+MOBILE                                  DESKTOP
+┌──────────────────────────┐            ┌──┬──────────────────────────────────────┬─────────────────┐
+│ Importar extrato         │            │R │ Importar extrato                     │ Como exportar   │
+│ Envie o OFX do Sicredi…  │            │  │ ┌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┐ │ do Sicredi      │
+│ ┌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┐ │            │  │ ╎   [⤓ Escolher arquivo OFX]       ╎ │ 1. Internet     │
+│ ╎[⤓ Escolher arquivo OFX]╎│            │  │ ╎ ou arraste o arquivo .ofx p/ cá  ╎ │    Banking PJ   │
+│ └╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┘ │            │  │ └╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┘ │ 2. Extrato      │
+│ 37 novas  4 atualizadas  │            │  │ Extrato de 01/10 a 09/10 importado.  │ 3. Período      │
+│ 2 comprovantes concil.   │            │  │ 37 novas · 4 atualizadas · 2 compr.  │ 4. Exportar OFX │
+│ [Ver no extrato]         │            │  │ [Ver no extrato] Enviar comprovantes │ 5. Envie aqui   │
+│ Histórico                │            │  │ Histórico                            │                 │
+│ Última importação hoje   │            │  │ 01/10 a 09/10  extrato.ofx  37 novas │                 │
+│ 01/10 a 09/10 · 37 novas │            │  │ 24/09 a 30/09  …                     │                 │
+│ Como exportar do Sicredi │            │  │                                      │                 │
+└──────────────────────────┘            └──┴──────────────────────────────────────┴─────────────────┘
+```
+
+| Estado | O que aparece |
+|---|---|
+| Carregando | Envio: `◌ sincronizando` "Importando extrato.ofx". Histórico: `◌ sincronizando` "Carregando as importações". |
+| Vazio | Histórico: "Nenhuma importação ainda" com a trilha pontilhada; a área de envio e as instruções continuam visíveis. |
+| Erro | Arquivo inválido ou acima de 5 MB: faixa "Não importamos" + motivo. Histórico indisponível: bloco de erro com (Tentar de novo). |
+| Sucesso | Bloco com novas, atualizadas, comprovantes conciliados e período; o rastro sai da área do arquivo até o número de novas (só opacidade com movimento reduzido). |
+
+## 8. Comprovantes (`/comprovantes`)
+
+```
+MOBILE                                  DESKTOP
+┌──────────────────────────┐            ┌──┬────────────────────────────────────────────────────────┐
+│ Comprovantes             │            │R │ Comprovantes                                           │
+│ ┌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┐ │            │  │ ┌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┐ │
+│ ╎ [Enviar comprovante]   ╎ │            │  │ ╎    [Enviar comprovante]  arraste a foto ou o PDF   ╎ │
+│ ╎ [Escolher arquivo]     ╎ │            │  │ └╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┘ │
+│ └╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┘ │            │  │ (Todos)(Conciliado)(Pendente)(Escolher transação)(Erro)│
+│ (Todos)(Conciliado)(…)   │            │  │ ┌──┐ NFC-e de 08/10                     R$ 286,40       │
+│ ┌──┐ Pix de 08/10        │            │  │ │▒▒│ Posto Tocantins · **.345.678/0001-** ● Conciliado  │
+│ │▒▒│ R$ 1.200,00         │            │  │ └──┘ ▸ 3 itens                                         │
+│ └──┘ Fulano · ***.456.…  │            │  │      [Abrir transação] Corrigir dados  Remover         │
+│ ● Escolher transação     │            │  │ ┌──┐ Pix de 07/10                     R$ 1.200,00      │
+│ ○ Pix · 07/10 −R$1.200   │            │  │ │▒▒│ Fulano ● Escolher transação                       │
+│ ○ Pix · 09/10 −R$1.200   │            │  │ └──┘ ○ PIX ENVIADO 07/10 ○ PIX ENVIADO 09/10 [Ligar]   │
+│ [Ligar à transação]      │            │  │                                                        │
+└──────────────────────────┘            └──┴────────────────────────────────────────────────────────┘
+```
+
+| Estado | O que aparece |
+|---|---|
+| Carregando | Envio: `◌ categorizando` "Lendo o comprovante" (QR, redução e leitura pela IA). Lista: `◌ categorizando` "Carregando os comprovantes". Item ainda em leitura: `◌ inline`. |
+| Vazio | "Nenhum comprovante enviado" com o que pode ser enviado; com filtro: "Nenhum comprovante em …" + (Ver todos). |
+| Erro | Envio recusado (tipo, tamanho, limite): faixa "Não enviamos". Lista indisponível: bloco com (Tentar de novo). Item em `erro_de_leitura`: faixa vermelha suave + (Preencher dados). Confiança < 0,7: selo "Confira os dados lidos". |
+| Sucesso | Mensagem por situação (conciliado, pendente, ambíguo) em aria-live + (Abrir transação). No detalhe da transação (`/extrato/[id]`): seção "Comprovante" com miniatura, emissor mascarado, chave de acesso e tabela de itens. |

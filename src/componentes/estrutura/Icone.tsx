@@ -19,6 +19,8 @@ const TRACOS = {
   fechar: "M5 5l10 10M15 5L5 15",
   subir: "M10 15.5v-11M5.5 9L10 4.5 14.5 9",
   abrir: "M11 4h5v5M16 4l-7 7M14 12v4H4V6h4",
+  comprovante: "M3 6.5h3l1.5-2h5L14 6.5h3v9.5H3zM10 13.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z",
+  importar: "M10 3.5v9M6 8.5l4 4 4-4M3.5 13v3.5h13V13",
 } as const;
 
 export type NomeDoIcone = keyof typeof TRACOS;

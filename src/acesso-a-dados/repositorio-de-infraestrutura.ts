@@ -12,9 +12,7 @@ import { dadosOuFalha, falhaDoBanco } from "./erros-do-banco";
 import type { ClienteDoBanco } from "./supabase/cliente-do-usuario";
 
 /** eventos_webhook: só service role. */
-export class RepositorioDeEventosDeWebhookSupabase
-  implements RepositorioDeEventosDeWebhook
-{
+export class RepositorioDeEventosDeWebhookSupabase implements RepositorioDeEventosDeWebhook {
   constructor(private readonly banco: ClienteDoBanco) {}
 
   async registrar(

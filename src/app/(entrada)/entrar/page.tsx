@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { FormularioDeEntrada } from "@/componentes/entrada/FormularioDeEntrada";
 import { LinhaTrilha } from "@/componentes/estrutura/CabecalhoDaPagina";
-import { enviarLinkMagico } from "@/componentes/prototipo/acoes-simuladas";
+import { enviarLinkMagico } from "@/regras-de-negocio/interface-web/acoes";
 import { LogoRastro } from "@/identidade-visual/LogoRastro";
 import { caminhoDaTrilha } from "@/identidade-visual/rastro-movimento";
 
@@ -12,10 +12,12 @@ const AVISOS: Record<string, string> = {
   link_expirado: "Este link expirou ou já foi usado. Peça um novo.",
 };
 
-// Lê ?estado (protótipo) e ?erro (callback do link) dentro do Suspense: o resto é shell estático.
+// Lê ?estado (desenvolvimento) e ?erro (callback do link) dentro do Suspense: o resto é shell estático.
 async function Formulario({ searchParams }: Pick<PageProps<"/entrar">, "searchParams">) {
   const { estado, erro } = await searchParams;
-  const forcar = estado === "carregando" || estado === "erro" || estado === "enviado" ? estado : null;
+  // ?estado= só em desenvolvimento, para revisar os estados da tela.
+  const forcar =
+    process.env.NODE_ENV !== "production" && (estado === "carregando" || estado === "erro" || estado === "enviado") ? estado : null;
   return <FormularioDeEntrada enviar={enviarLinkMagico} forcar={forcar} avisoInicial={typeof erro === "string" ? (AVISOS[erro] ?? null) : null} />;
 }
 

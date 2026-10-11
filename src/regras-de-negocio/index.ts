@@ -7,3 +7,8 @@ export type { FiltrosDoExtrato, PaginaDoExtrato } from "./extrato";
 export type { NovaRegra, SugestaoDeRegra } from "./categorizacao";
 export type { PeriodoDoPainel, ResumoDoPainel } from "./painel";
 export type { ServicosDoUsuario } from "./montagem";
+export type {
+  ResultadoDaImportacao,
+  SituacaoDoExtrato,
+} from "./importacao-de-extrato";
+export type { CandidatoAConciliacao } from "./comprovantes";

@@ -1,4 +1,4 @@
-import type { Conexao } from "@/componentes/prototipo/tipos-provisorios";
+import type { Conexao } from "@/regras-de-negocio";
 
 /** Os quatro rótulos do RF-07, com o detalhe do glossário quando ajuda. */
 export type Situacao = {

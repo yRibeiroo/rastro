@@ -18,6 +18,9 @@ function segredoDoWebhook(): string | undefined {
 }
 
 export async function POST(requisicao: Request) {
+  // RF-45: Open Finance desligado → 404, sem ler o corpo nem conferir o segredo.
+  if (!ambiente.RECURSO_OPEN_FINANCE)
+    return Response.json({ erro: "não encontrado" }, { status: 404 });
   // 401 não é reenviado pela Pluggy; sem detalhes na resposta.
   if (
     !webhookAutorizado(

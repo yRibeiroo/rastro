@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { Anuncio, Erro, Sucesso } from "@/componentes/estados/Estados";
 import { botao } from "@/componentes/formulario/classes";
-import type { Conexao, Id, ResultadoDaAcao } from "@/componentes/prototipo/tipos-provisorios";
+import type { Conexao, Id, ResultadoDaAcao } from "@/regras-de-negocio";
 import { Carregando } from "@/identidade-visual/Carregando";
 
 // O widget (iframe da Pluggy) só existe no navegador e só baixa quando alguém clica.
@@ -20,8 +20,6 @@ type Props = {
   reconectar?: { conexaoId: Id; idExterno: string };
   /** Só com PLUGGY_INCLUIR_SANDBOX=true. */
   incluirSandbox?: boolean;
-  /** Protótipo: a ação simulada não abre o widget, só mostra o estado "conectando". */
-  simulado?: boolean;
   variante?: keyof typeof botao;
 };
 
@@ -37,7 +35,7 @@ type Estado =
  * Conectar ou reconectar o banco pelo Pluggy Connect (RF-05 a RF-08). Porte de
  * prototipo-flask/OpenFinanceConnect.tsx: o navegador só recebe o Connect Token de curta duração.
  */
-export function BotaoConectarBanco({ iniciarConexao, registrarConexao, reconectar, incluirSandbox = false, simulado = false, variante }: Props) {
+export function BotaoConectarBanco({ iniciarConexao, registrarConexao, reconectar, incluirSandbox = false, variante }: Props) {
   const router = useRouter();
   const [, iniciar] = useTransition();
   const [estado, setEstado] = useState<Estado>({ tipo: "parado" });
@@ -47,7 +45,7 @@ export function BotaoConectarBanco({ iniciarConexao, registrarConexao, reconecta
     setEstado({ tipo: "preparando" });
     const r = await iniciarConexao(reconectar ? { conexaoIdParaReconectar: reconectar.conexaoId } : undefined);
     if (!r.ok) return setEstado({ tipo: "erro", mensagem: "Não foi possível iniciar a conexão com o banco. Tente de novo em instantes." });
-    setEstado(simulado ? { tipo: "conectando" } : { tipo: "widget", token: r.dados.token });
+    setEstado({ tipo: "widget", token: r.dados.token });
   }
 
   async function aoConectar(idExterno: string) {
@@ -85,10 +83,7 @@ export function BotaoConectarBanco({ iniciarConexao, registrarConexao, reconecta
       )}
 
       {estado.tipo === "conectando" && (
-        <div className="grid gap-1">
-          <Carregando contexto="conectando" tamanho="inline" rotulo="Conectando ao banco" />
-          {simulado && <p className="text-xs text-texto-suave">Protótipo: aqui abriria o widget da Pluggy para autorizar no app do Sicredi.</p>}
-        </div>
+        <Carregando contexto="conectando" tamanho="inline" rotulo="Conectando ao banco" />
       )}
 
       <Anuncio className="w-full empty:hidden">

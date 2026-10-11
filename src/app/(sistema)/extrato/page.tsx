@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { unstable_rethrow } from "next/navigation";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { Erro, Vazio } from "@/componentes/estados/Estados";
 import { lerEstadoForcado } from "@/componentes/estados/estado-forcado";
@@ -9,9 +11,21 @@ import { FiltrosDoExtrato } from "@/componentes/extrato/FiltrosDoExtrato";
 import { lerFiltros } from "@/componentes/extrato/filtros-da-url";
 import { ListaDoExtrato } from "@/componentes/extrato/ListaDoExtrato";
 import { botao } from "@/componentes/formulario/classes";
-import { corrigirCategoria, criarRegra, sincronizarAgora } from "@/componentes/prototipo/acoes-simuladas";
-import { idsComAnexo, listarCategorias, listarCentrosDeCusto, listarConexoes, listarTransacoes } from "@/componentes/prototipo/fonte-de-dados";
+import { carregarCategoriasERegras, carregarCentrosDeCusto, carregarComprovantes, carregarConexoes, carregarExtrato, carregarRecursos } from "@/regras-de-negocio/interface-web";
+import { corrigirCategoria, criarRegra, sincronizarAgora } from "@/regras-de-negocio/interface-web/acoes";
+import { Icone } from "@/componentes/estrutura/Icone";
 import { Carregando } from "@/identidade-visual/Carregando";
+
+/** Parâmetros de texto da URL atual (sem o cursor), para montar os links de página. */
+function textos(sp: Record<string, string | string[] | undefined>): Record<string, string> {
+  return Object.fromEntries(Object.entries(sp).filter((e): e is [string, string] => typeof e[1] === "string" && e[0] !== "cursor"));
+}
+
+// ponytail: o clipe marca as transações com comprovante conciliado; anexos manuais não entram (falta uma leitura em lote no backend).
+async function idsComComprovante(): Promise<string[]> {
+  const conciliados = await carregarComprovantes({ situacao: "conciliado" });
+  return conciliados.flatMap((c) => (c.transacaoId ? [c.transacaoId] : []));
+}
 
 export const metadata: Metadata = { title: "Extrato" };
 
@@ -29,24 +43,29 @@ export default function Extrato({ searchParams }: PageProps<"/extrato">) {
 }
 
 async function ConteudoDoExtrato({ searchParams }: Pick<PageProps<"/extrato">, "searchParams">) {
+  // Dados por requisição (sessão e relógio): fora do shell e do prefetch.
+  await connection();
   const sp = await searchParams;
   const forcado = lerEstadoForcado(sp.estado);
   if (forcado === "carregando") return carregando;
 
   const { filtros, periodo, valores, ativos } = lerFiltros(sp);
+  const cursor = typeof sp.cursor === "string" ? sp.cursor : undefined;
 
   let dados;
   try {
     if (forcado === "erro") throw new Error("forçado");
-    const [conexoes, pagina, categorias, centros, anexos] = await Promise.all([
-      listarConexoes(),
-      listarTransacoes(filtros),
-      listarCategorias({ incluirArquivadas: true }),
-      listarCentrosDeCusto({ incluirArquivados: true }),
-      idsComAnexo(),
+    const [conexoes, { openFinance }, pagina, { categorias }, centros, anexos] = await Promise.all([
+      carregarConexoes(),
+      carregarRecursos(),
+      carregarExtrato({ ...filtros, cursor, limite: 100 }),
+      carregarCategoriasERegras(),
+      carregarCentrosDeCusto({ incluirArquivados: true }),
+      idsComComprovante(),
     ]);
-    dados = { conexoes, pagina, categorias, centros, anexos };
-  } catch {
+    dados = { conexoes, openFinance, pagina, categorias, centros, anexos };
+  } catch (erro) {
+    unstable_rethrow(erro);
     return (
       <Erro
         titulo="Não foi possível carregar o extrato"
@@ -60,9 +79,10 @@ async function ConteudoDoExtrato({ searchParams }: Pick<PageProps<"/extrato">, "
     );
   }
 
-  const { conexoes, pagina, categorias, centros, anexos } = dados;
-  if (forcado === "vazio" || conexoes.length === 0)
-    return (
+  const { conexoes, openFinance, pagina, categorias, centros, anexos } = dados;
+  const conexao = conexoes.find((c) => (openFinance ? c.provedor === "pluggy" : c.provedor !== "pluggy"));
+  if (forcado === "vazio" || !conexao)
+    return openFinance ? (
       <Vazio
         titulo="Nenhum banco conectado ainda"
         descricao="Conecte a conta do Sicredi e as transações chegam aqui sozinhas, já categorizadas."
@@ -72,9 +92,19 @@ async function ConteudoDoExtrato({ searchParams }: Pick<PageProps<"/extrato">, "
           </Link>
         }
       />
+    ) : (
+      <Vazio
+        titulo="Nenhum extrato importado ainda"
+        descricao="Exporte o extrato em OFX no Internet Banking do Sicredi e envie aqui. As transações entram já categorizadas."
+        acao={
+          <Link href="/importar" className={botao.primario}>
+            Importar extrato
+          </Link>
+        }
+      />
     );
 
-  const conexao = conexoes[0];
+  const proxima = pagina.proximoCursor ? new URLSearchParams({ ...textos(sp), cursor: pagina.proximoCursor }).toString() : null;
   return (
     <div className="grid gap-6 pb-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -82,7 +112,14 @@ async function ConteudoDoExtrato({ searchParams }: Pick<PageProps<"/extrato">, "
           <span className="valor-monetario font-medium text-texto">{pagina.itens.length}</span>{" "}
           {pagina.itens.length === 1 ? "transação" : "transações"}
         </p>
-        <BotaoSincronizar conexaoId={conexao.id} banco={conexao.banco} sincronizar={sincronizarAgora} />
+        {openFinance ? (
+          <BotaoSincronizar conexaoId={conexao.id} banco={conexao.banco} sincronizar={sincronizarAgora} />
+        ) : (
+          <Link href="/importar" className={botao.secundario}>
+            <Icone nome="importar" className="size-4" />
+            Importar extrato
+          </Link>
+        )}
       </div>
       <FiltrosDoExtrato periodo={periodo} valores={valores} ativos={ativos} categorias={categorias} centros={centros} />
       {pagina.itens.length === 0 ? (
@@ -104,6 +141,20 @@ async function ConteudoDoExtrato({ searchParams }: Pick<PageProps<"/extrato">, "
           corrigirCategoria={corrigirCategoria}
           criarRegra={criarRegra}
         />
+      )}
+      {(cursor || proxima) && (
+        <nav aria-label="Páginas do extrato" className="flex flex-wrap gap-3">
+          {cursor && (
+            <Link href={`/extrato?${new URLSearchParams(textos(sp))}`} className={botao.fantasma}>
+              Voltar ao início
+            </Link>
+          )}
+          {proxima && (
+            <Link href={`/extrato?${proxima}`} className={botao.secundario}>
+              Transações mais antigas
+            </Link>
+          )}
+        </nav>
       )}
     </div>
   );

@@ -285,3 +285,13 @@ describe("sincronizarConexao, ressincronizarTodas e sincronizarAgora", () => {
     await expect(m.servico.sincronizarAgora(ctx, conexao.id)).resolves.toEqual({ transacoesGravadas: 0 });
   });
 });
+
+describe("conexão 'arquivo' (extrato importado, ADR 0016)", () => {
+  it("o cron ignora e o 'Sincronizar agora' recusa: não há o que buscar na Pluggy", async () => {
+    const arquivo = umaConexao({ provedor: "arquivo", idExterno: EMPRESA });
+    const m = montar({ conexoes: [arquivo] });
+    expect(await m.servico.ressincronizarTodas()).toEqual({ conexoes: 0, falhas: 0 });
+    expect(m.provedor.obterConexao).not.toHaveBeenCalled();
+    await expect(m.servico.sincronizarAgora(ctx, arquivo.id)).rejects.toMatchObject({ codigo: "conexao_nao_encontrada" });
+  });
+});

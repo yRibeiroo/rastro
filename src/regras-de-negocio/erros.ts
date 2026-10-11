@@ -12,7 +12,9 @@ export type CodigoDeErro =
   | "provedor_indisponivel" // Pluggy fora ou erro 5xx
   | "classificador_indisponivel"
   | "recurso_desligado" // feature flag
-  | "anexo_invalido";
+  | "anexo_invalido"
+  | "arquivo_invalido" // extrato/comprovante ilegível ou fora do formato
+  | "comprovante_duplicado"; // mesma chave de acesso já enviada
 
 export class ErroDeNegocio extends Error {
   constructor(
@@ -33,7 +35,8 @@ export type ResultadoDaAcao<T> =
       erro: { codigo: CodigoDeErro | "inesperado"; mensagem: string };
     };
 
-export const MENSAGEM_INESPERADA = "Algo deu errado. Tente de novo em instantes.";
+export const MENSAGEM_INESPERADA =
+  "Algo deu errado. Tente de novo em instantes.";
 
 /** Atalho para a validação de entrada (Zod) nos serviços. */
 export function entradaInvalida(

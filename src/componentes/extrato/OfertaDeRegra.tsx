@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { botao, campo } from "@/componentes/formulario/classes";
-import type { NovaRegra, Regra, ResultadoDaAcao, SugestaoDeRegra } from "@/componentes/prototipo/tipos-provisorios";
+import type { NovaRegra, Regra, ResultadoDaAcao, SugestaoDeRegra } from "@/regras-de-negocio";
 import { Carregando } from "@/identidade-visual/Carregando";
 
 export type CriarRegra = (dados: NovaRegra) => Promise<ResultadoDaAcao<{ regra: Regra; transacoesAlteradas: number }>>;

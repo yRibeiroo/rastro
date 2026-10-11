@@ -5,7 +5,7 @@ import { useState, useTransition } from "react";
 import { Anuncio, Sucesso } from "@/componentes/estados/Estados";
 import { Icone } from "@/componentes/estrutura/Icone";
 import { botao, campo, mensagemDeErro, rotulo } from "@/componentes/formulario/classes";
-import type { Categoria, CentroDeCusto, Id, NovaRegra, Regra, ResultadoDaAcao } from "@/componentes/prototipo/tipos-provisorios";
+import type { Categoria, CentroDeCusto, Id, NovaRegra, Regra, ResultadoDaAcao } from "@/regras-de-negocio";
 import { Carregando } from "@/identidade-visual/Carregando";
 
 type EdicaoDeRegra = Partial<Pick<Regra, "padrao" | "campo" | "prioridade" | "categoriaId" | "centroDeCustoId" | "ativa">>;

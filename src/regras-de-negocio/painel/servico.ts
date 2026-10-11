@@ -69,14 +69,19 @@ export function criarServicoDoPainel(deps: {
       if (!r.success)
         throw entradaInvalida("Escolha um período de até 24 meses.");
       const periodo = { de: r.data.de, ate: r.data.ate };
-      const [fluxoMensal, gastosPorCategoria, resultadoPorCentroDeCusto, saldo, semCategoria] =
-        await Promise.all([
-          deps.painel.fluxoMensal(ctx.empresaId, periodo),
-          deps.painel.gastosPorCategoria(ctx.empresaId, periodo),
-          deps.painel.resultadoPorCentroDeCusto(ctx.empresaId, periodo),
-          deps.contas.obterSaldoTotal(ctx.empresaId),
-          deps.transacoes.contarSemCategoria(ctx.empresaId, periodo),
-        ]);
+      const [
+        fluxoMensal,
+        gastosPorCategoria,
+        resultadoPorCentroDeCusto,
+        saldo,
+        semCategoria,
+      ] = await Promise.all([
+        deps.painel.fluxoMensal(ctx.empresaId, periodo),
+        deps.painel.gastosPorCategoria(ctx.empresaId, periodo),
+        deps.painel.resultadoPorCentroDeCusto(ctx.empresaId, periodo),
+        deps.contas.obterSaldoTotal(ctx.empresaId),
+        deps.transacoes.contarSemCategoria(ctx.empresaId, periodo),
+      ]);
       return {
         periodo,
         saldoAtualCentavos: saldo.saldoCentavos,

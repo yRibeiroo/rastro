@@ -1,9 +1,6 @@
 import "server-only";
 import type { Anexo } from "@/regras-de-negocio/tipos";
-import type {
-  ArmazenamentoDeArquivos,
-  RepositorioDeAnexos,
-} from "./contratos";
+import type { ArmazenamentoDeArquivos, RepositorioDeAnexos } from "./contratos";
 import { dadosOuFalha, falhaDoBanco } from "./erros-do-banco";
 import type { ClienteDoBanco } from "./supabase/cliente-do-usuario";
 import type { Tables } from "./supabase/tipos-do-banco";
@@ -15,6 +12,7 @@ export function paraAnexo(linha: Tables<"anexos">): Anexo {
     id: linha.id,
     empresaId: linha.empresa_id,
     transacaoId: linha.transacao_id,
+    comprovanteId: linha.comprovante_id,
     caminho: linha.caminho,
     nomeArquivo: linha.nome_arquivo,
     tipoMime: linha.tipo_mime as Anexo["tipoMime"],
@@ -37,6 +35,7 @@ export class RepositorioDeAnexosSupabase implements RepositorioDeAnexos {
         .insert({
           empresa_id: empresaId,
           transacao_id: dados.transacaoId,
+          comprovante_id: dados.comprovanteId,
           caminho: dados.caminho,
           nome_arquivo: dados.nomeArquivo,
           tipo_mime: dados.tipoMime,
@@ -49,15 +48,36 @@ export class RepositorioDeAnexosSupabase implements RepositorioDeAnexos {
     return paraAnexo(linha);
   }
 
+  /** Anexos da transação + arquivos dos comprovantes conciliados com ela (ADR 0016). */
   async listar(empresaId: string, transacaoId: string) {
-    return dadosOuFalha(
+    const comprovantes = dadosOuFalha(
       await this.banco
-        .from("anexos")
-        .select()
+        .from("comprovantes")
+        .select("id")
         .eq("empresa_id", empresaId)
-        .eq("transacao_id", transacaoId)
-        .order("criado_em"),
-    ).map(paraAnexo);
+        .eq("transacao_id", transacaoId),
+    ).map((c) => c.id);
+    let consulta = this.banco
+      .from("anexos")
+      .select()
+      .eq("empresa_id", empresaId);
+    consulta = comprovantes.length
+      ? consulta.or(
+          `transacao_id.eq.${transacaoId},comprovante_id.in.(${comprovantes.join(",")})`,
+        )
+      : consulta.eq("transacao_id", transacaoId);
+    return dadosOuFalha(await consulta.order("criado_em")).map(paraAnexo);
+  }
+
+  async buscarPorComprovante(empresaId: string, comprovanteId: string) {
+    const { data, error } = await this.banco
+      .from("anexos")
+      .select()
+      .eq("empresa_id", empresaId)
+      .eq("comprovante_id", comprovanteId)
+      .maybeSingle();
+    if (error) throw falhaDoBanco(error);
+    return data ? paraAnexo(data) : null;
   }
 
   async buscarPorId(empresaId: string, anexoId: string) {
@@ -97,8 +117,17 @@ export class ArmazenamentoDeArquivosSupabase implements ArmazenamentoDeArquivos 
     if (error) throw falhaDoBanco({ code: "storage" });
   }
 
+  async baixar(caminho: string) {
+    const { data, error } = await this.bucket.download(caminho);
+    if (error || !data) throw falhaDoBanco({ code: "storage" });
+    return new Uint8Array(await data.arrayBuffer());
+  }
+
   async gerarUrlAssinada(caminho: string, segundos: number) {
-    const { data, error } = await this.bucket.createSignedUrl(caminho, segundos);
+    const { data, error } = await this.bucket.createSignedUrl(
+      caminho,
+      segundos,
+    );
     if (error || !data) throw falhaDoBanco({ code: "storage" });
     return data.signedUrl;
   }

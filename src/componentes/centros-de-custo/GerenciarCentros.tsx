@@ -5,7 +5,7 @@ import { useState, useTransition } from "react";
 import { Anuncio, Sucesso } from "@/componentes/estados/Estados";
 import { Icone } from "@/componentes/estrutura/Icone";
 import { botao, campo, mensagemDeErro, rotulo } from "@/componentes/formulario/classes";
-import type { CentroDeCusto, Id, ResultadoDaAcao } from "@/componentes/prototipo/tipos-provisorios";
+import type { CentroDeCusto, Id, ResultadoDaAcao } from "@/regras-de-negocio";
 import { Carregando } from "@/identidade-visual/Carregando";
 
 export type AtualizarCentro = (id: Id, dados: Partial<Pick<CentroDeCusto, "nome" | "arquivado">>) => Promise<ResultadoDaAcao<CentroDeCusto>>;

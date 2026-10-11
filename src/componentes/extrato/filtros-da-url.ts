@@ -1,4 +1,4 @@
-import type { DataISO, FiltrosDoExtrato } from "@/componentes/prototipo/tipos-provisorios";
+import type { DataISO, FiltrosDoExtrato } from "@/regras-de-negocio";
 import { hojeISO, somarDias } from "@/ferramentas-internas/formatar-data";
 
 /**

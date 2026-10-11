@@ -13,11 +13,13 @@ type Item = { href: string; rotulo: string; curto: string; icone: NomeDoIcone };
 const ITENS: Item[] = [
   { href: "/painel", rotulo: "Painel", curto: "Painel", icone: "painel" },
   { href: "/extrato", rotulo: "Extrato", curto: "Extrato", icone: "extrato" },
+  { href: "/comprovantes", rotulo: "Comprovantes", curto: "Comprovantes", icone: "comprovante" },
+  { href: "/importar", rotulo: "Importar", curto: "Importar", icone: "importar" },
   { href: "/categorias", rotulo: "Categorias", curto: "Categorias", icone: "categorias" },
   { href: "/centros-de-custo", rotulo: "Centros de custo", curto: "Centros", icone: "centros" },
-  { href: "/conexoes-bancarias", rotulo: "Conexões bancárias", curto: "Conexões", icone: "conexoes" },
 ];
-const NA_BARRA = ITENS.slice(0, 4);
+const CONEXOES: Item = { href: "/conexoes-bancarias", rotulo: "Conexões bancárias", curto: "Conexões", icone: "conexoes" };
+const itensDaNavegacao = (openFinance: boolean) => (openFinance ? [...ITENS, CONEXOES] : ITENS);
 const ID_MAIS = "menu-mais";
 
 const ativo = (caminho: string | null, href: string) => caminho !== null && (caminho === href || caminho.startsWith(`${href}/`));
@@ -29,6 +31,8 @@ type Props = {
   sair: () => Promise<void>;
   /** Caminho atual (null no shell estático, antes de saber a URL). */
   caminho: string | null;
+  /** RECURSO_OPEN_FINANCE, lido no servidor: mostra "Conexões bancárias". */
+  openFinance: boolean;
 };
 
 function BotaoSair({ sair, className }: { sair: Props["sair"]; className: string }) {
@@ -47,7 +51,10 @@ export function NavegacaoComCaminho(props: Omit<Props, "caminho">) {
   return <NavegacaoDoSistema {...props} caminho={usePathname()} />;
 }
 
-export function NavegacaoDoSistema({ status, sair, caminho }: Props) {
+export function NavegacaoDoSistema({ status, sair, caminho, openFinance }: Props) {
+  const itens = itensDaNavegacao(openFinance);
+  const naBarra = itens.slice(0, 4);
+  const noMais = itens.slice(4);
   const fecharMais = () => document.getElementById(ID_MAIS)?.hidePopover();
 
   return (
@@ -60,7 +67,7 @@ export function NavegacaoDoSistema({ status, sair, caminho }: Props) {
         </Link>
         <nav aria-label="Principal" className="flex-1">
           <ul className="grid gap-1">
-            {ITENS.map((i) => {
+            {itens.map((i) => {
               const atual = ativo(caminho, i.href);
               return (
                 <li key={i.href}>
@@ -102,7 +109,7 @@ export function NavegacaoDoSistema({ status, sair, caminho }: Props) {
         className="fixed inset-x-0 bottom-0 z-20 border-t border-borda bg-superficie/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
       >
         <ul className="grid grid-cols-5">
-          {NA_BARRA.map((i) => {
+          {naBarra.map((i) => {
             const atual = ativo(caminho, i.href);
             return (
               <li key={i.href}>
@@ -124,7 +131,7 @@ export function NavegacaoDoSistema({ status, sair, caminho }: Props) {
               type="button"
               popoverTarget={ID_MAIS}
               className={`flex h-16 w-full flex-col items-center justify-center gap-1 text-[11px] ${
-                ativo(caminho, "/conexoes-bancarias") ? "font-semibold text-primaria-texto" : "text-texto-suave"
+                noMais.some((i) => ativo(caminho, i.href)) ? "font-semibold text-primaria-texto" : "text-texto-suave"
               }`}
             >
               <Icone nome="mais" />
@@ -140,15 +147,21 @@ export function NavegacaoDoSistema({ status, sair, caminho }: Props) {
         className="folha fixed inset-x-0 top-auto bottom-0 m-0 w-full max-w-none rounded-t-g border border-borda bg-superficie p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] text-texto shadow-3 backdrop:bg-[rgb(7_19_21/0.4)] lg:hidden"
       >
         <div className="grid gap-4">
-          <Link
-            href="/conexoes-bancarias"
-            onClick={fecharMais}
-            aria-current={ativo(caminho, "/conexoes-bancarias") ? "page" : undefined}
-            className="flex h-12 items-center gap-3 rounded-m px-3 hover:bg-superficie-2 aria-[current=page]:bg-primaria-suave aria-[current=page]:font-semibold"
-          >
-            <Icone nome="conexoes" />
-            Conexões bancárias
-          </Link>
+          <ul className="grid gap-1">
+            {noMais.map((i) => (
+              <li key={i.href}>
+                <Link
+                  href={i.href}
+                  onClick={fecharMais}
+                  aria-current={ativo(caminho, i.href) ? "page" : undefined}
+                  className="flex h-12 items-center gap-3 rounded-m px-3 hover:bg-superficie-2 aria-[current=page]:bg-primaria-suave aria-[current=page]:font-semibold"
+                >
+                  <Icone nome={i.icone} />
+                  {i.rotulo}
+                </Link>
+              </li>
+            ))}
+          </ul>
           <SeletorDeTema />
           <BotaoSair sair={sair} className={`${botao.secundario} w-full`} />
           <button type="button" popoverTarget={ID_MAIS} popoverTargetAction="hide" className={`${botao.fantasma} w-full`}>

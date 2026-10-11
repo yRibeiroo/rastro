@@ -6,7 +6,7 @@ import { useState, useTransition } from "react";
 import { Anuncio, Sucesso } from "@/componentes/estados/Estados";
 import { Icone } from "@/componentes/estrutura/Icone";
 import { botao, campo, mensagemDeErro, rotulo } from "@/componentes/formulario/classes";
-import type { Categoria, Id, ResultadoDaAcao, TipoDeCategoria } from "@/componentes/prototipo/tipos-provisorios";
+import type { Categoria, Id, ResultadoDaAcao, TipoDeCategoria } from "@/regras-de-negocio";
 import { Carregando } from "@/identidade-visual/Carregando";
 
 type Props = {

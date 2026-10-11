@@ -48,7 +48,9 @@ export class EstrategiaPorIa implements EstrategiaDeCategorizacao {
           referencia: String(indice),
           descricao: mascararDadosPessoais(t.descricao),
           valorCentavos: t.valorCentavos,
-          contraparte: t.contraparte ? mascararDadosPessoais(t.contraparte) : null,
+          contraparte: t.contraparte
+            ? mascararDadosPessoais(t.contraparte)
+            : null,
         })),
         opcoes,
       );

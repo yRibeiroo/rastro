@@ -10,9 +10,11 @@ O seed fica em [`supabase/seed.sql`](../../supabase/seed.sql) (caminho configura
 ## O que ele cria
 
 - Empresa de demonstração `00000000-0000-4000-a000-000000000001` — "Tocantins Climatização e Elétrica (demo)", com as sementes padrão (18 categorias, 4 centros de custo, 11 regras).
-- Uma conexão fictícia (Sicoob Empresas, `id_externo = demo-item-sicoob`) com conta corrente e poupança.
+- Uma conexão `provedor = 'arquivo'` (Sicredi, extrato OFX; `id_externo` = id da empresa) com conta corrente e poupança, e uma importação de exemplo (`extrato-sicredi.ofx`, ...0301) cobrindo as transações da conta corrente.
 - 120 transações nos **6 últimos meses** (datas relativas a `current_date`): recebimentos de condomínios, supermercado e clínica; posto de combustível, Elétrica Tocantins, peças de refrigeração, extintores, tarifas, IOF, DARF, Simples Nacional, Energisa, aluguel, folha, FGTS e transferências entre contas.
 - Categorização: as regras padrão já aplicadas (`categoria_origem = 'regra'`); algumas correções "do usuário" nos meses anteriores (`categoria_definida_pelo_usuario = true`); o mês atual tem lançamentos **sem categoria** e uma transação **pendente**, para exercitar o painel e o extrato.
+
+- 6 comprovantes (...0401 a ...0406): 3 `conciliado` (Pix do posto, NFC-e da Elétrica Tocantins com itens e chave de acesso, boleto da Energisa com data +1 dia), 1 `ambiguo` (R$ 2.000,00 no dia da aplicação/resgate entre contas), 1 `pendente` (NFC-e de hoje) e 1 `erro_de_leitura`. Não têm arquivo no Storage.
 
 O seed não cria usuários.
 

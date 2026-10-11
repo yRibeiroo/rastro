@@ -28,11 +28,15 @@ const esquemas = {
   PLUGGY_INCLUIR_SANDBOX: flag("0"),
   ANTHROPIC_API_KEY: texto,
   ANTHROPIC_MODELO: texto.optional(),
+  ANTHROPIC_MODELO_COMPROVANTES: texto.optional(), // P-45: cai em ANTHROPIC_MODELO
+  IA_LIMITE_COMPROVANTES_MES: z.coerce.number().int().min(0).default(300), // RNF-26
   CRON_SECRET: z.string().min(16, "precisa ter pelo menos 16 caracteres"),
   URL_DO_SITE: z.url().transform((v) => v.replace(/\/+$/, "")),
   RECURSO_CATEGORIZACAO_IA: flag("1"),
   RECURSO_ANEXOS: flag("1"),
   RECURSO_MULTIEMPRESA: flag("0"),
+  RECURSO_OPEN_FINANCE: flag("0"), // ADR 0016: Pluggy (webhook, cron, "Conectar banco")
+  RECURSO_COMPROVANTES_IA: flag("1"), // ADR 0016: leitura de comprovantes pelo Claude
 };
 
 type Ambiente = {

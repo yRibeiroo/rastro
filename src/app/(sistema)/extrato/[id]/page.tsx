@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { unstable_rethrow } from "next/navigation";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { Erro, Vazio } from "@/componentes/estados/Estados";
 import { lerEstadoForcado } from "@/componentes/estados/estado-forcado";
@@ -9,8 +10,9 @@ import { Anexos } from "@/componentes/extrato/Anexos";
 import { ClassificacaoDaTransacao } from "@/componentes/extrato/ClassificacaoDaTransacao";
 import { ValorMonetario } from "@/componentes/extrato/ValorMonetario";
 import { botao } from "@/componentes/formulario/classes";
-import { anexar, corrigirCategoria, criarRegra, gerarLinkTemporario, removerAnexo } from "@/componentes/prototipo/acoes-simuladas";
-import { listarAnexos, listarCategorias, listarCentrosDeCusto, listarRegras, obterTransacao } from "@/componentes/prototipo/fonte-de-dados";
+import { ComprovantesDaTransacao } from "@/componentes/comprovantes/ComprovantesDaTransacao";
+import { carregarCategoriasERegras, carregarCentrosDeCusto, carregarComprovantes, carregarTransacao } from "@/regras-de-negocio/interface-web";
+import { anexar, corrigirCategoria, criarRegra, gerarLinkTemporario, removerAnexo } from "@/regras-de-negocio/interface-web/acoes";
 import { formatarData, formatarDataHora } from "@/ferramentas-internas/formatar-data";
 import { Carregando } from "@/identidade-visual/Carregando";
 
@@ -42,6 +44,8 @@ function Linha({ termo, children }: { termo: string; children: React.ReactNode }
 }
 
 async function Conteudo({ params, searchParams }: PageProps<"/extrato/[id]">) {
+  // Dados por requisição (sessão e relógio): fora do shell e do prefetch.
+  await connection();
   const [{ id }, sp] = await Promise.all([params, searchParams]);
   const forcado = lerEstadoForcado(sp.estado);
   if (forcado === "carregando") return carregando;
@@ -61,15 +65,17 @@ async function Conteudo({ params, searchParams }: PageProps<"/extrato/[id]">) {
   let dados;
   try {
     if (forcado === "erro") throw new Error("forçado");
-    const [t, anexos, categorias, centros, regras] = await Promise.all([
-      obterTransacao(id),
-      listarAnexos(id),
-      listarCategorias({ incluirArquivadas: true }),
-      listarCentrosDeCusto({ incluirArquivados: true }),
-      listarRegras(),
+    const [{ transacao: t, anexos }, { categorias, regras }, centros, conciliados] = await Promise.all([
+      carregarTransacao(id),
+      carregarCategoriasERegras(),
+      carregarCentrosDeCusto({ incluirArquivados: true }),
+      carregarComprovantes({ situacao: "conciliado" }),
     ]);
-    dados = { t, anexos, categorias, centros, regras };
-  } catch {
+    const comprovantes = conciliados.filter((c) => c.transacaoId === id);
+    dados = { t, anexos, categorias, centros, regras, comprovantes };
+  } catch (erro) {
+    // notFound() (transação inexistente ou de outra empresa) e redirect() passam direto.
+    unstable_rethrow(erro);
     return (
       <Erro
         titulo="Não foi possível abrir a transação"
@@ -82,8 +88,7 @@ async function Conteudo({ params, searchParams }: PageProps<"/extrato/[id]">) {
       />
     );
   }
-  const { t, anexos, categorias, centros, regras } = dados;
-  if (!t) notFound();
+  const { t, anexos, categorias, centros, regras, comprovantes } = dados;
 
   const regra = t.regraId ? regras.find((r) => r.id === t.regraId) : null;
   const categorizando = sp.estado === "categorizando" || (t.categoriaId === null && t.categorizacaoAutomaticaEm === null && !t.categoriaDefinidaPeloUsuario);
@@ -139,7 +144,9 @@ async function Conteudo({ params, searchParams }: PageProps<"/extrato/[id]">) {
         </dl>
       </section>
 
-      <Anexos transacaoId={t.id} anexos={anexos} anexar={anexar} gerarLinkTemporario={gerarLinkTemporario} removerAnexo={removerAnexo} />
+      <ComprovantesDaTransacao comprovantes={comprovantes} anexos={anexos} gerarLinkTemporario={gerarLinkTemporario} />
+
+      <Anexos transacaoId={t.id} anexos={anexos.filter((a) => !a.comprovanteId)} anexar={anexar} gerarLinkTemporario={gerarLinkTemporario} removerAnexo={removerAnexo} />
     </article>
   );
 }

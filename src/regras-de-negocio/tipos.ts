@@ -38,7 +38,7 @@ export interface ErroDaConexao {
 export interface Conexao {
   id: Id;
   empresaId: Id;
-  provedor: "pluggy";
+  provedor: "pluggy" | "arquivo"; // 'arquivo' = extrato importado (ADR 0016)
   idExterno: string;
   banco: string | null;
   status: StatusDaConexao;
@@ -129,10 +129,75 @@ export interface Regra {
 export interface Anexo {
   id: Id;
   empresaId: Id;
-  transacaoId: Id;
+  transacaoId: Id | null; // null = arquivo de um comprovante (ADR 0016)
+  comprovanteId: Id | null;
   caminho: string;
   nomeArquivo: string;
   tipoMime: "application/pdf" | "image/jpeg" | "image/png" | "image/webp";
   tamanhoBytes: number;
   criadoEm: Date;
+}
+
+// ── Extrato importado e comprovantes (ADR 0016) ─────────────────────────────
+
+export interface ImportacaoDeExtrato {
+  id: Id;
+  empresaId: Id;
+  conexaoId: Id;
+  contaId: Id;
+  nomeDoArquivo: string;
+  periodo: { de: DataISO; ate: DataISO };
+  novas: number;
+  atualizadas: number;
+  criadaEm: Date;
+}
+
+export type TipoDeComprovante =
+  "pix" | "boleto" | "nfce" | "nfe" | "recibo" | "outro";
+
+export type SituacaoDoComprovante =
+  "lendo" | "conciliado" | "pendente" | "ambiguo" | "erro_de_leitura";
+
+export interface ItemDoComprovante {
+  descricao: string;
+  quantidade: number | null;
+  valorCentavos: Centavos | null;
+}
+
+/** O que o LeitorDeComprovantes extrai. valorCentavos é o valor absoluto (> 0). */
+export interface DadosDoComprovante {
+  tipo: TipoDeComprovante;
+  valorCentavos: Centavos;
+  data: DataISO | null;
+  emissor: string | null;
+  documentoEmissor: string | null; // CPF/CNPJ só dígitos (mascarar na interface)
+  chaveDeAcesso: string | null; // 44 dígitos
+  itens: ItemDoComprovante[];
+  confianca: number; // 0..1
+}
+
+/** Campos que o usuário pode corrigir (RF-41); uma releitura não os sobrescreve. */
+export type CampoCorrigivel = Exclude<keyof DadosDoComprovante, "confianca">;
+
+/** RF-42: pendente há mais de 10 dias depois da importação que cobre a data dele. */
+export type AlertaDoComprovante = "sem_transacao_no_extrato";
+
+export interface Comprovante extends Omit<
+  DadosDoComprovante,
+  "tipo" | "valorCentavos" | "confianca"
+> {
+  id: Id;
+  empresaId: Id;
+  transacaoId: Id | null; // preenchido ao conciliar
+  situacao: SituacaoDoComprovante;
+  // Nulos enquanto 'lendo' ou em 'erro_de_leitura'.
+  tipo: TipoDeComprovante | null;
+  valorCentavos: Centavos | null;
+  confianca: number | null;
+  erro: string | null; // código curto, nunca conteúdo
+  camposCorrigidos: CampoCorrigivel[];
+  /** Calculado na listagem (não é coluna); null fora de listar/contarAlertas. */
+  alerta: AlertaDoComprovante | null;
+  criadoEm: Date;
+  atualizadoEm: Date;
 }

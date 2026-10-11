@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useId, useState, useTransition } from "react";
 import { Icone } from "@/componentes/estrutura/Icone";
 import { botao, campo, rotulo } from "@/componentes/formulario/classes";
-import type { Categoria, CentroDeCusto } from "@/componentes/prototipo/tipos-provisorios";
+import type { Categoria, CentroDeCusto } from "@/regras-de-negocio";
 import { Carregando } from "@/identidade-visual/Carregando";
 import { PERIODOS_DO_EXTRATO, type PeriodoDoExtrato } from "./filtros-da-url";
 

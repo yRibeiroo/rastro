@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 import { Anuncio, Sucesso } from "@/componentes/estados/Estados";
 import { rotulo } from "@/componentes/formulario/classes";
-import type { Categoria, CentroDeCusto, Id, SugestaoDeRegra, Transacao } from "@/componentes/prototipo/tipos-provisorios";
+import type { Categoria, CentroDeCusto, Id, SugestaoDeRegra, Transacao } from "@/regras-de-negocio";
 import { Carregando } from "@/identidade-visual/Carregando";
 import { deixarRastro } from "@/identidade-visual/rastro-movimento";
 import type { CorrigirCategoria } from "./ListaDoExtrato";

@@ -63,7 +63,9 @@ export function criarServicoDeSincronizacao(deps: {
 }): ServicoDeSincronizacao {
   const agora = deps.agora ?? (() => new Date());
 
-  async function obterDoProvedor(idExterno: string): Promise<ConexaoDoProvedor> {
+  async function obterDoProvedor(
+    idExterno: string,
+  ): Promise<ConexaoDoProvedor> {
     const doProvedor = await deps.provedor.obterConexao(idExterno);
     if (!doProvedor) throw conexaoNaoEncontrada();
     return doProvedor;
@@ -179,7 +181,11 @@ export function criarServicoDeSincronizacao(deps: {
         conta,
         criadasDesde ? { criadasDesde } : undefined,
       );
-    await deps.conexoes.marcarSincronizada(conexao.empresaId, conexao.id, agora());
+    await deps.conexoes.marcarSincronizada(
+      conexao.empresaId,
+      conexao.id,
+      agora(),
+    );
     await categorizarSemQuebrar(conexao.empresaId);
     return { transacoesGravadas };
   }
@@ -202,7 +208,10 @@ export function criarServicoDeSincronizacao(deps: {
     switch (evento.tipo) {
       case "conexao_criada": {
         const doProvedor = await obterDoProvedor(evento.conexaoIdExterno);
-        const conexao = await garantirConexao(evento.conexaoIdExterno, doProvedor);
+        const conexao = await garantirConexao(
+          evento.conexaoIdExterno,
+          doProvedor,
+        );
         const atual = await atualizarStatus(conexao, doProvedor);
         // Primeira sincronização: o item já pode ter dados coletados.
         if (atual.status === "atualizada") await sincronizar(conexao);
@@ -210,7 +219,10 @@ export function criarServicoDeSincronizacao(deps: {
       }
       case "conexao_atualizada": {
         const doProvedor = await obterDoProvedor(evento.conexaoIdExterno);
-        const conexao = await garantirConexao(evento.conexaoIdExterno, doProvedor);
+        const conexao = await garantirConexao(
+          evento.conexaoIdExterno,
+          doProvedor,
+        );
         await atualizarStatus(conexao, doProvedor);
         // Folga de 2 dias sobre a última sincronização; completa se for a primeira.
         const desde = conexao.ultimaSincronizacaoEm
@@ -221,7 +233,10 @@ export function criarServicoDeSincronizacao(deps: {
       }
       case "conexao_com_erro": {
         const doProvedor = await obterDoProvedor(evento.conexaoIdExterno);
-        const conexao = await garantirConexao(evento.conexaoIdExterno, doProvedor);
+        const conexao = await garantirConexao(
+          evento.conexaoIdExterno,
+          doProvedor,
+        );
         await atualizarStatus(conexao, doProvedor, {
           status: STATUS_ESPECIFICOS_DE_ERRO.has(doProvedor.status)
             ? doProvedor.status
@@ -302,12 +317,17 @@ export function criarServicoDeSincronizacao(deps: {
     sincronizarConexao,
 
     async ressincronizarTodas() {
-      const conexoes = await deps.conexoes.listarTodas();
+      // Conexões 'arquivo' (extrato importado, ADR 0016) não têm o que buscar no provedor.
+      const conexoes = (await deps.conexoes.listarTodas()).filter(
+        (c) => c.provedor === "pluggy",
+      );
       const desde = new Date(agora().getTime() - 7 * DIA_EM_MS);
       let falhas = 0;
       for (const conexao of conexoes) {
         try {
-          const doProvedor = await deps.provedor.obterConexao(conexao.idExterno);
+          const doProvedor = await deps.provedor.obterConexao(
+            conexao.idExterno,
+          );
           if (doProvedor) await atualizarStatus(conexao, doProvedor);
           await sincronizar(conexao, desde);
         } catch (erro) {
@@ -322,17 +342,15 @@ export function criarServicoDeSincronizacao(deps: {
       const conexao = z.uuid().safeParse(conexaoId).success
         ? await deps.conexoes.buscarPorId(ctx.empresaId, conexaoId)
         : null;
-      if (!conexao) throw conexaoNaoEncontrada();
+      if (!conexao || conexao.provedor !== "pluggy")
+        throw conexaoNaoEncontrada();
       await exigirLimite(
         deps.consumirLimite,
         `sincronizar:usuario:${ctx.usuarioId}`,
         LIMITES.sincronizar,
       );
       // P-07: o manual busca os últimos 90 dias.
-      return sincronizar(
-        conexao,
-        new Date(agora().getTime() - 90 * DIA_EM_MS),
-      );
+      return sincronizar(conexao, new Date(agora().getTime() - 90 * DIA_EM_MS));
     },
   };
 }

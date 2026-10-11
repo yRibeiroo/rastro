@@ -42,6 +42,8 @@ Motivo da abertura não bloquear: ela é overlay; a sessão e os dados do painel
 
 ## 2. Conectar banco (Pluggy, Sicredi Empresas via Open Finance)
 
+Só com `RECURSO_OPEN_FINANCE=true` (ADR 0016). Com a flag desligada (padrão), `/conexoes-bancarias` responde 404 e o caminho principal é o fluxo 5.
+
 ```
 [/conexoes-bancarias]  (Conectar banco)
    ▼
@@ -111,3 +113,51 @@ A correção vira regra (princípio do produto): a IA só vê o que nenhuma regr
 ```
 
 A nota é opcional e pedida só quando o contador precisa: filtro "Sem nota" no extrato e no painel ("12 despesas de setembro sem nota").
+
+## 5. Importar extrato (OFX do Sicredi), ADR 0016
+
+```
+[Internet Banking Sicredi PJ]  Conta corrente → Extrato → período → Exportar → OFX
+   ▼
+[/importar]  (Escolher arquivo OFX) ou (arrasta o .ofx para a área)  ── teclado: Tab até o botão, Enter
+   ▼
+◇ validação no navegador: extensão .ofx e até 5 MB
+   ├─ inválido ─▶ faixa "Não importamos" + motivo; nada é enviado
+   └─ ok ─▶ {importarExtrato(formData)}  <Carregando sincronizando> "Importando extrato.ofx"
+              ▼
+         {lê OFX → upsert por FITID → regras → IA → reconcilia comprovantes pendentes}
+              ▼
+         ◇ resultado
+           ├─ sucesso ─▶ bloco: novas · atualizadas · comprovantes conciliados · período
+           │             {deixarRastro(área do arquivo, número de novas)}  aria-live com o mesmo texto
+           │             (Ver no extrato)  (Enviar comprovantes)   histórico atualiza
+           │             mesmo período de novo: "Esse período já estava importado: nada foi duplicado."
+           └─ erro ─────▶ faixa com a mensagem do servidor (arquivo inválido, limite de envios)
+```
+
+O shell mostra "Última importação há X dias" (trilho lateral e topo do celular). Acima de 7 dias, faixa em todas as telas: "Última importação há 9 dias. O extrato pode estar desatualizado. (Importar extrato)".
+
+## 6. Enviar comprovante → conciliar, ADR 0016
+
+```
+[/comprovantes]  (Enviar comprovante)
+   │  celular: abre a câmera traseira (capture="environment"); (Escolher arquivo) pega PDF ou foto salva
+   │  desktop: seletor de arquivo ou arrastar para a área
+   ▼
+{navegador}  1. imagem e BarcodeDetector disponível? lê o QR da NFC-e → chave de acesso (44 dígitos)
+             2. imagem: reduz para no máx. 2576 px e reencoda JPEG 0,85 (remove EXIF/GPS)
+             3. confere tipo e tamanho (até 4 MB; o JPEG perde qualidade em degraus até caber); senão, mensagem e nada é enviado
+   ▼
+{enviarComprovante(formData: arquivo + chaveDeAcesso?)}  <Carregando categorizando> "Lendo o comprovante"
+   ▼
+{IA lê tipo, valor, data, emissor, itens, confiança} → {procura transação: mesmo valor, ±3 dias}
+   ▼
+◇ situação
+   ├─ conciliado ──────▶ "Lido e ligado à transação do extrato." (Abrir transação)
+   │                     clipe na linha do extrato; no detalhe da transação: comprovante + itens
+   ├─ pendente ────────▶ "A transação ainda não está no extrato"; reavaliado a cada importação
+   ├─ ambiguo ─────────▶ na lista: "Qual destas transações é este comprovante?" (rádio) (Ligar à transação)
+   └─ erro_de_leitura ─▶ (Preencher dados) tipo, valor, data, emissor → nova tentativa de conciliar
+```
+
+Confiança abaixo de 0,7: selo "Confira os dados lidos" no item e no detalhe da transação. Em qualquer item: (Corrigir dados), (Remover) com confirmação; filtros por situação em `?situacao=`.

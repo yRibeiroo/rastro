@@ -12,9 +12,11 @@ import {
   RepositorioDeCategoriasSupabase,
   RepositorioDeCentrosDeCustoSupabase,
 } from "@/acesso-a-dados/repositorio-de-categorias";
+import { RepositorioDeComprovantesSupabase } from "@/acesso-a-dados/repositorio-de-comprovantes";
 import { RepositorioDeConexoesSupabase } from "@/acesso-a-dados/repositorio-de-conexoes";
 import { RepositorioDeContasSupabase } from "@/acesso-a-dados/repositorio-de-contas";
 import { RepositorioDeEmpresasSupabase } from "@/acesso-a-dados/repositorio-de-empresas";
+import { RepositorioDeImportacoesSupabase } from "@/acesso-a-dados/repositorio-de-importacoes";
 import {
   RepositorioDeEventosDeWebhookSupabase,
   RepositorioDeLimitesSupabase,
@@ -47,7 +49,13 @@ import {
   type ServicoDeCentrosDeCusto,
 } from "./centros-de-custo";
 import {
+  criarServicoDeComprovantes,
+  leitorDeComprovantesClaude,
+  type ServicoDeComprovantes,
+} from "./comprovantes";
+import {
   criarServicoDeConexaoBancaria,
+  provedorDesligado,
   provedorPluggy,
   type ProvedorBancario,
   type ServicoDeConexaoBancaria,
@@ -58,6 +66,11 @@ import {
   type ServicoDeExtrato,
   type ServicoDeSincronizacao,
 } from "./extrato";
+import {
+  criarServicoDeImportacao,
+  LeitorDeExtratoOfx,
+  type ServicoDeImportacao,
+} from "./importacao-de-extrato";
 import { criarServicoDoPainel, type ServicoDoPainel } from "./painel";
 import type { ContextoDoUsuario } from "./tipos";
 
@@ -73,10 +86,14 @@ export interface ServicosDoUsuario {
   centrosDeCusto: ServicoDeCentrosDeCusto;
   painel: ServicoDoPainel;
   anexos: ServicoDeAnexos;
+  importacao: ServicoDeImportacao;
+  comprovantes: ServicoDeComprovantes;
 }
 
 export interface ServicosDoSistema {
   provedor: ProvedorBancario;
+  /** Cron: reconcilia os comprovantes pendentes de todas as empresas (service role). */
+  comprovantes: Pick<ServicoDeComprovantes, "reconciliarTodas">;
   eventos: RepositorioDeEventosDeWebhook;
   sincronizacao: ServicoDeSincronizacao;
   limites: RepositorioDeLimites;
@@ -98,6 +115,36 @@ const estrategiaPorIa = new EstrategiaPorIa({
       modelo: ambiente.ANTHROPIC_MODELO,
     }).classificar(lote, opcoes),
 });
+
+/** O Leitor só lê a chave da Anthropic quando um comprovante é lido de fato. P-45: modelo próprio opcional. */
+const leitorDeComprovantes = {
+  ler: (
+    ...args: Parameters<ReturnType<typeof leitorDeComprovantesClaude>["ler"]>
+  ) =>
+    leitorDeComprovantesClaude({
+      apiKey: ambiente.ANTHROPIC_API_KEY,
+      modelo:
+        ambiente.ANTHROPIC_MODELO_COMPROVANTES ?? ambiente.ANTHROPIC_MODELO,
+    }).ler(...args),
+};
+
+function comprovantesCom(
+  banco: ClienteDoBanco,
+  consumirLimite: ConsumirLimite,
+): ServicoDeComprovantes {
+  return criarServicoDeComprovantes({
+    leitor: leitorDeComprovantes,
+    comprovantes: new RepositorioDeComprovantesSupabase(banco),
+    anexos: new RepositorioDeAnexosSupabase(banco),
+    importacoes: new RepositorioDeImportacoesSupabase(banco),
+    armazenamento: new ArmazenamentoDeArquivosSupabase(banco),
+    transacoes: new RepositorioDeTransacoesSupabase(banco),
+    categorizacao: categorizacaoCom(banco),
+    consumirLimite,
+    ligado: () => ambiente.RECURSO_COMPROVANTES_IA,
+    limiteMensal: () => ambiente.IA_LIMITE_COMPROVANTES_MES,
+  });
+}
 
 function categorizacaoCom(banco: ClienteDoBanco): ServicoDeCategorizacao {
   return criarServicoDeCategorizacao({
@@ -138,10 +185,14 @@ let sistema: ServicosDoSistema | undefined;
 export function servicosDoSistema(): ServicosDoSistema {
   if (sistema) return sistema;
   const banco = clienteDoSistema();
-  const provedor = provedorPluggy(() => ({
-    clientId: ambiente.PLUGGY_CLIENT_ID,
-    clientSecret: ambiente.PLUGGY_CLIENT_SECRET,
-  }));
+  // RECURSO_OPEN_FINANCE desligado (ADR 0016): sem adaptador Pluggy; tudo que chamaria a Pluggy
+  // lança 'recurso_desligado' e as variáveis PLUGGY_* nem são lidas.
+  const provedor = ambiente.RECURSO_OPEN_FINANCE
+    ? provedorPluggy(() => ({
+        clientId: ambiente.PLUGGY_CLIENT_ID,
+        clientSecret: ambiente.PLUGGY_CLIENT_SECRET,
+      }))
+    : provedorDesligado;
   const eventos = new RepositorioDeEventosDeWebhookSupabase(banco);
   const limites = new RepositorioDeLimitesSupabase(banco);
   const sincronizacao = criarServicoDeSincronizacao({
@@ -156,6 +207,7 @@ export function servicosDoSistema(): ServicosDoSistema {
   });
   sistema = {
     provedor,
+    comprovantes: comprovantesCom(banco, consumidorDeLimite(limites)),
     eventos,
     sincronizacao,
     limites,
@@ -175,6 +227,22 @@ export async function servicosDoUsuario(): Promise<ServicosDoUsuario> {
   const doSistema = servicosDoSistema();
   const consumirLimite = consumidorDeLimite(doSistema.limites);
   const transacoes = new RepositorioDeTransacoesSupabase(banco);
+  const categorizacao = categorizacaoCom(banco);
+  const armazenamento = new ArmazenamentoDeArquivosSupabase(banco);
+  const anexos = new RepositorioDeAnexosSupabase(banco);
+  const comprovantes = comprovantesCom(banco, consumirLimite);
+  // Importação: as tabelas não aceitam insert pela sessão; service role, sempre filtrado por ctx.empresaId.
+  const sistema = clienteDoSistema();
+  const importacao = criarServicoDeImportacao({
+    leitor: new LeitorDeExtratoOfx(),
+    conexoes: new RepositorioDeConexoesSupabase(sistema),
+    contas: new RepositorioDeContasSupabase(sistema),
+    transacoes: new RepositorioDeTransacoesSupabase(sistema),
+    importacoes: new RepositorioDeImportacoesSupabase(sistema),
+    categorizacao: categorizacaoCom(sistema),
+    comprovantes,
+    consumirLimite,
+  });
   return {
     ctx,
     conexoes: criarServicoDeConexaoBancaria({
@@ -188,7 +256,7 @@ export async function servicosDoUsuario(): Promise<ServicosDoUsuario> {
       sincronizarAgora: (c, id) =>
         doSistema.sincronizacao.sincronizarAgora(c, id),
     },
-    categorizacao: categorizacaoCom(banco),
+    categorizacao,
     centrosDeCusto: criarServicoDeCentrosDeCusto({
       centrosDeCusto: new RepositorioDeCentrosDeCustoSupabase(banco),
     }),
@@ -198,11 +266,13 @@ export async function servicosDoUsuario(): Promise<ServicosDoUsuario> {
       transacoes,
     }),
     anexos: criarServicoDeAnexos({
-      anexos: new RepositorioDeAnexosSupabase(banco),
-      armazenamento: new ArmazenamentoDeArquivosSupabase(banco),
+      anexos,
+      armazenamento,
       transacoes,
       consumirLimite,
       anexosLigados: () => ambiente.RECURSO_ANEXOS,
     }),
+    importacao,
+    comprovantes,
   };
 }

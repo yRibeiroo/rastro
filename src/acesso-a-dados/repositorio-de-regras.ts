@@ -33,7 +33,12 @@ const MENSAGENS = {
 type Alteracoes = Partial<
   Pick<
     Regra,
-    "padrao" | "campo" | "prioridade" | "categoriaId" | "centroDeCustoId" | "ativa"
+    | "padrao"
+    | "campo"
+    | "prioridade"
+    | "categoriaId"
+    | "centroDeCustoId"
+    | "ativa"
   >
 >;
 

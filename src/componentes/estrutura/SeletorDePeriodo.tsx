@@ -1,5 +1,21 @@
 import Link from "next/link";
-import { PERIODOS, type ChavePeriodo } from "@/componentes/prototipo/fonte-de-dados";
+import type { DataISO, PeriodoDoPainel } from "@/regras-de-negocio";
+import { hojeISO } from "@/ferramentas-internas/formatar-data";
+
+export type ChavePeriodo = "mes" | "3m" | "6m" | "12m";
+export const PERIODOS: Record<ChavePeriodo, string> = {
+  mes: "Este mês",
+  "3m": "Últimos 3 meses",
+  "6m": "Últimos 6 meses",
+  "12m": "Últimos 12 meses",
+};
+
+/** Do dia 1 do mês (N-1 meses atrás) até hoje, no fuso America/Araguaina. */
+export function periodoDe(chave: ChavePeriodo, hoje: DataISO = hojeISO()): PeriodoDoPainel {
+  const meses = { mes: 1, "3m": 3, "6m": 6, "12m": 12 }[chave];
+  const [a, m] = hoje.split("-").map(Number);
+  return { de: new Date(Date.UTC(a, m - meses, 1)).toISOString().slice(0, 10), ate: hoje };
+}
 
 export const CHAVES_DE_PERIODO = Object.keys(PERIODOS) as ChavePeriodo[];
 

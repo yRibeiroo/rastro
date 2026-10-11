@@ -270,3 +270,45 @@ describe("regras e categorias", () => {
     await expect(m.servico.atualizarCategoria(ctx, combustivel.id, { tipo: "x" as "saida" })).rejects.toMatchObject({ codigo: "entrada_invalida" });
   });
 });
+
+describe("categorizarComDica — comprovante conciliado (RF-43)", () => {
+  it("regra casa pelo texto dos itens, com o centro de custo da regra", async () => {
+    const t = umaTransacao({ descricao: "PAG*LOJA 123" });
+    const centro = novoId();
+    const m = montar({
+      transacoes: [t],
+      regras: [umaRegra({ padrao: "R410A", categoriaId: combustivel.id, centroDeCustoId: centro })],
+    });
+    m.centrosDeCusto.linhas.push({ id: centro, empresaId: EMPRESA, nome: "Refrigeração", padrao: false, arquivado: false });
+    expect(await m.servico.categorizarComDica(EMPRESA, t.id, "Loja | Gás R410A 1 kg, Tubo de cobre")).toBe(true);
+    expect(m.transacoes.linhas[0]).toMatchObject({ categoriaId: combustivel.id, centroDeCustoId: centro, categoriaOrigem: "regra" });
+    expect(m.transacoes.linhas[0].descricao).toBe("PAG*LOJA 123"); // a descrição gravada não muda
+    expect(m.classificar).not.toHaveBeenCalled();
+  });
+
+  it("sem regra, a IA recebe os itens; categoria do usuário nunca é tocada; falha da IA → false", async () => {
+    const t = umaTransacao({ descricao: "PAG*LOJA 123" });
+    const m = montar({
+      transacoes: [t],
+      ia: async (lote) => lote.map((i) => ({ referencia: i.referencia, categoriaCodigo: "c1", centroDeCustoCodigo: null, confianca: 0.9 })),
+    });
+    expect(await m.servico.categorizarComDica(EMPRESA, t.id, "Tubo de cobre")).toBe(true);
+    expect(m.classificar.mock.calls[0][0][0].descricao).toContain("Tubo de cobre");
+    expect(m.transacoes.linhas[0].categoriaOrigem).toBe("ia");
+
+    const doUsuario = umaTransacao({ categoriaDefinidaPeloUsuario: true, categoriaOrigem: "usuario" });
+    const u = montar({ transacoes: [doUsuario] });
+    expect(await u.servico.categorizarComDica(EMPRESA, doUsuario.id, "x")).toBe(false);
+    expect(await u.servico.categorizarComDica(EMPRESA, novoId(), "x")).toBe(false);
+    expect(u.classificar).not.toHaveBeenCalled();
+
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const semNada = montar({ transacoes: [umaTransacao()] });
+    expect(await semNada.servico.categorizarComDica(EMPRESA, semNada.transacoes.linhas[0].id, "x")).toBe(false);
+    const quebrada = montar({ transacoes: [umaTransacao()] });
+    quebrada.regras.listarAtivas = async () => {
+      throw new Error("db");
+    };
+    expect(await quebrada.servico.categorizarComDica(EMPRESA, quebrada.transacoes.linhas[0].id, "x")).toBe(false);
+  });
+});

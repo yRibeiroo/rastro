@@ -12,7 +12,11 @@ export class ErroDoBanco extends Error {
 /** Traduz o erro do supabase-js em ErroDeNegocio (esperado) ou ErroDoBanco (inesperado). */
 export function falhaDoBanco(
   erro: { code?: string } | null | undefined,
-  mensagens: { duplicado?: string; referencia?: string; naoEncontrado?: string } = {},
+  mensagens: {
+    duplicado?: string;
+    referencia?: string;
+    naoEncontrado?: string;
+  } = {},
 ): Error {
   const codigo = erro?.code ?? "desconhecido";
   if (codigo === "23505" && mensagens.duplicado)
@@ -23,7 +27,10 @@ export function falhaDoBanco(
       mensagens.referencia ?? "Confira os dados informados.",
     );
   if (codigo === "22023" || codigo === "22P02")
-    return new ErroDeNegocio("entrada_invalida", "Confira os dados informados.");
+    return new ErroDeNegocio(
+      "entrada_invalida",
+      "Confira os dados informados.",
+    );
   if (codigo === "PGRST116")
     return new ErroDeNegocio(
       "nao_encontrado",
