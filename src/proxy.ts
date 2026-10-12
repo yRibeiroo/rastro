@@ -55,8 +55,8 @@ export async function proxy(requisicao: NextRequest) {
 
 export const config = {
   matcher: [
-    // Tudo, menos: assets do Next, arquivos com extensão (públicos), /entrar*, /vitrine,
+    // Tudo, menos: assets do Next, arquivos com extensão (públicos), /entrar*,
     // /api/webhooks/* (Bearer próprio) e /api/tarefas/* (CRON_SECRET).
-    "/((?!_next/static|_next/image|entrar|vitrine|api/webhooks|api/tarefas|.*\\.[\\w]+$).*)",
+    "/((?!_next/static|_next/image|entrar|api/webhooks|api/tarefas|.*\\.[\\w]+$).*)",
   ],
 };

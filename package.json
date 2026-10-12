@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "tipos": "tsc --noEmit",
+    "tipos": "next typegen && tsc --noEmit",
     "formatar": "prettier --write .",
     "formatar:verificar": "prettier --check .",
     "testar": "vitest run --project unidade --project unidade-componentes",

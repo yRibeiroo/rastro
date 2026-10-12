@@ -307,6 +307,9 @@ describe("leituras para Server Components", () => {
   it("recursos (flags) lidos no servidor", async () => {
     vi.stubEnv("RECURSO_ANEXOS", "0");
     vi.stubEnv("PLUGGY_INCLUIR_SANDBOX", "1");
+    vi.stubEnv("RECURSO_CATEGORIZACAO_IA", "1");
+    vi.stubEnv("RECURSO_OPEN_FINANCE", "0");
+    vi.stubEnv("RECURSO_COMPROVANTES_IA", "1");
     expect(await leituras.carregarRecursos()).toEqual({
       anexos: false,
       categorizacaoIa: true,

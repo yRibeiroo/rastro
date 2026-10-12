@@ -78,29 +78,12 @@ test("desfazer a conciliação volta a pendente (RF-40)", async ({ page }) => {
   ).toBeVisible();
 });
 
-test("com a leitura por IA desligada, o envio avisa e nada é guardado", async ({
+test("com a leitura por IA desligada, a página avisa e não oferece o envio", async ({
   page,
 }) => {
-  const antes = sql(
-    `select count(*) from public.comprovantes where empresa_id = '${EMPRESA_DEMO}'`,
-  );
   await page.goto("/comprovantes");
-  await hidratada(page);
-  // PNG 1×1 válido.
-  const png = Buffer.from(
-    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
-    "base64",
-  );
-  await page
-    .locator('input[type="file"]')
-    .first()
-    .setInputFiles({ name: "pix.png", mimeType: "image/png", buffer: png });
   await expect(
     page.getByText("A leitura de comprovantes está desligada no momento."),
-  ).toBeVisible({ timeout: 20_000 });
-  expect(
-    sql(
-      `select count(*) from public.comprovantes where empresa_id = '${EMPRESA_DEMO}'`,
-    ),
-  ).toBe(antes);
+  ).toBeVisible();
+  await expect(page.locator('input[type="file"]')).toHaveCount(0);
 });

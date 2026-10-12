@@ -58,7 +58,9 @@ export default function Comprovantes({
         descricao="Fotografe o Pix, o boleto ou a nota. O Rastro lê os dados e liga cada um à transação do extrato."
       />
       <div className="grid gap-10 pb-8">
-        <EnviarComprovante enviarComprovante={enviarComprovante} />
+        <Suspense fallback={null}>
+          <Envio />
+        </Suspense>
         <section aria-labelledby="lista" className="grid gap-4">
           <h2 id="lista" className="sr-only">
             Comprovantes enviados
@@ -69,6 +71,19 @@ export default function Comprovantes({
         </section>
       </div>
     </>
+  );
+}
+
+/** Com a leitura por IA desligada, o servidor recusa o envio; melhor avisar antes. */
+async function Envio() {
+  const { comprovantesIa } = await carregarRecursos();
+  if (comprovantesIa)
+    return <EnviarComprovante enviarComprovante={enviarComprovante} />;
+  return (
+    <p role="status" className="text-sm text-texto-suave">
+      A leitura de comprovantes está desligada no momento. Os comprovantes já
+      enviados continuam abaixo.
+    </p>
   );
 }
 

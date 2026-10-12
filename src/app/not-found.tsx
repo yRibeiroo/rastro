@@ -8,6 +8,7 @@ export default function NaoEncontrado() {
       id="conteudo"
       className="mx-auto w-full max-w-3xl flex-1 px-4 md:px-8"
     >
+      <h1 className="sr-only">Página não encontrada</h1>
       <Vazio
         titulo="Esta página não existe"
         descricao="O endereço pode ter mudado ou a transação foi removida pelo banco."
