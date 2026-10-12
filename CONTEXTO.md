@@ -1,7 +1,7 @@
 ---
 tags: [rastro, projeto, open-finance, pluggy, hometec]
 criado: 2026-10-09
-status: v1.0.0 pronta, deploy pendente
+status: v1.0.0 em produção
 atualizado: 2026-10-11
 ---
 
@@ -21,7 +21,7 @@ Sistema de controle financeiro da **HOMETEC SERVIÇOS** que puxa o extrato da co
 - **Stack:** Next.js 16 + TypeScript + Tailwind 4, Supabase (Postgres com RLS, Auth, Storage), Vercel, Claude ([ADR 0001](documentos/arquitetura/decisoes/0001-nextjs-supabase-vercel.md)). O protótipo Flask descrito nas seções 1 a 7 ficou em `prototipo-flask/` como referência.
 - **Fonte dos dados:** extrato **OFX** do Sicredi + comprovantes lidos pelo Claude ([ADR 0016](documentos/arquitetura/decisoes/0016-extrato-ofx-e-comprovantes-com-ia.md)). A Pluggy está no código, desligada (`RECURSO_OPEN_FINANCE=0`), porque custaria no mínimo R$ 2.500/mês.
 - **Supabase de produção:** projeto `sdglxhgxofttirwfuzlh` (sa-east-1, plano Free) com as migrações aplicadas, **exceto** `supabase/migrations/20261009120600_eventos_webhook_e_limites.sql`, que o Davi precisa rodar no SQL Editor.
-- **Deploy na Vercel: pendente.** O conector da Vercel deu 403 neste time; o Davi importa o repositório manualmente.
+- **Produção:** https://rastro-wheat-pi.vercel.app (Vercel, gru1, deploy automático a cada push na main). Supabase prod com as 10 migrações aplicadas; variáveis cadastradas; Auth com Site URL e redirect configurados.
 - **Próximos passos:** [documentos/PARA-O-DAVI.md](documentos/PARA-O-DAVI.md) (o que o dono faz), [documentos/operacao.md](documentos/operacao.md) (operação) e [documentos/evolucao/roteiro.md](documentos/evolucao/roteiro.md) (próximas versões).
 
 > As seções 1 a 8 abaixo registram o início do projeto (protótipo Flask + Pluggy) e ficam como histórico.
