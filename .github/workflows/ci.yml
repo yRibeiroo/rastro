@@ -53,7 +53,7 @@ jobs:
         with: { node-version: 24, cache: npm }
       - run: npm ci
       - run: npm run testar:cobertura
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           {
@@ -107,7 +107,7 @@ jobs:
       - run: node comandos/ambiente-supabase-local.mjs >> "$GITHUB_ENV"
       - run: npm run build
       - run: npm run testar:e2e
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           {
@@ -130,7 +130,7 @@ jobs:
       - run: node comandos/ambiente-supabase-local.mjs >> "$GITHUB_ENV"
       - run: npm run build
       - run: npm run lighthouse
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           {
