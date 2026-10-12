@@ -14,7 +14,7 @@
     "testar": "vitest run --project unidade --project unidade-componentes",
     "testar:cobertura": "vitest run --coverage --project unidade --project unidade-componentes",
     "testar:integracao": "vitest run --project integracao --passWithNoTests",
-    "testar:e2e": "playwright test --pass-with-no-tests",
+    "testar:e2e": "node comandos/ambiente-e2e.mjs playwright test",
     "testar:banco": "supabase test db",
     "lighthouse": "lhci autorun",
     "segredos": "node comandos/segredos.mjs",

@@ -1,6 +1,6 @@
 -- Seed de DESENVOLVIMENTO (roda só em `supabase db reset` / `supabase start` local). Nunca em produção.
 -- Empresa de demonstração: prestadora de serviços técnicos de Palmas/TO (refrigeração, elétrica, incêndio),
--- ~120 transações nos 6 últimos meses (datas relativas a current_date). Ver banco-de-dados/seeds/README.md.
+-- ~120 transações nos 6 últimos meses (datas relativas a hoje no fuso America/Araguaina, como o app). Ver banco-de-dados/seeds/README.md.
 
 -- Ids fixos para facilitar testes manuais.
 -- empresa:  00000000-0000-4000-a000-000000000001
@@ -55,13 +55,13 @@ with modelos (ordem, dia, descricao, contraparte, metodo, valor_base, variacao, 
     (20, 25, 'TRANSF ENTRE CONTAS RESGATE CORRENTE',     null,                           'TED',    2000.00, 0.00, 'poupanca')
 ),
 meses as (
-  select m, (date_trunc('month', current_date) - make_interval(months => m))::date as inicio
+  select m, (date_trunc('month', (now() at time zone 'America/Araguaina')::date) - make_interval(months => m))::date as inicio
   from generate_series(0, 5) as m
 ),
 linhas as (
   select
     me.m, mo.ordem,
-    least(me.inicio + (mo.dia - 1), current_date) as data,
+    least(me.inicio + (mo.dia - 1), (now() at time zone 'America/Araguaina')::date) as data,
     mo.descricao, mo.contraparte, mo.metodo, mo.conta,
     round((mo.valor_base * (1 + mo.variacao * (random() * 2 - 1)))::numeric, 2) as valor
   from meses me
@@ -128,7 +128,7 @@ join public.categorias c on c.empresa_id = '00000000-0000-4000-a000-000000000001
 left join public.centros_de_custo cc on cc.empresa_id = '00000000-0000-4000-a000-000000000001' and cc.nome = co.centro
 where t.empresa_id = '00000000-0000-4000-a000-000000000001'
   and strpos(t.descricao, co.trecho) > 0
-  and (t.data < date_trunc('month', current_date) or co.trecho = 'TRANSF ENTRE CONTAS');
+  and (t.data < date_trunc('month', (now() at time zone 'America/Araguaina')::date) or co.trecho = 'TRANSF ENTRE CONTAS');
 
 -- Importação de exemplo (o extrato OFX que "trouxe" as transações acima).
 insert into public.importacoes_de_extrato (id, empresa_id, conexao_id, conta_id, nome_do_arquivo, periodo_de, periodo_ate, novas, atualizadas)
@@ -161,10 +161,10 @@ insert into public.comprovantes (id, empresa_id, situacao, tipo, valor, data, em
 values
   -- Ambíguo: aplicação (-2000) e resgate (+2000) no mesmo dia têm o mesmo valor absoluto.
   ('00000000-0000-4000-a000-000000000404', '00000000-0000-4000-a000-000000000001', 'ambiguo', 'recibo', 2000.00,
-   (date_trunc('month', current_date) - interval '1 month')::date + 24, null, null, '[]', 0.80, null),
+   (date_trunc('month', (now() at time zone 'America/Araguaina')::date) - interval '1 month')::date + 24, null, null, '[]', 0.80, null),
   -- Pendente: o extrato de hoje ainda não foi importado.
   ('00000000-0000-4000-a000-000000000405', '00000000-0000-4000-a000-000000000001', 'pendente', 'nfce', 156.40,
-   current_date, 'REFRIGERACAO POLAR PECAS', '34567890000112',
+   (now() at time zone 'America/Araguaina')::date, 'REFRIGERACAO POLAR PECAS', '34567890000112',
    '[{"descricao":"GAS R410A 750G","quantidade":1,"valor_centavos":12900},{"descricao":"FITA PVC","quantidade":2,"valor_centavos":1370}]',
    0.88, null),
   ('00000000-0000-4000-a000-000000000406', '00000000-0000-4000-a000-000000000001', 'erro_de_leitura', null, null,

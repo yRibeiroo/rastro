@@ -25,8 +25,7 @@ import type {
 } from "../tipos";
 import { executarAcao, ipDaRequisicao } from "./resultado";
 
-// Server Actions do Rastro. Mesmas assinaturas de src/componentes/prototipo/acoes-simuladas.ts:
-// sem ctx (a sessão e a allowlist são conferidas aqui, em toda chamada) e retorno ResultadoDaAcao<T>.
+// Server Actions do Rastro. Sem ctx (a sessão e a allowlist são conferidas aqui, em toda chamada) e retorno ResultadoDaAcao<T>.
 
 /** Executa com sessão + allowlist e atualiza a tela depois de uma mutação bem-sucedida. */
 async function mutacao<T>(

@@ -1,6 +1,11 @@
 "use client";
 
-import { useState, type AnimationEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useState,
+  type AnimationEvent,
+  type ReactNode,
+} from "react";
 import { LogoRastro } from "./LogoRastro";
 import "./abertura.css";
 
@@ -17,6 +22,17 @@ const FIM = new Set(["abertura-fim", "abertura-pular"]);
 export function AberturaAnimada({ children }: { children: ReactNode }) {
   const [encerrada, setEncerrada] = useState(false);
   const [pulada, setPulada] = useState(false);
+
+  // HU-02: Enter (ou Esc) pula, mesmo sem o foco no botão. Na segunda visita o overlay nem aparece.
+  useEffect(() => {
+    if (encerrada || pulada) return;
+    if ("aberturaVista" in document.documentElement.dataset) return;
+    const aoTeclar = (e: KeyboardEvent) => {
+      if (e.key === "Enter" || e.key === "Escape") setPulada(true);
+    };
+    window.addEventListener("keydown", aoTeclar);
+    return () => window.removeEventListener("keydown", aoTeclar);
+  }, [encerrada, pulada]);
 
   function aoTerminar(e: AnimationEvent<HTMLDivElement>) {
     if (e.target === e.currentTarget && FIM.has(e.animationName))

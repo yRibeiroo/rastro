@@ -98,7 +98,7 @@ export function GerenciarCategorias({
   return (
     <section
       aria-labelledby="titulo-categorias"
-      className="grid content-start gap-6"
+      className="grid min-w-0 content-start gap-6"
     >
       <h2 id="titulo-categorias" className="text-xl font-semibold">
         Categorias
@@ -181,7 +181,7 @@ export function GerenciarCategorias({
         const doGrupo = ativas.filter((c) => c.tipo === g.tipo);
         if (doGrupo.length === 0) return null;
         return (
-          <div key={g.tipo} className="grid gap-1">
+          <div key={g.tipo} className="grid grid-cols-[minmax(0,1fr)] gap-1">
             <h3 className="font-sans text-sm font-semibold tracking-normal text-texto-suave">
               {g.titulo}
             </h3>
@@ -189,7 +189,7 @@ export function GerenciarCategorias({
               {doGrupo.map((c) => (
                 <li
                   key={c.id}
-                  className={`grid gap-2 py-2.5 transition-colors duration-[1500ms] ${nova === c.id ? "surgir bg-primaria-suave" : ""}`}
+                  className={`grid grid-cols-[minmax(0,1fr)] gap-2 py-2.5 transition-colors duration-[1500ms] ${nova === c.id ? "surgir bg-primaria-suave" : ""}`}
                 >
                   {editando === c.id ? (
                     <form

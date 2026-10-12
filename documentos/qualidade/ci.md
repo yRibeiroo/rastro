@@ -10,7 +10,7 @@ O pipeline está em `.github/workflows/ci.yml` (decisão no [ADR 0015](../arquit
 | `unidade` | `npm run testar:cobertura` |
 | `integracao` | `npx supabase start && npx supabase db reset && npm run testar:banco && npm run testar:integracao` |
 | `build` | `npm run build` |
-| `e2e` | `npm run build && npm run testar:e2e` (com o Supabase local rodando) |
+| `e2e` | `npm run build && npm run testar:e2e` (Supabase local rodando; `comandos/ambiente-e2e.mjs` injeta as chaves locais e desliga IA/Open Finance) |
 | `lighthouse` | `npm run build && npm run lighthouse` |
 | `segredos` | `npm run segredos` |
 

@@ -36,7 +36,12 @@ export function ValorMonetario({
       <span aria-hidden="true">
         {formatarMoeda(centavos, { sinal: comSinal, compacto })}
       </span>
-      <span className="sr-only">{descreverMoeda(centavos)}</span>
+      <span className="sr-only">
+        {/* "mais" só onde o sinal aparece; sem sinal, positivo é só o valor. */}
+        {comSinal || centavos < 0
+          ? descreverMoeda(centavos)
+          : formatarMoeda(centavos)}
+      </span>
     </span>
   );
 }

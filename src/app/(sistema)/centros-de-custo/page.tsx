@@ -9,6 +9,7 @@ import {
   NovoCentro,
 } from "@/componentes/centros-de-custo/GerenciarCentros";
 import { Erro, Vazio } from "@/componentes/estados/Estados";
+import { comTodosOsCentros } from "@/componentes/centros-de-custo/resultado";
 import { lerEstadoForcado } from "@/componentes/estados/estado-forcado";
 import { CabecalhoDaPagina } from "@/componentes/estrutura/CabecalhoDaPagina";
 import { botao } from "@/componentes/formulario/classes";
@@ -114,7 +115,7 @@ async function Conteudo({
 
       <ResultadoPorCentro
         titulo={`Resultado: ${PERIODOS[chave].toLowerCase()}`}
-        centros={resumo.resultadoPorCentroDeCusto}
+        centros={comTodosOsCentros(resumo.resultadoPorCentroDeCusto, ativos)}
         hrefSemCentro={`/extrato?de=${periodo.de}&ate=${periodo.ate}&centro=nenhum`}
         acoes={(c) => {
           const centro = c.centroDeCustoId

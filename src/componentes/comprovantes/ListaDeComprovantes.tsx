@@ -233,14 +233,14 @@ function ItemDoComprovante({
   return (
     <li
       aria-labelledby={`${id}-titulo`}
-      className={`grid gap-4 rounded-m border bg-superficie p-4 ${c.alerta ? "border-alerta/60" : "border-borda"}`}
+      className={`grid min-w-0 gap-4 rounded-m border bg-superficie p-4 ${c.alerta ? "border-alerta/60" : "border-borda"}`}
     >
-      <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
+      <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1">
         <Miniatura
           anexoId={c.anexoId}
           gerarLinkTemporario={acoes.gerarLinkTemporario}
         />
-        <div className="grid min-w-0 gap-1">
+        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-1">
           <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
             <h3 id={`${id}-titulo`} className="text-base font-semibold">
               {titulo}
@@ -507,6 +507,7 @@ function EscolherTransacao({
   aoEscolher: (id: Id) => void;
 }) {
   const [escolhida, setEscolhida] = useState<Id | null>(null);
+  const grupo = useId(); // um grupo de rádios por comprovante (vários ambíguos na mesma tela)
   return (
     <fieldset className="grid gap-2 rounded-m border border-alerta/40 p-3">
       <legend className="px-1 text-sm font-semibold">
@@ -519,7 +520,7 @@ function EscolherTransacao({
         >
           <input
             type="radio"
-            name="candidato"
+            name={grupo}
             value={t.id}
             onChange={() => setEscolhida(t.id)}
             className="size-4 accent-[var(--cor-primaria-texto)]"

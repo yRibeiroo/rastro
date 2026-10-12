@@ -105,7 +105,7 @@ export function GerenciarRegras({
     <section
       id="regras"
       aria-labelledby="titulo-regras"
-      className="grid content-start gap-6"
+      className="grid min-w-0 content-start gap-6"
     >
       <div className="grid gap-1">
         <h2 id="titulo-regras" className="text-xl font-semibold">
@@ -340,7 +340,7 @@ function FormularioDeRegra({
   aoEnviar,
   aoCancelar,
 }: PropsDoFormulario) {
-  const p = regra?.id ?? "nova";
+  const p = regra?.id ?? "regra-nova"; // "nova-categoria" já é o campo de GerenciarCategorias
   return (
     <form
       onSubmit={(e) => {
