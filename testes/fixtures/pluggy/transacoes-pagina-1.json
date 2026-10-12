@@ -1,0 +1,83 @@
+{
+  "results": [
+    {
+      "id": "f1a2b3c4-d5e6-4f70-8192-a3b4c5d6e7f8",
+      "accountId": "0b4d6f3a-91c2-4e6a-8d7f-5a2c1b3e9f10",
+      "date": "2026-10-08T01:15:00.000Z",
+      "description": "PIX ENVIADO POSTO IPIRANGA",
+      "descriptionRaw": "PIX ENV 08/10 POSTO IPIRANGA",
+      "type": "DEBIT",
+      "amount": 250.9,
+      "balance": 15234.56,
+      "currencyCode": "BRL",
+      "category": "Gas stations",
+      "status": "POSTED",
+      "paymentData": {
+        "payer": {
+          "name": "HOMETEC SERVICOS LTDA",
+          "documentNumber": {
+            "type": "CNPJ",
+            "value": "12345678000190"
+          }
+        },
+        "receiver": {
+          "name": "Posto Ipiranga Palmas",
+          "documentNumber": {
+            "type": "CNPJ",
+            "value": "98765432000110"
+          },
+          "accountNumber": "12345"
+        },
+        "paymentMethod": "PIX"
+      },
+      "merchant": null,
+      "createdAt": "2026-10-08T12:31:00.000Z",
+      "updatedAt": "2026-10-08T12:31:00.000Z"
+    },
+    {
+      "id": "a2b3c4d5-e6f7-4081-92a3-b4c5d6e7f809",
+      "accountId": "0b4d6f3a-91c2-4e6a-8d7f-5a2c1b3e9f10",
+      "date": "2026-10-07T00:00:00.000Z",
+      "description": "PIX RECEBIDO CONDOMINIO SOL",
+      "descriptionRaw": null,
+      "type": "CREDIT",
+      "amount": 1800,
+      "balance": 15485.46,
+      "currencyCode": "BRL",
+      "category": "Transfer - PIX",
+      "status": "POSTED",
+      "paymentData": {
+        "payer": {
+          "name": "Condominio Residencial Sol"
+        },
+        "receiver": {
+          "name": "HOMETEC SERVICOS LTDA"
+        },
+        "paymentMethod": "PIX"
+      },
+      "createdAt": "2026-10-07T12:00:00.000Z",
+      "updatedAt": "2026-10-07T12:00:00.000Z"
+    },
+    {
+      "id": "c4d5e6f7-0819-42a3-b4c5-d6e7f8091a2b",
+      "accountId": "0b4d6f3a-91c2-4e6a-8d7f-5a2c1b3e9f10",
+      "date": "2026-10-06T15:00:00.000Z",
+      "description": "TARIFA CESTA DE RELACIONAMENTO",
+      "descriptionRaw": null,
+      "type": "DEBIT",
+      "amount": -59.9,
+      "balance": 13685.46,
+      "currencyCode": "BRL",
+      "category": "Bank fees",
+      "status": "PENDING",
+      "merchant": {
+        "name": "",
+        "businessName": "SICREDI",
+        "cnpj": "01181521000155"
+      },
+      "createdAt": "2026-10-06T16:00:00.000Z",
+      "updatedAt": "2026-10-06T16:00:00.000Z"
+    }
+  ],
+  "next": "/v2/transactions?accountId=0b4d6f3a-91c2-4e6a-8d7f-5a2c1b3e9f10&after=eyJpZCI6ImM0ZDUifQ"
+}

@@ -12,6 +12,12 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Saídas de teste e o protótipo de referência.
+    "coverage/**",
+    "playwright-report/**",
+    "test-results/**",
+    ".lighthouseci/**",
+    "prototipo-flask/**",
   ]),
 ]);
 

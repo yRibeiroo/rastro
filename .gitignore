@@ -41,3 +41,6 @@ __pycache__/
 .DS_Store
 Thumbs.db
 npm-debug.log*
+
+# sessão gerada pelo preparo dos testes de ponta a ponta
+testes/ponta-a-ponta/.sessao/

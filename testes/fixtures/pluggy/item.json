@@ -1,0 +1,15 @@
+{
+  "id": "7c1d9a52-4c3e-4f8b-9a3e-2b6f0d1e5a01",
+  "connector": {
+    "id": 627,
+    "name": "Sicredi Empresas"
+  },
+  "status": "UPDATED",
+  "executionStatus": "SUCCESS",
+  "error": null,
+  "clientUserId": "11111111-2222-4333-8444-555555555555",
+  "consentExpiresAt": "2027-10-01T00:00:00.000Z",
+  "lastUpdatedAt": "2026-10-09T11:00:00.000Z",
+  "createdAt": "2026-10-01T10:00:00.000Z",
+  "updatedAt": "2026-10-09T11:00:00.000Z"
+}

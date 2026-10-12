@@ -1,0 +1,3 @@
+#!/bin/sh
+# Bloqueia commits com segredos: gitleaks nos arquivos em stage.
+exec node comandos/segredos.mjs --staged

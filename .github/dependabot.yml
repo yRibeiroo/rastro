@@ -1,0 +1,18 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule: { interval: weekly, day: monday, timezone: America/Araguaina }
+    open-pull-requests-limit: 5
+    commit-message: { prefix: "chore(deps)" }
+    groups:
+      desenvolvimento:
+        dependency-type: development
+        update-types: [minor, patch]
+      producao:
+        dependency-type: production
+        update-types: [patch]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly, day: monday, timezone: America/Araguaina }
+    commit-message: { prefix: "ci" }

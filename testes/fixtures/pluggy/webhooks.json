@@ -1,0 +1,60 @@
+{
+  "item-created": {
+    "event": "item/created",
+    "eventId": "a3f1c2d4-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+    "id": "7c1d9a52-4c3e-4f8b-9a3e-2b6f0d1e5a01",
+    "itemId": "7c1d9a52-4c3e-4f8b-9a3e-2b6f0d1e5a01",
+    "triggeredBy": "USER"
+  },
+  "item-updated": {
+    "event": "item/updated",
+    "eventId": "b4e2d3c5-6f7a-4b8c-9dae-1f2a3b4c5d6e",
+    "id": "7c1d9a52-4c3e-4f8b-9a3e-2b6f0d1e5a01",
+    "itemId": "7c1d9a52-4c3e-4f8b-9a3e-2b6f0d1e5a01",
+    "triggeredBy": "SYNC"
+  },
+  "item-error": {
+    "event": "item/error",
+    "eventId": "c5f3e4d6-7a8b-4c9d-aebf-2a3b4c5d6e7f",
+    "id": "7c1d9a52-4c3e-4f8b-9a3e-2b6f0d1e5a01",
+    "itemId": "7c1d9a52-4c3e-4f8b-9a3e-2b6f0d1e5a01",
+    "error": {
+      "code": "INVALID_CREDENTIALS_MFA",
+      "message": "Credenciais inválidas"
+    }
+  },
+  "transactions-created": {
+    "event": "transactions/created",
+    "eventId": "d6a4f5e7-8b9c-4dae-bfc0-3b4c5d6e7f80",
+    "itemId": "7c1d9a52-4c3e-4f8b-9a3e-2b6f0d1e5a01",
+    "accountId": "0b4d6f3a-91c2-4e6a-8d7f-5a2c1b3e9f10",
+    "transactionsCreatedAtFrom": "2026-10-08T12:30:00.000Z",
+    "createdTransactionsLink": "https://api.pluggy.ai/transactions?accountId=0b4d6f3a-91c2-4e6a-8d7f-5a2c1b3e9f10&createdAtFrom=2026-10-08T12:30:00.000Z"
+  },
+  "transactions-updated": {
+    "event": "transactions/updated",
+    "eventId": "e7b5a6f8-9cad-4ebf-c0d1-4c5d6e7f8091",
+    "itemId": "7c1d9a52-4c3e-4f8b-9a3e-2b6f0d1e5a01",
+    "accountId": "0b4d6f3a-91c2-4e6a-8d7f-5a2c1b3e9f10",
+    "clientId": "9f8e7d6c-5b4a-4392-8170-6f5e4d3c2b1a",
+    "transactionIds": [
+      "f1a2b3c4-d5e6-4f70-8192-a3b4c5d6e7f8",
+      "a2b3c4d5-e6f7-4081-92a3-b4c5d6e7f809"
+    ]
+  },
+  "transactions-deleted": {
+    "event": "transactions/deleted",
+    "eventId": "f8c6b7a9-adbe-4fc0-d1e2-5d6e7f8091a2",
+    "itemId": "7c1d9a52-4c3e-4f8b-9a3e-2b6f0d1e5a01",
+    "accountId": "0b4d6f3a-91c2-4e6a-8d7f-5a2c1b3e9f10",
+    "clientId": "9f8e7d6c-5b4a-4392-8170-6f5e4d3c2b1a",
+    "transactionIds": ["b3c4d5e6-f708-4192-a3b4-c5d6e7f8091a"]
+  },
+  "connector-status": {
+    "event": "connector/status_updated",
+    "eventId": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d",
+    "data": {
+      "status": "ONLINE"
+    }
+  }
+}

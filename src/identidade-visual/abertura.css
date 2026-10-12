@@ -1,0 +1,226 @@
+/*
+ * Abertura do Rastro (2,4 s, uma vez por sessão). Tudo em CSS: roda fora da thread principal,
+ * então continua suave enquanto o app hidrata e busca dados por baixo.
+ *   0–1,25 s  a logo se desenha por traçado (stroke-dashoffset), barras → trajetória → R
+ *   0,95 s    o preenchimento em gradiente acende
+ *   1,35–2,35 s um véu inclinado na direção da trajetória sai pela diagonal, com um rastro de luz
+ *              na borda, revelando o conteúdo já montado
+ * Sem JS a sequência também termina sozinha (animação abertura-fim).
+ */
+
+.abertura {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  pointer-events: auto;
+  animation: abertura-fim 2.4s linear forwards;
+}
+
+/* Segunda visita na sessão: o script inline marcou o <html> antes da pintura. */
+html[data-abertura-vista] .abertura {
+  display: none;
+}
+
+.abertura[data-pulada] {
+  animation: abertura-pular 160ms var(--curva-saida) forwards;
+}
+
+.abertura__veu {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 400vmax;
+  height: 400vmax;
+  margin-top: -200vmax;
+  margin-left: -75vmax; /* borda esquerda começa 75vmax antes do centro, fora da tela */
+  transform-origin: 75vmax 200vmax; /* gira em torno do centro da tela */
+  transform: rotate(-28deg);
+  background: var(--cor-fundo);
+  animation: abertura-veu 1s var(--curva-entrada-saida) 1.35s forwards;
+}
+
+/* O rastro de luz: preso à borda do véu, se apaga enquanto corre. */
+.abertura__veu::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 100%;
+  width: 28vmax;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--cor-rastro-fraco) 80%,
+    var(--cor-rastro) 99.4%,
+    var(--cor-secundaria) 100%
+  );
+  opacity: 0;
+  animation: abertura-luz 1s linear 1.35s forwards;
+}
+
+.abertura__marca {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 1.25rem;
+  animation: abertura-marca-sai 0.45s var(--curva-saida) 1.55s forwards;
+}
+
+.abertura__logo {
+  display: grid;
+  width: clamp(120px, 34vw, 200px);
+}
+
+.abertura__logo > svg {
+  grid-area: 1 / 1;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.abertura__tracado path {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: abertura-desenho 0.9s var(--curva-entrada-saida) forwards;
+}
+.abertura__tracado path:nth-child(2) {
+  animation-delay: 0.07s;
+}
+.abertura__tracado path:nth-child(3) {
+  animation-delay: 0.14s;
+}
+.abertura__tracado path:nth-child(4) {
+  animation-delay: 0.22s;
+}
+.abertura__tracado path:nth-child(5) {
+  animation-delay: 0.3s;
+}
+.abertura__tracado path:nth-child(6) {
+  animation-delay: 0.35s;
+}
+
+.abertura__preenchida {
+  opacity: 0;
+  animation: abertura-acende 0.4s var(--curva-saida) 0.95s forwards;
+}
+
+.abertura__nome {
+  font-family: var(--fonte-titulo), system-ui, sans-serif;
+  font-weight: 700;
+  font-size: clamp(1.75rem, 6vw, 2.5rem);
+  letter-spacing: -0.02em;
+  color: var(--cor-texto);
+  opacity: 0;
+  transform: translateY(6px);
+  animation: abertura-nome 0.4s var(--curva-saida) 1s forwards;
+}
+
+.abertura__pular {
+  position: absolute;
+  right: max(1rem, env(safe-area-inset-right));
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  padding: 0.5rem 1rem;
+  border-radius: var(--raio-total);
+  border: 1px solid var(--cor-borda-controle);
+  background: var(--cor-superficie);
+  color: var(--cor-texto);
+  font:
+    500 0.875rem/1.25 var(--fonte-texto),
+    system-ui,
+    sans-serif;
+  cursor: pointer;
+  transition: transform var(--duracao-toque) var(--curva-saida);
+  animation: abertura-some 0.3s var(--curva-saida) 1.7s forwards; /* sai junto com a marca */
+}
+.abertura__pular:active {
+  transform: scale(0.97);
+}
+.abertura__pular:focus-visible {
+  outline: 2px solid var(--cor-foco);
+  outline-offset: 2px;
+}
+
+@keyframes abertura-desenho {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes abertura-acende {
+  to {
+    opacity: 1;
+  }
+}
+@keyframes abertura-nome {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes abertura-marca-sai {
+  to {
+    opacity: 0;
+    transform: translate(12px, -8px) scale(1.03);
+  }
+}
+@keyframes abertura-veu {
+  to {
+    transform: rotate(-28deg) translateX(160vmax);
+  }
+}
+@keyframes abertura-luz {
+  0% {
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes abertura-some {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+@keyframes abertura-fim {
+  0%,
+  99% {
+    visibility: visible;
+  }
+  100% {
+    visibility: hidden;
+  }
+}
+@keyframes abertura-pular {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+/* Movimento reduzido: logo estática, só um fade curto do véu inteiro. */
+@media (prefers-reduced-motion: reduce) {
+  .abertura {
+    animation: abertura-pular 0.3s ease 0.6s forwards;
+  }
+  .abertura__veu,
+  .abertura__marca,
+  .abertura__pular {
+    animation: none;
+  }
+  .abertura__veu::before,
+  .abertura__tracado {
+    display: none;
+  }
+  .abertura__preenchida,
+  .abertura__nome {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}

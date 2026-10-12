@@ -1,0 +1,13 @@
+.next/
+coverage/
+playwright-report/
+test-results/
+.lighthouseci/
+package-lock.json
+prototipo-flask/
+documentos/
+supabase/
+banco-de-dados/
+public/
+.claude/
+*.md

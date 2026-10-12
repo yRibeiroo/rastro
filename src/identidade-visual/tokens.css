@@ -1,0 +1,128 @@
+/*
+ * Rastro: tokens de design.
+ * Fonte: documentos/design/Rastro.png (paleta extraída em documentos/design/paleta-extraida.json).
+ *
+ * Cada cor é `light-dark(CLARO, ESCURO)`. O tema segue o sistema (color-scheme: light dark)
+ * e pode ser fixado com <html data-tema="claro|escuro"> (ver definirTema() em tema.ts).
+ * Contraste WCAG verificado por documentos/design/verificar-contraste.mjs, que lê ESTE arquivo.
+ *
+ * Regra de ouro: #00D1A0 (--cor-primaria) é cor de MARCA/preenchimento. Sobre fundo claro ele não
+ * passa AA como texto (1,9:1). Para texto e links use --cor-primaria-texto.
+ */
+
+:root {
+  color-scheme: light dark;
+
+  /* Marca */
+  --cor-primaria: light-dark(
+    #00d1a0,
+    #00d1a0
+  ); /* preenchimentos, logo, botão principal */
+  --cor-secundaria: light-dark(
+    #4ee6b7,
+    #4ee6b7
+  ); /* destaques, fim do gradiente */
+  --cor-primaria-texto: light-dark(
+    #016654,
+    #4ee6b7
+  ); /* links e texto em verde (círculo "Verde Principal" do board) */
+  --cor-primaria-suave: light-dark(
+    #e0f7ef,
+    #0c3a31
+  ); /* fundo de chips, seleção, linha ativa */
+  --cor-sobre-primaria: light-dark(
+    #04241c,
+    #04241c
+  ); /* texto sobre --cor-primaria */
+
+  /* Superfícies (fundo do app → cartões → áreas rebaixadas) */
+  --cor-fundo: light-dark(#f4f7f6, #071315);
+  --cor-superficie: light-dark(#fcfdfd, #0d1d1f);
+  --cor-superficie-2: light-dark(#e9efed, #14292a);
+
+  /* Texto */
+  --cor-texto: light-dark(
+    #0f172a,
+    #e5e7eb
+  ); /* Grafite / Cinza Claro do board */
+  --cor-texto-suave: light-dark(#4a5568, #9fb0ae);
+
+  /* Bordas: decorativa (divisórias) e de controle (inputs, ≥ 3:1) */
+  --cor-borda: light-dark(#e5e7eb, #1d3433);
+  --cor-borda-controle: light-dark(#7a8794, #5f7e7b);
+
+  /* Dinheiro */
+  --cor-entrada: light-dark(#016654, #4ee6b7); /* receita */
+  --cor-saida: light-dark(
+    #a8402a,
+    #ff9b85
+  ); /* despesa: terracota, não é "erro" */
+
+  /* Estados */
+  --cor-erro: light-dark(#c01c28, #ff7b7b);
+  --cor-erro-suave: light-dark(#fde8e8, #3a1416);
+  --cor-alerta: light-dark(#8a5300, #f5b83d);
+  --cor-alerta-suave: light-dark(#fdf1dc, #33260b);
+  --cor-sucesso: light-dark(#016654, #4ee6b7);
+  --cor-foco: light-dark(
+    #016654,
+    #4ee6b7
+  ); /* anel de foco, ≥ 3:1 contra fundo e superfície */
+
+  /* Rastro: a trilha do dinheiro (decorativa, nunca carrega informação sozinha) */
+  --cor-rastro: light-dark(rgb(0 209 160 / 0.55), rgb(78 230 183 / 0.6));
+  --cor-rastro-fraco: light-dark(rgb(0 209 160 / 0.14), rgb(78 230 183 / 0.12));
+  --gradiente-marca: linear-gradient(
+    45deg,
+    #008f6c 0%,
+    #00d1a0 55%,
+    #4ee6b7 100%
+  );
+
+  /* Forma */
+  --raio-p: 6px; /* inputs, chips */
+  --raio-m: 12px; /* cartões, menus */
+  --raio-g: 20px; /* painéis, folhas */
+  --raio-total: 999px; /* só botões e pílulas */
+
+  /* Movimento (espelha rastro-movimento.ts) */
+  --curva-saida: cubic-bezier(0.23, 1, 0.32, 1);
+  --curva-entrada-saida: cubic-bezier(0.77, 0, 0.175, 1);
+  --curva-gaveta: cubic-bezier(0.32, 0.72, 0, 1);
+  --duracao-toque: 140ms;
+  --duracao-rapida: 180ms;
+  --duracao-padrao: 240ms;
+  --duracao-gaveta: 400ms;
+
+  /* Sombras tingidas de grafite-verde, nunca preto puro */
+  --sombra-1: 0 1px 2px rgb(7 19 21 / 0.06), 0 1px 1px rgb(7 19 21 / 0.04);
+  --sombra-2:
+    0 8px 24px -8px rgb(7 19 21 / 0.18), 0 2px 6px rgb(7 19 21 / 0.06);
+  --sombra-3: 0 24px 48px -16px rgb(7 19 21 / 0.28);
+}
+
+:root[data-tema="claro"] {
+  color-scheme: light;
+}
+
+:root[data-tema="escuro"] {
+  color-scheme: dark;
+  --sombra-1: 0 1px 2px rgb(0 0 0 / 0.4);
+  --sombra-2: 0 8px 24px -8px rgb(0 0 0 / 0.6);
+  --sombra-3: 0 24px 48px -16px rgb(0 0 0 / 0.7);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="claro"]) {
+    --sombra-1: 0 1px 2px rgb(0 0 0 / 0.4);
+    --sombra-2: 0 8px 24px -8px rgb(0 0 0 / 0.6);
+    --sombra-3: 0 24px 48px -16px rgb(0 0 0 / 0.7);
+  }
+}
+
+/* Valores em R$: algarismos tabulares para colunas alinharem */
+.valor-monetario {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  letter-spacing: -0.01em;
+}

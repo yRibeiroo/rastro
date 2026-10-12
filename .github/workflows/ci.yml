@@ -1,0 +1,159 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+# Valores FALSOS, só para o build e os testes. Nunca coloque segredo real aqui:
+# segredos reais ficam na Vercel. As chaves do Supabase vêm do Supabase local.
+env:
+  NEXT_TELEMETRY_DISABLED: 1
+  EMAIL_AUTORIZADO: teste@rastro.local
+  URL_DO_SITE: http://localhost:3000
+  PLUGGY_CLIENT_ID: ci-falso
+  PLUGGY_CLIENT_SECRET: ci-falso
+  PLUGGY_WEBHOOK_SECRET: ci-falso-ci-falso-ci-falso-ci-falso
+  PLUGGY_INCLUIR_SANDBOX: "1"
+  ANTHROPIC_API_KEY: ci-falso
+  CRON_SECRET: ci-falso-ci-falso-ci-falso
+  RECURSO_CATEGORIZACAO_IA: "0"
+  RECURSO_ANEXOS: "1"
+  RECURSO_MULTIEMPRESA: "0"
+  # Os E2E nunca chamam a Pluggy nem a Anthropic (o comandos/ambiente-e2e.mjs também força isto).
+  RECURSO_OPEN_FINANCE: "0"
+  RECURSO_COMPROVANTES_IA: "0"
+
+jobs:
+  qualidade:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm }
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run tipos
+      - run: npm run formatar:verificar
+
+  unidade:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm }
+      - run: npm ci
+      - run: npm run testar:cobertura
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          {
+            name: cobertura,
+            path: coverage/,
+            retention-days: 7,
+            if-no-files-found: ignore,
+          }
+
+  integracao:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm }
+      - run: npm ci
+      - name: Supabase local
+        run: npx supabase start -x studio,imgproxy,logflare,vector,edge-runtime,supavisor
+      - run: npx supabase db reset
+      - name: Testes do banco (pgTAP)
+        run: npm run testar:banco
+      - run: node comandos/ambiente-supabase-local.mjs >> "$GITHUB_ENV"
+      - run: npm run testar:integracao
+
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ci-falso
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm }
+      - run: npm ci
+      - run: npm run build
+
+  e2e:
+    needs: [qualidade]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm }
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Supabase local
+        run: npx supabase start -x studio,imgproxy,logflare,vector,edge-runtime,supavisor
+      - run: node comandos/ambiente-supabase-local.mjs >> "$GITHUB_ENV"
+      - run: npm run build
+      - run: npm run testar:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          {
+            name: playwright-report,
+            path: playwright-report/,
+            retention-days: 7,
+          }
+
+  lighthouse:
+    needs: [qualidade]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm }
+      - run: npm ci
+      - name: Supabase local
+        run: npx supabase start -x studio,imgproxy,logflare,vector,edge-runtime,supavisor
+      - run: node comandos/ambiente-supabase-local.mjs >> "$GITHUB_ENV"
+      - run: npm run build
+      - run: npm run lighthouse
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          {
+            name: lighthouse,
+            path: .lighthouseci/,
+            retention-days: 7,
+            if-no-files-found: ignore,
+          }
+
+  segredos:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GITLEAKS_VERSAO: 8.30.1
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - name: Instala o gitleaks
+        run: |
+          base="https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSAO}"
+          arquivo="gitleaks_${GITLEAKS_VERSAO}_linux_x64.tar.gz"
+          curl -sSfLO "$base/$arquivo"
+          curl -sSfL "$base/gitleaks_${GITLEAKS_VERSAO}_checksums.txt" | grep " $arquivo\$" | sha256sum -c -
+          sudo tar -xzf "$arquivo" -C /usr/local/bin gitleaks
+      - name: Varre todo o histórico
+        run: gitleaks git --redact --no-banner --verbose .
