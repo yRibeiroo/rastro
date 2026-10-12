@@ -1,36 +1,54 @@
 ---
 tags: [rastro, projeto, open-finance, pluggy, hometec]
 criado: 2026-10-09
-status: em desenvolvimento
+status: v1.0.0 pronta, deploy pendente
+atualizado: 2026-10-11
 ---
 
 # Rastro — Contexto do projeto
 
-> *"Rastro: saiba para onde vai cada real."*
+> _"Rastro: saiba para onde vai cada real."_
 
 Sistema de controle financeiro da **HOMETEC SERVIÇOS** que puxa o extrato da conta PJ **automaticamente**, sem precisar enviar comprovantes, e categoriza cada gasto. Começa como ferramenta interna e pode virar um SaaS regional (Tocantins → Brasil).
 
 ---
 
+## 0. Estado atual (11/10/2026)
+
+- **v1.0.0 pronta** e revisada pelo QA ([documentos/qualidade/revisoes.md](documentos/qualidade/revisoes.md)). Mudanças em [CHANGELOG.md](CHANGELOG.md).
+- **Local:** `C:\projetos\rastro` (a pasta antiga no OneDrive pode ser apagada).
+- **GitHub:** repositório privado **yRibeiroo/rastro**, pull request #1 (`funcionalidade/v1-em-andamento` → `main`).
+- **Stack:** Next.js 16 + TypeScript + Tailwind 4, Supabase (Postgres com RLS, Auth, Storage), Vercel, Claude ([ADR 0001](documentos/arquitetura/decisoes/0001-nextjs-supabase-vercel.md)). O protótipo Flask descrito nas seções 1 a 7 ficou em `prototipo-flask/` como referência.
+- **Fonte dos dados:** extrato **OFX** do Sicredi + comprovantes lidos pelo Claude ([ADR 0016](documentos/arquitetura/decisoes/0016-extrato-ofx-e-comprovantes-com-ia.md)). A Pluggy está no código, desligada (`RECURSO_OPEN_FINANCE=0`), porque custaria no mínimo R$ 2.500/mês.
+- **Supabase de produção:** projeto `sdglxhgxofttirwfuzlh` (sa-east-1, plano Free) com as migrações aplicadas, **exceto** `supabase/migrations/20261009120600_eventos_webhook_e_limites.sql`, que o Davi precisa rodar no SQL Editor.
+- **Deploy na Vercel: pendente.** O conector da Vercel deu 403 neste time; o Davi importa o repositório manualmente.
+- **Próximos passos:** [documentos/PARA-O-DAVI.md](documentos/PARA-O-DAVI.md) (o que o dono faz), [documentos/operacao.md](documentos/operacao.md) (operação) e [documentos/evolucao/roteiro.md](documentos/evolucao/roteiro.md) (próximas versões).
+
+> As seções 1 a 8 abaixo registram o início do projeto (protótipo Flask + Pluggy) e ficam como histórico.
+
+---
+
 ## 1. Decisões tomadas
 
-| Tema | Decisão |
-|---|---|
-| Nome | **Rastro**. Alternativas consideradas: Cadê, Tostão, Gastô, Contô, Dourado, Jalapa |
-| Banco | **Sicredi**, conta PJ |
-| Fonte dos dados | **Open Finance via Pluggy**, conector *Sicredi Empresas (627)* |
-| Backend | Python + Flask |
-| Frontend | React + `react-pluggy-connect` |
-| Banco de dados | SQLite por enquanto, migrar para Postgres depois |
-| Categorização | Regras + API do Claude + centro de custo por serviço |
+| Tema            | Decisão                                                                            |
+| --------------- | ---------------------------------------------------------------------------------- |
+| Nome            | **Rastro**. Alternativas consideradas: Cadê, Tostão, Gastô, Contô, Dourado, Jalapa |
+| Banco           | **Sicredi**, conta PJ                                                              |
+| Fonte dos dados | **Open Finance via Pluggy**, conector _Sicredi Empresas (627)_                     |
+| Backend         | Python + Flask                                                                     |
+| Frontend        | React + `react-pluggy-connect`                                                     |
+| Banco de dados  | SQLite por enquanto, migrar para Postgres depois                                   |
+| Categorização   | Regras + API do Claude + centro de custo por serviço                               |
 
 ### Por que Pluggy e não a conexão direta
+
 - Para se conectar direto ao Open Finance seria preciso autorização do Banco Central, certificados ICP-Brasil e conformidade com FAPI, o que é inviável para uma empresa pequena.
 - Um **agregador** (Pluggy, Belvo...) já é participante regulado e entrega os dados por uma API comum.
 - As APIs próprias do Sicredi (**API Pix** e **API de Cobrança**, em developer.sicredi.com.br) só mostram **recebimentos**, sem o extrato completo das saídas.
 - O conector direto antigo do Sicredi PJ na Pluggy foi descontinuado. **Use o de Open Finance.**
 
 ### Plano B
+
 Exportar o extrato em **OFX** pelo Sicredi Internet e importar manualmente enquanto a integração não estiver pronta.
 
 ---
@@ -54,6 +72,7 @@ Exportar o extrato em **OFX** pelo Sicredi Internet e importar manualmente enqua
 ```
 
 ### Estrutura de arquivos
+
 ```
 rastro/
 ├── .env              ← credenciais reais (NUNCA vai para o git)
@@ -72,13 +91,14 @@ rastro/
 
 ## 3. Endpoints
 
-| Rota | O que faz |
-|---|---|
-| `POST /api/connect-token` | Body `{clientUserId}` e retorna `{accessToken}` para o widget |
-| `POST /api/items` | Body `{clientUserId, itemId}`. Valida o item na Pluggy (404 se não for da sua aplicação) e salva |
+| Rota                        | O que faz                                                                                                                               |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST /api/connect-token`   | Body `{clientUserId}` e retorna `{accessToken}` para o widget                                                                           |
+| `POST /api/items`           | Body `{clientUserId, itemId}`. Valida o item na Pluggy (404 se não for da sua aplicação) e salva                                        |
 | `POST /api/webhooks/pluggy` | Recebe eventos da Pluggy. Exige o header `Authorization: Bearer <PLUGGY_WEBHOOK_SECRET>`, responde em ms e processa em fila (2 workers) |
 
 ### Banco de dados (SQLite)
+
 - **conexoes**: item_id, client_user_id, banco, status, erro
 - **transacoes**: id, item_id, account_id, data, descricao, valor (**negativo = saída**), tipo (DEBIT/CREDIT), categoria_pluggy, contraparte (quem recebeu/pagou), **categoria** (do Rastro, a preencher)
 - **webhook_eventos**: event_id, usado para ignorar eventos duplicados
@@ -113,6 +133,7 @@ FLASK_DEBUG=1
 > O Client Secret atual apareceu em um print. **Gere um novo no painel da Pluggy** e atualize o `.env`.
 
 **Cuidados com o arquivo:**
+
 - O nome precisa ser exatamente `.env`, não `env.example` nem `.env.txt`.
 - Ele fica **na mesma pasta do `app.py`**, não em Downloads.
 - Teste: `python -c "from dotenv import load_dotenv; import os; load_dotenv(); print(os.environ.get('PLUGGY_CLIENT_ID'))"`
@@ -132,8 +153,13 @@ npm i react-pluggy-connect pluggy-js
 ```
 
 ```tsx
-<OpenFinanceConnect clientUserId="hometec" includeSandbox onConnected={(id) => console.log(id)} />
+<OpenFinanceConnect
+  clientUserId="hometec"
+  includeSandbox
+  onConnected={(id) => console.log(id)}
+/>
 ```
+
 Com Vite, configure o proxy de `/api` para `http://localhost:5000` no `vite.config.ts`.
 
 ---
@@ -160,9 +186,11 @@ Com Vite, configure o proxy de `/api` para `http://localhost:5000` no `vite.conf
 ---
 
 ## 8. Alternativas de mercado (referência)
+
 Conta Azul, Nibo, Organizze e Mobills já fazem a importação via Open Finance. O Rastro se diferencia pela categorização com IA e pelo centro de custo por tipo de serviço.
 
 ## Links
+
 - Docs Pluggy: https://docs.pluggy.ai
 - Pluggy Connect: https://docs.pluggy.ai/docs/pluggy-connect
 - Webhooks: https://docs.pluggy.ai/docs/webhooks
