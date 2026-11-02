@@ -127,6 +127,8 @@ export interface RepositorioDeTransacoes {
     empresaId: Id,
     transacaoIds: readonly Id[],
   ): Promise<void>;
+  /** "Ocultar dos totais" (ADR 0017): só a coluna oculta. */
+  definirOculta(empresaId: Id, transacaoId: Id, oculta: boolean): Promise<Transacao>;
   definirCategoriaPeloUsuario(
     empresaId: Id,
     transacaoId: Id,

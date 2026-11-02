@@ -25,7 +25,7 @@ const carregando = <Carregando contexto="gerando-painel" className="min-h-[50vh]
 export default function Painel({ searchParams }: PageProps<"/painel">) {
   return (
     <>
-      <CabecalhoDaPagina titulo="Painel" descricao="Quanto entrou, para onde foi e qual serviço dá lucro." />
+      <CabecalhoDaPagina titulo="Painel" descricao="Quanto entrou, para onde foi e o que sobrou." />
       <Suspense fallback={carregando}>
         <ConteudoDoPainel searchParams={searchParams} />
       </Suspense>
@@ -168,7 +168,7 @@ function SemConexao({ openFinance }: { openFinance: boolean }) {
   if (openFinance)
     return (
       <Vazio
-        titulo="Conecte a conta do Sicredi para ver para onde vai cada real"
+        titulo="Conecte seu banco para ver para onde vai cada real"
         descricao="A conexão é feita pelo Open Finance: o Rastro só lê o extrato, nunca movimenta dinheiro."
         acao={
           <Link href="/conexoes-bancarias" className={botao.primario}>
@@ -179,8 +179,8 @@ function SemConexao({ openFinance }: { openFinance: boolean }) {
     );
   return (
     <Vazio
-      titulo="Importe o extrato do Sicredi para ver para onde vai cada real"
-      descricao="Exporte o arquivo OFX no Internet Banking e envie aqui. Reenviar o mesmo período não duplica nada."
+      titulo="Importe o extrato do seu banco para ver para onde vai cada real"
+      descricao="Exporte o arquivo OFX no Internet Banking e envie aqui, ou lance à mão em Contas. Reenviar o mesmo período não duplica nada."
       acao={
         <Link href="/importar" className={botao.primario}>
           Importar extrato

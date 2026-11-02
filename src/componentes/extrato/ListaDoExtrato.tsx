@@ -100,6 +100,7 @@ export function ListaDoExtrato({ transacoes, categorias, centros, idsComAnexo, c
                           {t.metodoDePagamento && <span>{t.metodoDePagamento}</span>}
                           {t.centroDeCustoId && <span>{centroDo.get(t.centroDeCustoId)}</span>}
                           {t.pendente && <span className="rounded-full bg-alerta-suave px-2 font-medium text-alerta">pendente no banco</span>}
+                          {t.oculta && <span className="rounded-full bg-superficie-2 px-2 font-medium">fora dos totais</span>}
                           {comAnexo.has(t.id) && (
                             <span className="inline-flex items-center gap-0.5">
                               <Icone nome="clipe" className="size-3.5" />

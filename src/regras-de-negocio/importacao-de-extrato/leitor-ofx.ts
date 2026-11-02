@@ -36,6 +36,19 @@ const BANCOS: Record<string, string> = {
   "033": "Santander",
   "260": "Nubank",
   "077": "Inter",
+  "336": "C6 Bank",
+  "323": "Mercado Pago",
+  "380": "PicPay",
+  "290": "PagBank",
+  "208": "BTG Pactual",
+  "212": "Banco Original",
+  "422": "Safra",
+  "655": "Neon",
+  "041": "Banrisul",
+  "070": "BRB",
+  "136": "Unicred",
+  "085": "Ailos",
+  "102": "XP",
 };
 
 const TIPOS_DE_SAIDA = new Set([
@@ -170,7 +183,10 @@ export class LeitorDeExtratoOfx implements LeitorDeExtrato {
     // RNF-25: texto não confiável. Nada de DTD/entidades externas (o leitor não as resolve de todo modo).
     if (/<!(DOCTYPE|ENTITY)/i.test(texto)) throw arquivoInvalido();
 
-    const conta = bloco(texto, "BANKACCTFROM");
+    // Conta corrente/poupança (BANKACCTFROM) ou fatura de cartão (CCACCTFROM, sem BANKID).
+    const contaBancaria = bloco(texto, "BANKACCTFROM");
+    const conta = contaBancaria ?? bloco(texto, "CCACCTFROM");
+    const cartao = !contaBancaria && conta !== null;
     const bankId = conta && campo(conta, "BANKID");
     const acctId = conta && campo(conta, "ACCTID");
     if (!conta || !acctId) throw arquivoInvalido();
@@ -185,8 +201,9 @@ export class LeitorDeExtratoOfx implements LeitorDeExtrato {
     const contaIdExterno = `ofx:${hash(`${bankId ?? ""}|${agencia}|${acctId}`)}`;
     const digitos = acctId.replace(/\D/g, "");
     const numeroFinal = digitos ? digitos.slice(-4) : null;
-    const tipo: TipoDeConta =
-      campo(conta, "ACCTTYPE")?.toUpperCase() === "SAVINGS"
+    const tipo: TipoDeConta = cartao
+      ? "cartao_de_credito"
+      : campo(conta, "ACCTTYPE")?.toUpperCase() === "SAVINGS"
         ? "poupanca"
         : "corrente";
 
@@ -209,7 +226,7 @@ export class LeitorDeExtratoOfx implements LeitorDeExtrato {
       banco,
       conta: {
         idExterno: contaIdExterno,
-        nome: `${banco ?? "Conta"}${numeroFinal ? ` •••• ${numeroFinal}` : ""}`,
+        nome: `${cartao ? `Cartão ${banco ?? ""}`.trim() : (banco ?? "Conta")}${numeroFinal ? ` •••• ${numeroFinal}` : ""}`,
         tipo,
         numeroFinal,
         saldoCentavos,

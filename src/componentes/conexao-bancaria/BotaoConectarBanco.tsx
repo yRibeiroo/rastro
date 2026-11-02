@@ -69,7 +69,7 @@ export function BotaoConectarBanco({ iniciarConexao, registrarConexao, reconecta
 
       {estado.tipo === "widget" && (
         <>
-          <Carregando contexto="aguardando" tamanho="inline" rotulo="Aguardando a autorização no app do Sicredi" />
+          <Carregando contexto="aguardando" tamanho="inline" rotulo="Aguardando a autorização no app do banco" />
           <PluggyConnect
             connectToken={estado.token}
             includeSandbox={incluirSandbox}

@@ -234,6 +234,16 @@ export async function removerAnexo(
   });
 }
 
+/** Tira (true) ou devolve (false) a transação dos totais do painel. */
+export async function ocultarTransacao(
+  transacaoId: Id,
+  oculta: boolean,
+): Promise<ResultadoDaAcao<Transacao>> {
+  return mutacao("ocultarTransacao", (s) =>
+    s.extrato.ocultar(s.ctx, transacaoId, oculta),
+  );
+}
+
 // ── Contas e lançamentos manuais (ADR 0017) ────────────────────────────────
 
 export async function criarContaManual(

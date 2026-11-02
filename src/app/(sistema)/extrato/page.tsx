@@ -87,7 +87,7 @@ async function ConteudoDoExtrato({ searchParams }: Pick<PageProps<"/extrato">, "
     return openFinance ? (
       <Vazio
         titulo="Nenhum banco conectado ainda"
-        descricao="Conecte a conta do Sicredi e as transações chegam aqui sozinhas, já categorizadas."
+        descricao="Conecte seu banco e as transações chegam aqui sozinhas, já categorizadas."
         acao={
           <Link href="/conexoes-bancarias" className={botao.primario}>
             Conectar banco
@@ -97,7 +97,7 @@ async function ConteudoDoExtrato({ searchParams }: Pick<PageProps<"/extrato">, "
     ) : (
       <Vazio
         titulo="Nenhum extrato importado ainda"
-        descricao="Exporte o extrato em OFX no Internet Banking do Sicredi e envie aqui. As transações entram já categorizadas."
+        descricao="Exporte o extrato em OFX no Internet Banking do seu banco e envie aqui, ou lance à mão em Contas. As transações entram já categorizadas."
         acao={
           <Link href="/importar" className={botao.primario}>
             Importar extrato

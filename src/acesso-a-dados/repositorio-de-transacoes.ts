@@ -52,6 +52,7 @@ export function paraTransacao(linha: Tables<"transacoes">): Transacao {
     categorizacaoAutomaticaEm: paraDataOuNulo(
       linha.categorizacao_automatica_em,
     ),
+    oculta: linha.oculta,
     criadaEm: new Date(linha.criado_em),
     atualizadaEm: new Date(linha.atualizado_em),
   };
@@ -293,6 +294,20 @@ export class RepositorioDeTransacoesSupabase implements RepositorioDeTransacoes 
         .in("id", lote);
       if (error) throw falhaDoBanco(error);
     }
+  }
+
+  async definirOculta(empresaId: string, transacaoId: string, oculta: boolean) {
+    const linha = dadosOuFalha(
+      await this.banco
+        .from("transacoes")
+        .update({ oculta })
+        .eq("empresa_id", empresaId)
+        .eq("id", transacaoId)
+        .select()
+        .single(),
+      { naoEncontrado: "Transação não encontrada." },
+    );
+    return paraTransacao(linha);
   }
 
   async definirCategoriaPeloUsuario(

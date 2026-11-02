@@ -22,7 +22,7 @@ const carregando = <Carregando contexto="sincronizando" rotulo="Carregando as im
 export default function Importar({ searchParams }: PageProps<"/importar">) {
   return (
     <>
-      <CabecalhoDaPagina titulo="Importar extrato" descricao="Envie o arquivo OFX do Sicredi. Reenviar o mesmo período atualiza sem duplicar." />
+      <CabecalhoDaPagina titulo="Importar extrato" descricao="Envie o arquivo OFX do seu banco (conta ou fatura do cartão). Reenviar o mesmo período atualiza sem duplicar." />
       <div className="grid gap-12 pb-8 lg:grid-cols-[1.3fr_1fr] lg:gap-16">
         <div className="grid content-start gap-10">
           <ImportarExtrato importarExtrato={importarExtrato} />
@@ -45,17 +45,26 @@ function ComoExportar() {
   return (
     <section aria-labelledby="como-exportar" className="grid content-start gap-3 lg:sticky lg:top-8">
       <h2 id="como-exportar" className="text-xl font-semibold">
-        Como exportar do Sicredi
+        Como exportar do seu banco
       </h2>
       <ol className="grid list-decimal gap-2 pl-5 text-sm marker:text-texto-suave">
-        <li>Entre no Internet Banking Sicredi da empresa (PJ), no computador.</li>
-        <li>Abra Conta corrente e depois Extrato.</li>
+        <li>Entre no Internet Banking (no computador) ou no app do banco.</li>
+        <li>Abra o extrato da conta ou a fatura do cartão.</li>
         <li>Escolha o período. Pode repetir dias já importados: nada se duplica.</li>
         <li>
-          Em Exportar, escolha o formato <strong className="font-semibold">OFX</strong> e salve o arquivo.
+          Em Exportar ou Baixar, escolha o formato <strong className="font-semibold">OFX</strong> (às vezes chamado de
+          &quot;Money&quot; ou &quot;Quicken&quot;) e salve o arquivo.
         </li>
         <li>Envie o arquivo aqui. Uma vez por semana basta.</li>
       </ol>
+      <p className="text-sm text-texto-suave">
+        Funciona com Nubank, Itaú, Bradesco, Banco do Brasil, Caixa, Santander, Inter, C6, Sicredi, Sicoob e outros que exportam
+        OFX. O que não passa pelo banco você lança em{" "}
+        <Link href="/contas" className="text-primaria-texto underline underline-offset-4">
+          Contas
+        </Link>
+        .
+      </p>
       <p className="text-xs text-texto-suave">O Rastro só lê o arquivo. Ele não acessa o banco nem movimenta dinheiro.</p>
     </section>
   );

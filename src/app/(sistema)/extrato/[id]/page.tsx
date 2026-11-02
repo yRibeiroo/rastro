@@ -19,8 +19,10 @@ import {
   criarRegra,
   gerarLinkTemporario,
   removerAnexo,
+  ocultarTransacao,
   removerLancamentoManual,
 } from "@/regras-de-negocio/interface-web/acoes";
+import { OcultarDosTotais } from "@/componentes/extrato/OcultarDosTotais";
 import { formatarData, formatarDataHora } from "@/ferramentas-internas/formatar-data";
 import { Carregando } from "@/identidade-visual/Carregando";
 
@@ -127,6 +129,8 @@ async function Conteudo({ params, searchParams }: PageProps<"/extrato/[id]">) {
         corrigirCategoria={corrigirCategoria}
         criarRegra={criarRegra}
       />
+
+      <OcultarDosTotais transacaoId={t.id} oculta={t.oculta} ocultar={ocultarTransacao} />
 
       <section aria-labelledby="detalhes" className="grid gap-2">
         <h2 id="detalhes" className="text-xl font-semibold">

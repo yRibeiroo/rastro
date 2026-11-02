@@ -68,7 +68,7 @@ async function Conteudo({ searchParams, acoes }: Pick<PageProps<"/conexoes-banca
     return (
       <Vazio
         titulo="Nenhum banco conectado"
-        descricao="Conecte a conta PJ do Sicredi. A autorização é feita no app do banco e vale por até 12 meses."
+        descricao="Conecte sua conta pelo Open Finance. A autorização é feita no app do banco e vale por até 12 meses."
         acao={<BotaoConectarBanco {...acoes} />}
       />
     );

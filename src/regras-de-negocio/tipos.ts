@@ -89,6 +89,8 @@ export interface Transacao {
   regraId: Id | null;
   confiancaIa: number | null; // 0..1, só quando categoriaOrigem = 'ia'
   categorizacaoAutomaticaEm: Date | null;
+  /** Fora dos totais do painel (continua no extrato e no saldo). */
+  oculta: boolean;
   criadaEm: Date;
   atualizadaEm: Date;
 }
