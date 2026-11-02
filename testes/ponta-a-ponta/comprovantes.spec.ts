@@ -46,7 +46,13 @@ test("filtros por situação ficam no endereço", async ({ page }) => {
   await filtros.getByRole("link", { name: "Escolher transação" }).click();
   await expect(page).toHaveURL(/situacao=ambiguo/);
   await expect(cartoes(page)).toHaveCount(1);
-  await expect(cartoes(page)).toContainText("Recibo de 25/09/2026");
+  // O seed põe o recibo ambíguo no dia 25 do mês anterior (datas relativas, fuso de Araguaína).
+  const [ano, mes] = new Date()
+    .toLocaleDateString("en-CA", { timeZone: "America/Araguaina" })
+    .split("-")
+    .map(Number);
+  const dia25 = new Date(ano, mes - 2, 25).toLocaleDateString("pt-BR");
+  await expect(cartoes(page)).toContainText(`Recibo de ${dia25}`);
 });
 
 test("ambíguo: escolher a transação concilia e o clipe aparece no extrato", async ({
