@@ -21,7 +21,13 @@ O Rastro nasceu para a HOMETEC: um usuário, `EMAIL_AUTORIZADO` e sementes de ca
 - (−) Quem abre o link em outro aparelho (sem o cookie) cai no padrão `empresa`. Mitigação futura: tela de configurações para trocar o perfil e ressemear.
 - (−) O SMTP padrão do Supabase não aguenta cadastro aberto. Antes de ligar a flag em produção, é preciso configurar um SMTP próprio e captcha no Auth.
 
-## Roteiro da v2 (próximas fases)
+## Roteiro da v2
+
+**Situação (2026-11-02):** fases 1 a 6 entregues no branch `evolucao-v2`, com migrações 20261102120000 a 20261102160000
+e testes pgTAP 02 e 07 a 10. Pendências conhecidas: o painel ainda mostra "Resultado por centro de custo" no perfil
+pessoal; não há como editar um lançamento ou uma recorrência (só apagar ou encerrar e criar de novo); a exportação é
+só em CSV.
+
 1. **Cadastro aberto + perfil**: esta ADR.
 2. **Lançamentos e contas manuais**: conexão `provedor = 'manual'` por empresa, no mesmo padrão da conexão `arquivo` (ADR 0016). `transacoes` passa a aceitar insert pelo serviço (service role, filtrado por `empresaId`).
 3. **Ocultar dos totais** (`transacoes.oculta`) e **OFX de qualquer banco**: o leitor já é genérico, falta validar com fixtures de outros bancos.

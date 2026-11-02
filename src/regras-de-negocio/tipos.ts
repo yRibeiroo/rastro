@@ -236,3 +236,21 @@ export interface OcorrenciaPrevista {
   contaManual: boolean;
   categoriaId: Id | null;
 }
+
+// ── Limites de gasto por categoria (Fase 6, ADR 0017) ────────────────────────
+
+export interface LimiteDeGasto {
+  categoriaId: Id;
+  valorMensalCentavos: Centavos;
+}
+
+export type EstadoDoLimite = "ok" | "atencao" | "estourado";
+
+export interface SituacaoDoLimite extends LimiteDeGasto {
+  nome: string;
+  /** Gasto do mês corrente (positivo), sem ocultas, pendentes e transferências. */
+  gastoCentavos: Centavos;
+  /** 0..∞ (1 = 100%). */
+  proporcao: number;
+  estado: EstadoDoLimite;
+}

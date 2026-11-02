@@ -20,6 +20,7 @@ import type {
   Recorrencia,
   Regra,
   SituacaoDoComprovante,
+  SituacaoDoLimite,
   Transacao,
 } from "../tipos";
 
@@ -147,6 +148,11 @@ export async function carregarPrevisao(dias: number): Promise<{
     ]);
     return { previsao, recorrencias };
   });
+}
+
+/** Limites de gasto com o gasto do mês corrente (do mais estourado para o mais folgado). */
+export async function carregarLimitesDeGasto(): Promise<SituacaoDoLimite[]> {
+  return comServicos((s) => s.limitesDeGasto.situacao(s.ctx));
 }
 
 /** Contas da empresa com a origem (banco, extrato importado ou manual). */

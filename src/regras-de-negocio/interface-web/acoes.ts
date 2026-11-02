@@ -23,6 +23,7 @@ import type {
   Conexao,
   DadosDoComprovante,
   Id,
+  LimiteDeGasto,
   Recorrencia,
   Regra,
   TipoDeCategoria,
@@ -296,6 +297,24 @@ export async function baixarOcorrencia(dados: {
   lancar?: boolean;
 }): Promise<ResultadoDaAcao<{ transacaoId: Id | null }>> {
   return mutacao("baixarOcorrencia", (s) => s.previsao.baixar(s.ctx, dados));
+}
+
+// ── Limites de gasto (ADR 0017) ─────────────────────────────────────────────
+
+/** Cria ou troca o limite mensal da categoria. */
+export async function definirLimiteDeGasto(
+  limite: LimiteDeGasto,
+): Promise<ResultadoDaAcao<LimiteDeGasto>> {
+  return mutacao("definirLimiteDeGasto", (s) => s.limitesDeGasto.definir(s.ctx, limite));
+}
+
+export async function removerLimiteDeGasto(
+  categoriaId: Id,
+): Promise<ResultadoDaAcao<null>> {
+  return mutacao("removerLimiteDeGasto", async (s) => {
+    await s.limitesDeGasto.remover(s.ctx, categoriaId);
+    return null;
+  });
 }
 
 // ── Importar extrato e comprovantes (ADR 0016) ─────────────────────────────

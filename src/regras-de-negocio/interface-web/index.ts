@@ -11,6 +11,7 @@ export {
   carregarContas,
   carregarExtrato,
   carregarImportacoes,
+  carregarLimitesDeGasto,
   carregarPainel,
   carregarPrevisao,
   carregarRecursos,

@@ -18,6 +18,7 @@ import { RepositorioDeContasSupabase } from "@/acesso-a-dados/repositorio-de-con
 import { RepositorioDeEmpresasSupabase } from "@/acesso-a-dados/repositorio-de-empresas";
 import { RepositorioDeImportacoesSupabase } from "@/acesso-a-dados/repositorio-de-importacoes";
 import { RepositorioDeLancamentosSupabase } from "@/acesso-a-dados/repositorio-de-lancamentos";
+import { RepositorioDeLimitesDeGastoSupabase } from "@/acesso-a-dados/repositorio-de-limites-de-gasto";
 import { RepositorioDeRecorrenciasSupabase } from "@/acesso-a-dados/repositorio-de-recorrencias";
 import { hojeISO } from "@/ferramentas-internas/formatar-data";
 import {
@@ -82,6 +83,10 @@ import {
   criarServicoDeExportacao,
   type ServicoDeExportacao,
 } from "./exportacao";
+import {
+  criarServicoDeLimitesDeGasto,
+  type ServicoDeLimitesDeGasto,
+} from "./limites-de-gasto";
 import { criarServicoDoPainel, type ServicoDoPainel } from "./painel";
 import { criarServicoDePrevisao, type ServicoDePrevisao } from "./previsao";
 import type { ContextoDoUsuario } from "./tipos";
@@ -103,6 +108,7 @@ export interface ServicosDoUsuario {
   lancamentos: ServicoDeLancamentos;
   previsao: ServicoDePrevisao;
   exportacao: ServicoDeExportacao;
+  limitesDeGasto: ServicoDeLimitesDeGasto;
 }
 
 export interface ServicosDoSistema {
@@ -322,6 +328,12 @@ export async function servicosDoUsuario(): Promise<ServicosDoUsuario> {
         };
       },
       consumirLimite,
+      hoje: () => hojeISO(),
+    }),
+    limitesDeGasto: criarServicoDeLimitesDeGasto({
+      limites: new RepositorioDeLimitesDeGastoSupabase(banco),
+      categorias: new RepositorioDeCategoriasSupabase(banco),
+      painel: new RepositorioDoPainelSupabase(banco),
       hoje: () => hojeISO(),
     }),
   };

@@ -25,6 +25,7 @@ import type {
   ErroDaConexao,
   Id,
   ImportacaoDeExtrato,
+  LimiteDeGasto,
   OcorrenciaPrevista,
   PapelNaEmpresa,
   PerfilDaEmpresa,
@@ -348,4 +349,12 @@ export interface RepositorioDeRecorrencias {
     data: DataISO,
     lancar: boolean,
   ): Promise<Id | null>;
+}
+
+/** Limites de gasto por categoria (Fase 6, ADR 0017). Sessão do usuário (RLS). */
+export interface RepositorioDeLimitesDeGasto {
+  listar(empresaId: Id): Promise<LimiteDeGasto[]>;
+  /** Cria ou troca o valor do limite da categoria. */
+  definir(empresaId: Id, limite: LimiteDeGasto): Promise<LimiteDeGasto>;
+  remover(empresaId: Id, categoriaId: Id): Promise<void>;
 }

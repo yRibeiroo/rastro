@@ -11,9 +11,10 @@ import { botao } from "@/componentes/formulario/classes";
 import { GraficoEntradasSaidas } from "@/componentes/graficos/GraficoEntradasSaidas";
 import { ParaOndeFoi } from "@/componentes/graficos/ParaOndeFoi";
 import { ResultadoPorCentro } from "@/componentes/graficos/ResultadoPorCentro";
-import { carregarConexoes, carregarPainel, carregarPrevisao, carregarRecursos } from "@/regras-de-negocio/interface-web";
+import { BarrasDeLimite } from "@/componentes/limites/BarrasDeLimite";
+import { carregarConexoes, carregarLimitesDeGasto, carregarPainel, carregarPrevisao, carregarRecursos } from "@/regras-de-negocio/interface-web";
 import { textoDaUltimaImportacao, ultimaImportacao } from "@/componentes/estrutura/StatusDaConexao";
-import { formatarData, formatarDataHora, formatarTempoRelativo } from "@/ferramentas-internas/formatar-data";
+import { formatarData, formatarDataHora, formatarTempoRelativo, hojeISO } from "@/ferramentas-internas/formatar-data";
 import { Carregando } from "@/identidade-visual/Carregando";
 import { lerPeriodo, periodoDe, PERIODOS, SeletorDePeriodo } from "@/componentes/estrutura/SeletorDePeriodo";
 
@@ -48,7 +49,7 @@ async function ConteudoDoPainel({ searchParams }: Pick<PageProps<"/painel">, "se
   try {
     if (forcado === "erro") throw new Error("forçado");
     // O gráfico mensal sempre mostra pelo menos 6 meses; o resto segue o período escolhido.
-    const [conexoes, { openFinance }, resumo, historico, previsto] = await Promise.all([
+    const [conexoes, { openFinance }, resumo, historico, previsto, limites] = await Promise.all([
       carregarConexoes(),
       carregarRecursos(),
       carregarPainel(periodo),
@@ -61,11 +62,16 @@ async function ConteudoDoPainel({ searchParams }: Pick<PageProps<"/painel">, "se
           return null;
         },
       ),
+      // Idem para os limites do mês.
+      carregarLimitesDeGasto().catch((erro: unknown) => {
+        unstable_rethrow(erro);
+        return [];
+      }),
     ]);
     const conexao = conexoes.find((c) => c.provedor === (openFinance ? "pluggy" : "arquivo"));
     // Só lançamentos manuais (ADR 0017) também alimentam o painel.
     const temDados = !!conexao || conexoes.some((c) => c.provedor === "manual");
-    dados = { conexao, temDados, openFinance, ultima: ultimaImportacao(conexoes), resumo, historico, previsto };
+    dados = { conexao, temDados, openFinance, ultima: ultimaImportacao(conexoes), resumo, historico, previsto, limites };
   } catch (erro) {
     unstable_rethrow(erro);
     return (
@@ -81,7 +87,8 @@ async function ConteudoDoPainel({ searchParams }: Pick<PageProps<"/painel">, "se
     );
   }
 
-  const { conexao, temDados, openFinance, ultima, resumo, historico, previsto } = dados;
+  const { conexao, temDados, openFinance, ultima, resumo, historico, previsto, limites } = dados;
+  const mesAtual = `${hojeISO().slice(0, 7)}-01`;
   if (forcado === "vazio" || !temDados) return <SemConexao openFinance={openFinance} />;
   const entradas = resumo.fluxoMensal.reduce((s, m) => s + m.entradasCentavos, 0);
   const saidas = resumo.fluxoMensal.reduce((s, m) => s + m.saidasCentavos, 0);
@@ -140,6 +147,20 @@ async function ConteudoDoPainel({ searchParams }: Pick<PageProps<"/painel">, "se
           </div>
         </dl>
       </section>
+
+      {limites.length > 0 && (
+        <section aria-labelledby="limites-do-mes" className="grid gap-4">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 id="limites-do-mes" className="text-xl font-semibold">
+              Limites do mês
+            </h2>
+            <Link href="/categorias#limites" className="text-sm text-texto-suave underline-offset-4 hover:underline">
+              Ajustar limites
+            </Link>
+          </div>
+          <BarrasDeLimite limites={limites} hrefDoExtrato={(id) => `/extrato?de=${mesAtual}&categoria=${id}`} />
+        </section>
+      )}
 
       {resumo.transacoesSemCategoria > 0 && (
         <p className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-m bg-alerta-suave px-4 py-3 text-sm">

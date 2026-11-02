@@ -265,6 +265,32 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"limites_de_gasto": {
+                  Row: {
+                    "atualizado_em": string,"categoria_id": string,"criado_em": string,"empresa_id": string,"valor_mensal": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "atualizado_em"?: string,"categoria_id": string,"criado_em"?: string,"empresa_id": string,"valor_mensal": number
+                  }
+                  Update: {
+                    "atualizado_em"?: string,"categoria_id"?: string,"criado_em"?: string,"empresa_id"?: string,"valor_mensal"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "limites_de_gasto_empresa_id_categoria_id_fkey"
+      columns: ["empresa_id","categoria_id"]
+isOneToOne: true
+      referencedRelation: "categorias"
+      referencedColumns: ["empresa_id","id"]
+    },{
+      foreignKeyName: "limites_de_gasto_empresa_id_fkey"
+      columns: ["empresa_id"]
+isOneToOne: false
+      referencedRelation: "empresas"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"limites_de_requisicao": {
                   Row: {
                     "chave": string,"contador": number,"janela": string

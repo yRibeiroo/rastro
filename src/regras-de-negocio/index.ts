@@ -12,8 +12,7 @@ export type {
   SituacaoDoExtrato,
 } from "./importacao-de-extrato";
 export type { CandidatoAConciliacao } from "./comprovantes";
-export type { NovaContaManual, NovoLancamento } from "./lancamentos";
-export type {
+export type { NovaContaManual, NovoLancamento } from "./lancamentos";export type {
   NovaRecorrencia,
   OcorrenciaNaPrevisao,
   PrevisaoDeSaldo,
