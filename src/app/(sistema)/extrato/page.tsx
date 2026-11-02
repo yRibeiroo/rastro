@@ -114,14 +114,25 @@ async function ConteudoDoExtrato({ searchParams }: Pick<PageProps<"/extrato">, "
           <span className="valor-monetario font-medium text-texto">{pagina.itens.length}</span>{" "}
           {pagina.itens.length === 1 ? "transação" : "transações"}
         </p>
-        {openFinance && conexao ? (
-          <BotaoSincronizar conexaoId={conexao.id} banco={conexao.banco} sincronizar={sincronizarAgora} />
-        ) : (
-          <Link href="/importar" className={botao.secundario}>
-            <Icone nome="importar" className="size-4" />
-            Importar extrato
-          </Link>
-        )}
+        <div className="flex flex-wrap gap-2">
+          {/* <a> (não <Link>): é um download, sem navegação nem prefetch. Mesmos filtros da tela. */}
+          <a
+            href={`/extrato/exportar?${new URLSearchParams(Object.entries(textos(sp)).filter(([k]) => k !== "estado")).toString()}`}
+            download
+            className={botao.secundario}
+          >
+            <Icone nome="subir" className="size-4" />
+            Exportar CSV
+          </a>
+          {openFinance && conexao ? (
+            <BotaoSincronizar conexaoId={conexao.id} banco={conexao.banco} sincronizar={sincronizarAgora} />
+          ) : (
+            <Link href="/importar" className={botao.secundario}>
+              <Icone nome="importar" className="size-4" />
+              Importar extrato
+            </Link>
+          )}
+        </div>
       </div>
       <FiltrosDoExtrato periodo={periodo} valores={valores} ativos={ativos} categorias={categorias} centros={centros} />
       {pagina.itens.length === 0 ? (

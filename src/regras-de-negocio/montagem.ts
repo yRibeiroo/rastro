@@ -78,6 +78,10 @@ import {
   criarServicoDeLancamentos,
   type ServicoDeLancamentos,
 } from "./lancamentos";
+import {
+  criarServicoDeExportacao,
+  type ServicoDeExportacao,
+} from "./exportacao";
 import { criarServicoDoPainel, type ServicoDoPainel } from "./painel";
 import { criarServicoDePrevisao, type ServicoDePrevisao } from "./previsao";
 import type { ContextoDoUsuario } from "./tipos";
@@ -98,6 +102,7 @@ export interface ServicosDoUsuario {
   comprovantes: ServicoDeComprovantes;
   lancamentos: ServicoDeLancamentos;
   previsao: ServicoDePrevisao;
+  exportacao: ServicoDeExportacao;
 }
 
 export interface ServicosDoSistema {
@@ -254,6 +259,16 @@ export async function servicosDoUsuario(): Promise<ServicosDoUsuario> {
     comprovantes,
     consumirLimite,
   });
+  const extrato = criarServicoDeExtrato({ transacoes });
+  const centrosDeCusto = criarServicoDeCentrosDeCusto({
+    centrosDeCusto: new RepositorioDeCentrosDeCustoSupabase(banco),
+  });
+  // RPCs security definer pela sessão do usuário (conferem a membership).
+  const lancamentos = criarServicoDeLancamentos({
+    lancamentos: new RepositorioDeLancamentosSupabase(banco),
+    contas: new RepositorioDeContasSupabase(banco),
+    categorizacao,
+  });
   return {
     ctx,
     conexoes: criarServicoDeConexaoBancaria({
@@ -262,15 +277,13 @@ export async function servicosDoUsuario(): Promise<ServicosDoUsuario> {
       conexoes: new RepositorioDeConexoesSupabase(clienteDoSistema()),
       consumirLimite,
     }),
-    extrato: criarServicoDeExtrato({ transacoes }),
+    extrato,
     sincronizacao: {
       sincronizarAgora: (c, id) =>
         doSistema.sincronizacao.sincronizarAgora(c, id),
     },
     categorizacao,
-    centrosDeCusto: criarServicoDeCentrosDeCusto({
-      centrosDeCusto: new RepositorioDeCentrosDeCustoSupabase(banco),
-    }),
+    centrosDeCusto,
     painel: criarServicoDoPainel({
       painel: new RepositorioDoPainelSupabase(banco),
       contas: new RepositorioDeContasSupabase(banco),
@@ -285,16 +298,30 @@ export async function servicosDoUsuario(): Promise<ServicosDoUsuario> {
     }),
     importacao,
     comprovantes,
-    // RPCs security definer pela sessão do usuário (conferem a membership).
-    lancamentos: criarServicoDeLancamentos({
-      lancamentos: new RepositorioDeLancamentosSupabase(banco),
-      contas: new RepositorioDeContasSupabase(banco),
-      categorizacao,
-    }),
+    lancamentos,
     previsao: criarServicoDePrevisao({
       recorrencias: new RepositorioDeRecorrenciasSupabase(banco),
       contas: new RepositorioDeContasSupabase(banco),
       categorizacao,
+      hoje: () => hojeISO(),
+    }),
+    exportacao: criarServicoDeExportacao({
+      listarPagina: (c, filtros) => extrato.listar(c, filtros),
+      nomes: async (c) => {
+        const [categorias, centros, contas] = await Promise.all([
+          categorizacao.listarCategorias(c, { incluirArquivadas: true }),
+          centrosDeCusto.listar(c, { incluirArquivados: true }),
+          lancamentos.listarContas(c),
+        ]);
+        const porId = (l: Array<{ id: string; nome: string }>) =>
+          new Map(l.map((x) => [x.id, x.nome]));
+        return {
+          categorias: porId(categorias),
+          centros: porId(centros),
+          contas: porId(contas),
+        };
+      },
+      consumirLimite,
       hoje: () => hojeISO(),
     }),
   };

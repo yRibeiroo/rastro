@@ -23,6 +23,7 @@ export const LIMITES = {
   anexo: { maximo: 30, janelaEmSegundos: 3600 },
   importacao: { maximo: 20, janelaEmSegundos: 3600 },
   comprovante: { maximo: 30, janelaEmSegundos: 3600 },
+  exportacao: { maximo: 30, janelaEmSegundos: 3600 },
 } as const satisfies Record<string, LimiteDeRequisicoes>;
 
 /** Chave com SHA-256 do valor (IP/e-mail nunca em texto puro, LGPD). */
