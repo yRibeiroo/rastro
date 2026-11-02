@@ -6,8 +6,10 @@ import type { ClienteDoBanco } from "./supabase/cliente-do-usuario";
 
 // Mensagens levantadas pelas RPCs (migração 20261102130000) → texto para o usuário.
 const MENSAGENS: Record<string, string> = {
-  conta_nao_manual: "Escolha uma conta manual. Contas do banco recebem lançamentos só pelo extrato.",
-  lancamento_nao_manual: "Só lançamentos manuais podem ser alterados. Os do extrato vêm do banco.",
+  conta_nao_manual:
+    "Escolha uma conta manual. Contas do banco recebem lançamentos só pelo extrato.",
+  lancamento_nao_manual:
+    "Só lançamentos manuais podem ser alterados. Os do extrato vêm do banco.",
   lancamento_com_anexos: "Remova os anexos deste lançamento antes de apagá-lo.",
   nome_invalido: "Dê um nome para a conta.",
   tipo_invalido: "Escolha o tipo da conta.",
@@ -16,11 +18,16 @@ const MENSAGENS: Record<string, string> = {
   data_invalida: "Informe a data.",
 };
 
-type Resposta<T> = { data: T; error: { code?: string; message?: string } | null };
+type Resposta<T> = {
+  data: T;
+  error: { code?: string; message?: string } | null;
+};
 
 /** Erro conhecido da RPC vira mensagem específica; o resto segue o tratamento padrão. */
 function resultado<T>(resposta: Resposta<T>): NonNullable<T> {
-  const mensagem = resposta.error?.message ? MENSAGENS[resposta.error.message] : undefined;
+  const mensagem = resposta.error?.message
+    ? MENSAGENS[resposta.error.message]
+    : undefined;
   if (mensagem) throw new ErroDeNegocio("entrada_invalida", mensagem);
   return dadosOuFalha(resposta, {
     referencia: "Categoria ou centro de custo inválido.",
@@ -28,7 +35,11 @@ function resultado<T>(resposta: Resposta<T>): NonNullable<T> {
 }
 
 /** RPC que devolve void: só o erro interessa. */
-function semRetorno({ error }: { error: { code?: string; message?: string } | null }) {
+function semRetorno({
+  error,
+}: {
+  error: { code?: string; message?: string } | null;
+}) {
   if (!error) return;
   const mensagem = error.message ? MENSAGENS[error.message] : undefined;
   if (mensagem) throw new ErroDeNegocio("entrada_invalida", mensagem);

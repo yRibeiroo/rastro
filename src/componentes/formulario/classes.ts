@@ -15,7 +15,8 @@ export const botao = {
   fantasma: `${base} text-texto hover:bg-superficie-2`,
   perigo: `${base} border border-erro/50 text-erro hover:bg-erro-suave`,
   /** Botão só com ícone: quadrado de 44 px. */
-  icone: "inline-grid size-11 shrink-0 place-items-center rounded-full text-texto-suave transition-[transform,background-color] duration-[140ms] ease-saida hover:bg-superficie-2 hover:text-texto active:scale-[0.97] md:size-10",
+  icone:
+    "inline-grid size-11 shrink-0 place-items-center rounded-full text-texto-suave transition-[transform,background-color] duration-[140ms] ease-saida hover:bg-superficie-2 hover:text-texto active:scale-[0.97] md:size-10",
 } as const;
 
 export const campo =

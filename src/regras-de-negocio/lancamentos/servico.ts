@@ -35,16 +35,29 @@ export interface NovoLancamento {
 export interface ServicoDeLancamentos {
   /** Todas as contas da empresa (banco, extrato importado e manuais). */
   listarContas(ctx: ContextoDoUsuario): Promise<Conta[]>;
-  criarConta(ctx: ContextoDoUsuario, dados: NovaContaManual): Promise<{ id: Id }>;
+  criarConta(
+    ctx: ContextoDoUsuario,
+    dados: NovaContaManual,
+  ): Promise<{ id: Id }>;
   lancar(ctx: ContextoDoUsuario, dados: NovoLancamento): Promise<{ id: Id }>;
   remover(ctx: ContextoDoUsuario, transacaoId: Id): Promise<void>;
-  editar(ctx: ContextoDoUsuario, transacaoId: Id, dados: EdicaoDeLancamento): Promise<void>;
+  editar(
+    ctx: ContextoDoUsuario,
+    transacaoId: Id,
+    dados: EdicaoDeLancamento,
+  ): Promise<void>;
 }
 
-export type EdicaoDeLancamento = Pick<NovoLancamento, "data" | "descricao" | "valorCentavos">;
+export type EdicaoDeLancamento = Pick<
+  NovoLancamento,
+  "data" | "descricao" | "valorCentavos"
+>;
 
 const LIMITE_EM_CENTAVOS = 1e14; // numeric(14,2)
-const centavos = z.number().int().refine((v) => Math.abs(v) < LIMITE_EM_CENTAVOS);
+const centavos = z
+  .number()
+  .int()
+  .refine((v) => Math.abs(v) < LIMITE_EM_CENTAVOS);
 
 const esquemaConta = z.object({
   nome: z.string().trim().min(1).max(200),
@@ -61,7 +74,11 @@ const esquemaLancamento = z.object({
   centroDeCustoId: z.uuid().nullish(),
 });
 
-const esquemaEdicao = esquemaLancamento.pick({ data: true, descricao: true, valorCentavos: true });
+const esquemaEdicao = esquemaLancamento.pick({
+  data: true,
+  descricao: true,
+  valorCentavos: true,
+});
 
 export function criarServicoDeLancamentos(deps: {
   lancamentos: RepositorioDeLancamentos;
@@ -94,7 +111,9 @@ export function criarServicoDeLancamentos(deps: {
       if (!r.data.categoriaId)
         await deps.categorizacao
           .categorizarPendentes(ctx.empresaId)
-          .catch((erro) => registrarFalha("categorizar lançamento manual", erro));
+          .catch((erro) =>
+            registrarFalha("categorizar lançamento manual", erro),
+          );
       return { id };
     },
 
@@ -109,7 +128,9 @@ export function criarServicoDeLancamentos(deps: {
         throw new ErroDeNegocio("nao_encontrado", "Lançamento não encontrado.");
       const r = esquemaEdicao.safeParse(dados);
       if (!r.success)
-        throw entradaInvalida("Confira a data, a descrição e o valor (diferente de zero).");
+        throw entradaInvalida(
+          "Confira a data, a descrição e o valor (diferente de zero).",
+        );
       await deps.lancamentos.editar(ctx.empresaId, transacaoId, r.data);
     },
   };

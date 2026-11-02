@@ -28,15 +28,23 @@ describe("chave de acesso (NF-e/NFC-e)", () => {
       ),
     ).toBe(CHAVE);
     expect(
-      extrairChaveDeAcessoDoQr(`https://x.gov.br/consulta?chNFe=${CHAVE}&nVersao=100`),
+      extrairChaveDeAcessoDoQr(
+        `https://x.gov.br/consulta?chNFe=${CHAVE}&nVersao=100`,
+      ),
     ).toBe(CHAVE);
-    expect(extrairChaveDeAcessoDoQr(CHAVE.replace(/(\d{4})/g, "$1 "))).toBe(CHAVE);
+    expect(extrairChaveDeAcessoDoQr(CHAVE.replace(/(\d{4})/g, "$1 "))).toBe(
+      CHAVE,
+    );
   });
 
   it("null para texto qualquer, p ausente, DV inválido ou tipo errado", () => {
     expect(extrairChaveDeAcessoDoQr("olá mundo")).toBeNull();
-    expect(extrairChaveDeAcessoDoQr("https://sefaz.gov.br/nfce?x=1")).toBeNull();
-    expect(extrairChaveDeAcessoDoQr(`https://s.gov.br/q?p=${DV_ERRADO}|2`)).toBeNull();
+    expect(
+      extrairChaveDeAcessoDoQr("https://sefaz.gov.br/nfce?x=1"),
+    ).toBeNull();
+    expect(
+      extrairChaveDeAcessoDoQr(`https://s.gov.br/q?p=${DV_ERRADO}|2`),
+    ).toBeNull();
     expect(extrairChaveDeAcessoDoQr(`${CHAVE}9`)).toBeNull();
     expect(extrairChaveDeAcessoDoQr(42 as unknown as string)).toBeNull();
   });

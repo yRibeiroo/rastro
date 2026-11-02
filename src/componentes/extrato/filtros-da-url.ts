@@ -17,10 +17,14 @@ export type PeriodoDoExtrato = keyof typeof PERIODOS_DO_EXTRATO;
 
 export type ParametrosDaUrl = Record<string, string | string[] | undefined>;
 
-const texto = (v: string | string[] | undefined) => (typeof v === "string" ? v.trim() : "");
+const texto = (v: string | string[] | undefined) =>
+  typeof v === "string" ? v.trim() : "";
 const ehData = (v: string) => /^\d{4}-\d{2}-\d{2}$/.test(v);
 
-export function intervaloDoPeriodo(periodo: Exclude<PeriodoDoExtrato, "personalizado">, hoje: DataISO): { de?: DataISO; ate?: DataISO } {
+export function intervaloDoPeriodo(
+  periodo: Exclude<PeriodoDoExtrato, "personalizado">,
+  hoje: DataISO,
+): { de?: DataISO; ate?: DataISO } {
   const inicioDoMes = `${hoje.slice(0, 7)}-01`;
   if (periodo === "mes") return { de: inicioDoMes, ate: hoje };
   if (periodo === "mes-passado") {
@@ -43,7 +47,10 @@ export function lerFiltros(sp: ParametrosDaUrl, hoje: DataISO = hojeISO()) {
       : "mes";
   const intervalo = personalizado
     ? { de: ehData(de) ? de : undefined, ate: ehData(ate) ? ate : undefined }
-    : intervaloDoPeriodo(periodo as Exclude<PeriodoDoExtrato, "personalizado">, hoje);
+    : intervaloDoPeriodo(
+        periodo as Exclude<PeriodoDoExtrato, "personalizado">,
+        hoje,
+      );
 
   const categoria = texto(sp.categoria);
   const centro = texto(sp.centro);
@@ -53,12 +60,31 @@ export function lerFiltros(sp: ParametrosDaUrl, hoje: DataISO = hojeISO()) {
   const filtros: FiltrosDoExtrato = {
     dataDe: intervalo.de,
     dataAte: intervalo.ate,
-    categoriaId: categoria === "nenhuma" ? "sem_categoria" : categoria || undefined,
+    categoriaId:
+      categoria === "nenhuma" ? "sem_categoria" : categoria || undefined,
     centroDeCustoId: centro === "nenhum" ? "sem_centro" : centro || undefined,
     sentido: sentido === "entrada" || sentido === "saida" ? sentido : undefined,
     busca: busca || undefined,
   };
   // Quantos filtros além do período padrão (para o rótulo "Filtros (2)" no celular).
-  const ativos = [periodo !== "mes", categoria, centro, filtros.sentido, busca].filter(Boolean).length;
-  return { filtros, periodo, valores: { de: intervalo.de ?? "", ate: intervalo.ate ?? "", categoria, centro, sentido: filtros.sentido ?? "", busca }, ativos };
+  const ativos = [
+    periodo !== "mes",
+    categoria,
+    centro,
+    filtros.sentido,
+    busca,
+  ].filter(Boolean).length;
+  return {
+    filtros,
+    periodo,
+    valores: {
+      de: intervalo.de ?? "",
+      ate: intervalo.ate ?? "",
+      categoria,
+      centro,
+      sentido: filtros.sentido ?? "",
+      busca,
+    },
+    ativos,
+  };
 }

@@ -11,7 +11,11 @@ import {
 } from "../acesso";
 import type { NovaRegra, SugestaoDeRegra } from "../categorizacao";
 import type { ResultadoDaImportacao } from "../importacao-de-extrato";
-import type { EdicaoDeLancamento, NovaContaManual, NovoLancamento } from "../lancamentos";
+import type {
+  EdicaoDeLancamento,
+  NovaContaManual,
+  NovoLancamento,
+} from "../lancamentos";
 import type { EdicaoDeRecorrencia, NovaRecorrencia } from "../previsao";
 import { ErroDeNegocio, type ResultadoDaAcao } from "../erros";
 import { servicosDoUsuario } from "../montagem";
@@ -31,8 +35,7 @@ import type {
 } from "../tipos";
 import { executarAcao, ipDaRequisicao } from "./resultado";
 
-// Server Actions do Rastro. Mesmas assinaturas de src/componentes/prototipo/acoes-simuladas.ts:
-// sem ctx (a sessão e a allowlist são conferidas aqui, em toda chamada) e retorno ResultadoDaAcao<T>.
+// Server Actions do Rastro. Sem ctx (a sessão e a allowlist são conferidas aqui, em toda chamada) e retorno ResultadoDaAcao<T>.
 
 /** Executa com sessão + allowlist e atualiza a tela depois de uma mutação bem-sucedida. */
 async function mutacao<T>(
@@ -252,7 +255,9 @@ export async function ocultarTransacao(
 export async function criarContaManual(
   dados: NovaContaManual,
 ): Promise<ResultadoDaAcao<{ id: Id }>> {
-  return mutacao("criarContaManual", (s) => s.lancamentos.criarConta(s.ctx, dados));
+  return mutacao("criarContaManual", (s) =>
+    s.lancamentos.criarConta(s.ctx, dados),
+  );
 }
 
 /** valorCentavos negativo = saída. Sem categoria, as regras/IA categorizam em seguida. */
@@ -288,7 +293,9 @@ export async function editarLancamentoManual(
 export async function criarRecorrencia(
   dados: NovaRecorrencia,
 ): Promise<ResultadoDaAcao<Recorrencia>> {
-  return mutacao("criarRecorrencia", (s) => s.previsao.criarRecorrencia(s.ctx, dados));
+  return mutacao("criarRecorrencia", (s) =>
+    s.previsao.criarRecorrencia(s.ctx, dados),
+  );
 }
 
 /** Para de prever (as baixas já feitas ficam). */
@@ -306,7 +313,9 @@ export async function editarRecorrencia(
   recorrenciaId: Id,
   dados: EdicaoDeRecorrencia,
 ): Promise<ResultadoDaAcao<Recorrencia>> {
-  return mutacao("editarRecorrencia", (s) => s.previsao.editarRecorrencia(s.ctx, recorrenciaId, dados));
+  return mutacao("editarRecorrencia", (s) =>
+    s.previsao.editarRecorrencia(s.ctx, recorrenciaId, dados),
+  );
 }
 
 /** "Paguei/Recebi" (lancar = true: lança na conta manual) ou "Pular" (lancar = false). */
@@ -324,7 +333,9 @@ export async function baixarOcorrencia(dados: {
 export async function definirLimiteDeGasto(
   limite: LimiteDeGasto,
 ): Promise<ResultadoDaAcao<LimiteDeGasto>> {
-  return mutacao("definirLimiteDeGasto", (s) => s.limitesDeGasto.definir(s.ctx, limite));
+  return mutacao("definirLimiteDeGasto", (s) =>
+    s.limitesDeGasto.definir(s.ctx, limite),
+  );
 }
 
 export async function removerLimiteDeGasto(

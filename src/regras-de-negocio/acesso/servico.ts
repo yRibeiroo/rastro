@@ -157,7 +157,10 @@ export function criarServicoDeAcesso(deps: {
         );
       }
       const empresaId = perfil
-        ? await deps.empresas.garantirEmpresaDoUsuario(nomePadrao(perfil), perfil)
+        ? await deps.empresas.garantirEmpresaDoUsuario(
+            nomePadrao(perfil),
+            perfil,
+          )
         : await deps.empresas.garantirEmpresaDoUsuario(NOME_PADRAO_DA_EMPRESA);
       return { empresaId };
     },

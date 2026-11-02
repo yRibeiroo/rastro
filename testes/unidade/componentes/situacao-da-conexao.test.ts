@@ -15,20 +15,50 @@ describe("situacaoDaConexao (RF-07)", () => {
     ["atualizada", emDias(5), "Precisa reconectar"],
     ["atualizada", emDias(-1), "Precisa reconectar"],
     ["atualizando", null, "Sincronizando"],
-  ] as const)("%s com consentimento %s → %s", (status, consentimentoExpiraEm, rotulo) => {
-    expect(situacaoDaConexao({ status, consentimentoExpiraEm }, agora).rotulo).toBe(rotulo);
-  });
+  ] as const)(
+    "%s com consentimento %s → %s",
+    (status, consentimentoExpiraEm, rotulo) => {
+      expect(
+        situacaoDaConexao({ status, consentimentoExpiraEm }, agora).rotulo,
+      ).toBe(rotulo);
+    },
+  );
 
   it("só oferece Reconectar quando faz sentido", () => {
-    expect(situacaoDaConexao({ status: "atualizada", consentimentoExpiraEm: emDias(90) }, agora).reconectar).toBe(false);
-    expect(situacaoDaConexao({ status: "erro_de_login", consentimentoExpiraEm: emDias(90) }, agora).reconectar).toBe(true);
+    expect(
+      situacaoDaConexao(
+        { status: "atualizada", consentimentoExpiraEm: emDias(90) },
+        agora,
+      ).reconectar,
+    ).toBe(false);
+    expect(
+      situacaoDaConexao(
+        { status: "erro_de_login", consentimentoExpiraEm: emDias(90) },
+        agora,
+      ).reconectar,
+    ).toBe(true);
   });
 });
 
 describe("aviso no cabeçalho (HU-04)", () => {
   it("avisa erro de login e autorização vencida, mas não a que só vai vencer", () => {
-    expect(situacaoDaConexao({ status: "erro_de_login", consentimentoExpiraEm: emDias(90) }, agora).aviso).toBe(true);
-    expect(situacaoDaConexao({ status: "atualizada", consentimentoExpiraEm: emDias(-1) }, agora).aviso).toBe(true);
-    expect(situacaoDaConexao({ status: "atualizada", consentimentoExpiraEm: emDias(5) }, agora).aviso).toBe(false);
+    expect(
+      situacaoDaConexao(
+        { status: "erro_de_login", consentimentoExpiraEm: emDias(90) },
+        agora,
+      ).aviso,
+    ).toBe(true);
+    expect(
+      situacaoDaConexao(
+        { status: "atualizada", consentimentoExpiraEm: emDias(-1) },
+        agora,
+      ).aviso,
+    ).toBe(true);
+    expect(
+      situacaoDaConexao(
+        { status: "atualizada", consentimentoExpiraEm: emDias(5) },
+        agora,
+      ).aviso,
+    ).toBe(false);
   });
 });

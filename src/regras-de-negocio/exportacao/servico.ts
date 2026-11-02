@@ -18,7 +18,10 @@ export interface ArquivoExportado {
 }
 
 export interface ServicoDeExportacao {
-  exportarExtrato(ctx: ContextoDoUsuario, filtros: FiltrosDoExtrato): Promise<ArquivoExportado>;
+  exportarExtrato(
+    ctx: ContextoDoUsuario,
+    filtros: FiltrosDoExtrato,
+  ): Promise<ArquivoExportado>;
 }
 
 /**
@@ -38,7 +41,8 @@ export function celulaDeValor(centavos: number): string {
   return `${sinal}${Math.floor(abs / 100)},${String(abs % 100).padStart(2, "0")}`;
 }
 
-const dataBr = (iso: DataISO) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
+const dataBr = (iso: DataISO) =>
+  `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
 
 export const CABECALHO = [
   "Data",
@@ -55,7 +59,11 @@ export const CABECALHO = [
 
 export function montarCsv(
   transacoes: readonly Transacao[],
-  nomes: { categorias: Map<Id, string>; centros: Map<Id, string>; contas: Map<Id, string> },
+  nomes: {
+    categorias: Map<Id, string>;
+    centros: Map<Id, string>;
+    contas: Map<Id, string>;
+  },
 ): string {
   const linhas = transacoes.map((t) =>
     [
@@ -63,7 +71,9 @@ export function montarCsv(
       celulaDeTexto(t.descricao),
       celulaDeValor(t.valorCentavos),
       celulaDeTexto(t.categoriaId ? nomes.categorias.get(t.categoriaId) : ""),
-      celulaDeTexto(t.centroDeCustoId ? nomes.centros.get(t.centroDeCustoId) : ""),
+      celulaDeTexto(
+        t.centroDeCustoId ? nomes.centros.get(t.centroDeCustoId) : "",
+      ),
       celulaDeTexto(nomes.contas.get(t.contaId)),
       celulaDeTexto(t.contraparte),
       celulaDeTexto(t.metodoDePagamento),
@@ -75,30 +85,44 @@ export function montarCsv(
 }
 
 export function criarServicoDeExportacao(deps: {
-  listarPagina: (ctx: ContextoDoUsuario, filtros: FiltrosDoExtrato) => Promise<PaginaDoExtrato>;
+  listarPagina: (
+    ctx: ContextoDoUsuario,
+    filtros: FiltrosDoExtrato,
+  ) => Promise<PaginaDoExtrato>;
   nomes: (ctx: ContextoDoUsuario) => Promise<Parameters<typeof montarCsv>[1]>;
   consumirLimite: ConsumirLimite;
   hoje: () => DataISO;
 }): ServicoDeExportacao {
   return {
     async exportarExtrato(ctx, filtros) {
-      await exigirLimite(deps.consumirLimite, `exportacao:usuario:${ctx.usuarioId}`, LIMITES.exportacao);
+      await exigirLimite(
+        deps.consumirLimite,
+        `exportacao:usuario:${ctx.usuarioId}`,
+        LIMITES.exportacao,
+      );
       const transacoes: Transacao[] = [];
       let cursor: string | undefined;
       let truncado = false;
       do {
         // listar valida os filtros (entrada_invalida) e é ordenado por data desc.
-        const pagina = await deps.listarPagina(ctx, { ...filtros, cursor, limite: PAGINA });
+        const pagina = await deps.listarPagina(ctx, {
+          ...filtros,
+          cursor,
+          limite: PAGINA,
+        });
         transacoes.push(...pagina.itens);
         cursor = pagina.proximoCursor ?? undefined;
         if (transacoes.length >= LIMITE_DE_LINHAS) {
-          truncado = cursor !== undefined || transacoes.length > LIMITE_DE_LINHAS;
+          truncado =
+            cursor !== undefined || transacoes.length > LIMITE_DE_LINHAS;
           transacoes.length = Math.min(transacoes.length, LIMITE_DE_LINHAS);
           break;
         }
       } while (cursor);
 
-      const periodo = [filtros.dataDe, filtros.dataAte].filter(Boolean).join("_a_") || `ate_${deps.hoje()}`;
+      const periodo =
+        [filtros.dataDe, filtros.dataAte].filter(Boolean).join("_a_") ||
+        `ate_${deps.hoje()}`;
       return {
         nomeDoArquivo: `rastro-extrato_${periodo}${truncado ? "_parcial" : ""}.csv`,
         conteudo: montarCsv(transacoes, await deps.nomes(ctx)),

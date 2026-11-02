@@ -27,6 +27,9 @@ env:
   RECURSO_CATEGORIZACAO_IA: "0"
   RECURSO_ANEXOS: "1"
   RECURSO_MULTIEMPRESA: "0"
+  # Os E2E nunca chamam a Pluggy nem a Anthropic (o comandos/ambiente-e2e.mjs também força isto).
+  RECURSO_OPEN_FINANCE: "0"
+  RECURSO_COMPROVANTES_IA: "0"
 
 jobs:
   qualidade:

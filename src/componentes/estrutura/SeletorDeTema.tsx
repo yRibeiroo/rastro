@@ -12,14 +12,22 @@ const OPCOES: { valor: Tema; rotulo: string }[] = [
 // O tema vive no <html data-tema> (gravado antes da pintura pelo script do layout).
 function assinar(aviso: () => void) {
   const observador = new MutationObserver(aviso);
-  observador.observe(document.documentElement, { attributes: true, attributeFilter: ["data-tema"] });
+  observador.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["data-tema"],
+  });
   return () => observador.disconnect();
 }
-const temaAtual = (): Tema => (document.documentElement.dataset.tema as Tema | undefined) ?? "sistema";
+const temaAtual = (): Tema =>
+  (document.documentElement.dataset.tema as Tema | undefined) ?? "sistema";
 
 export function SeletorDeTema({ className = "" }: { className?: string }) {
   const nome = useId();
-  const tema = useSyncExternalStore(assinar, temaAtual, () => "sistema" as Tema);
+  const tema = useSyncExternalStore(
+    assinar,
+    temaAtual,
+    () => "sistema" as Tema,
+  );
   return (
     <fieldset className={`grid gap-1.5 ${className}`}>
       <legend className="mb-1.5 text-xs text-texto-suave">Tema</legend>

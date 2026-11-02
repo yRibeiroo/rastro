@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import { criarServicoDeLimitesDeGasto, estadoDoLimite } from "@/regras-de-negocio/limites-de-gasto";
+import {
+  criarServicoDeLimitesDeGasto,
+  estadoDoLimite,
+} from "@/regras-de-negocio/limites-de-gasto";
 import type { LimiteDeGasto } from "@/regras-de-negocio/tipos";
 import { ctx, EMPRESA, novoId, umaCategoria } from "../falsos";
 
@@ -15,13 +18,33 @@ function montar(limites: LimiteDeGasto[]) {
   };
   const painel = {
     gastosPorCategoria: vi.fn(async () => [
-      { categoriaId: mercado.id, nome: "Mercado", totalCentavos: 85000, quantidade: 4 },
-      { categoriaId: lazer.id, nome: "Lazer", totalCentavos: 30000, quantidade: 2 },
-      { categoriaId: null, nome: "Sem categoria", totalCentavos: 999, quantidade: 1 },
+      {
+        categoriaId: mercado.id,
+        nome: "Mercado",
+        totalCentavos: 85000,
+        quantidade: 4,
+      },
+      {
+        categoriaId: lazer.id,
+        nome: "Lazer",
+        totalCentavos: 30000,
+        quantidade: 2,
+      },
+      {
+        categoriaId: null,
+        nome: "Sem categoria",
+        totalCentavos: 999,
+        quantidade: 1,
+      },
     ]),
   };
   const categorias = { listar: vi.fn(async () => [mercado, lazer, pets]) };
-  const servico = criarServicoDeLimitesDeGasto({ limites: repo, categorias, painel, hoje: () => "2026-11-20" });
+  const servico = criarServicoDeLimitesDeGasto({
+    limites: repo,
+    categorias,
+    painel,
+    hoje: () => "2026-11-20",
+  });
   return { servico, repo, painel };
 }
 
@@ -39,7 +62,10 @@ describe("limites de gasto", () => {
       { categoriaId: pets.id, valorMensalCentavos: 20000 },
     ]);
     const s = await servico.situacao(ctx);
-    expect(painel.gastosPorCategoria).toHaveBeenCalledWith(EMPRESA, { de: "2026-11-01", ate: "2026-11-20" });
+    expect(painel.gastosPorCategoria).toHaveBeenCalledWith(EMPRESA, {
+      de: "2026-11-01",
+      ate: "2026-11-20",
+    });
     expect(s.map((l) => [l.nome, l.gastoCentavos, l.estado])).toEqual([
       ["Mercado", 85000, "estourado"],
       ["Lazer", 30000, "ok"],
@@ -57,9 +83,20 @@ describe("limites de gasto", () => {
     const { servico, repo } = montar([]);
     const categoriaId = novoId();
     await servico.definir(ctx, { categoriaId, valorMensalCentavos: 60000 });
-    expect(repo.definir).toHaveBeenCalledWith(EMPRESA, { categoriaId, valorMensalCentavos: 60000 });
-    for (const l of [{ categoriaId: "x", valorMensalCentavos: 1 }, { categoriaId, valorMensalCentavos: 0 }, { categoriaId, valorMensalCentavos: 1.5 }])
-      await expect(servico.definir(ctx, l)).rejects.toMatchObject({ codigo: "entrada_invalida" });
-    await expect(servico.remover(ctx, "x")).rejects.toMatchObject({ codigo: "nao_encontrado" });
+    expect(repo.definir).toHaveBeenCalledWith(EMPRESA, {
+      categoriaId,
+      valorMensalCentavos: 60000,
+    });
+    for (const l of [
+      { categoriaId: "x", valorMensalCentavos: 1 },
+      { categoriaId, valorMensalCentavos: 0 },
+      { categoriaId, valorMensalCentavos: 1.5 },
+    ])
+      await expect(servico.definir(ctx, l)).rejects.toMatchObject({
+        codigo: "entrada_invalida",
+      });
+    await expect(servico.remover(ctx, "x")).rejects.toMatchObject({
+      codigo: "nao_encontrado",
+    });
   });
 });

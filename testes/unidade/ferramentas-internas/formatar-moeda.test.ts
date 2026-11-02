@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { descreverMoeda, formatarMoeda, MENOS } from "@/ferramentas-internas/formatar-moeda";
+import {
+  descreverMoeda,
+  formatarMoeda,
+  MENOS,
+} from "@/ferramentas-internas/formatar-moeda";
 
 // Intl usa espaço não separável (U+00A0) entre "R$" e o número.
 const s = (t: string) => t.replace(/ /g, " ");
@@ -23,7 +27,9 @@ describe("formatarMoeda", () => {
 
   it("compacto", () => {
     expect(s(formatarMoeda(1842000, { compacto: true }))).toBe("R$ 18,4 mil");
-    expect(s(formatarMoeda(-512000, { compacto: true, sinal: true }))).toBe(`${MENOS}R$ 5,1 mil`);
+    expect(s(formatarMoeda(-512000, { compacto: true, sinal: true }))).toBe(
+      `${MENOS}R$ 5,1 mil`,
+    );
   });
 
   it("descreve para leitor de tela", () => {
@@ -34,7 +40,8 @@ describe("formatarMoeda", () => {
 
 describe("textoParaCentavos", () => {
   it("entende vírgula ou ponto decimal e separador de milhar", async () => {
-    const { textoParaCentavos } = await import("@/ferramentas-internas/formatar-moeda");
+    const { textoParaCentavos } =
+      await import("@/ferramentas-internas/formatar-moeda");
     expect(textoParaCentavos("1.234,56")).toBe(123456);
     expect(textoParaCentavos("1234,5")).toBe(123450);
     expect(textoParaCentavos("1234.56")).toBe(123456);
@@ -45,7 +52,9 @@ describe("textoParaCentavos", () => {
   });
 
   it("recusa vazio, negativo, letras e valores grandes demais", async () => {
-    const { textoParaCentavos } = await import("@/ferramentas-internas/formatar-moeda");
-    for (const t of ["", "-10", "abc", "10,5x", "1234567890123,00"]) expect(textoParaCentavos(t)).toBeNull();
+    const { textoParaCentavos } =
+      await import("@/ferramentas-internas/formatar-moeda");
+    for (const t of ["", "-10", "abc", "10,5x", "1234567890123,00"])
+      expect(textoParaCentavos(t)).toBeNull();
   });
 });

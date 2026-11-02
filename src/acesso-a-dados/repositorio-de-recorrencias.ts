@@ -6,7 +6,12 @@ import type {
   TipoDeConta,
 } from "@/regras-de-negocio/tipos";
 import type { RepositorioDeRecorrencias } from "./contratos";
-import { dadosOuFalha, falhaDoBanco, paraCentavos, paraReais } from "./erros-do-banco";
+import {
+  dadosOuFalha,
+  falhaDoBanco,
+  paraCentavos,
+  paraReais,
+} from "./erros-do-banco";
 import type { ClienteDoBanco } from "./supabase/cliente-do-usuario";
 import type { Tables } from "./supabase/tipos-do-banco";
 
@@ -20,7 +25,9 @@ const MENSAGENS: Record<string, string> = {
 
 function erroDaRpc(erro: { code?: string; message?: string }): Error {
   const mensagem = erro.message ? MENSAGENS[erro.message] : undefined;
-  return mensagem ? new ErroDeNegocio("entrada_invalida", mensagem) : falhaDoBanco(erro);
+  return mensagem
+    ? new ErroDeNegocio("entrada_invalida", mensagem)
+    : falhaDoBanco(erro);
 }
 
 const paraRecorrencia = (l: Tables<"recorrencias">): Recorrencia => ({
@@ -50,7 +57,10 @@ export class RepositorioDeRecorrenciasSupabase implements RepositorioDeRecorrenc
     ).map(paraRecorrencia);
   }
 
-  async criar(empresaId: string, dados: Parameters<RepositorioDeRecorrencias["criar"]>[1]) {
+  async criar(
+    empresaId: string,
+    dados: Parameters<RepositorioDeRecorrencias["criar"]>[1],
+  ) {
     const linha = dadosOuFalha(
       await this.banco
         .from("recorrencias")
@@ -92,13 +102,20 @@ export class RepositorioDeRecorrenciasSupabase implements RepositorioDeRecorrenc
     const linha = dadosOuFalha(
       await this.banco
         .from("recorrencias")
-        .update({ descricao: dados.descricao, valor: paraReais(dados.valorCentavos), fim: dados.fim })
+        .update({
+          descricao: dados.descricao,
+          valor: paraReais(dados.valorCentavos),
+          fim: dados.fim,
+        })
         .eq("empresa_id", empresaId)
         .eq("id", recorrenciaId)
         .eq("ativa", true)
         .select()
         .single(),
-      { naoEncontrado: "Recorrência não encontrada ou encerrada.", referencia: "O fim não pode ser antes do início." },
+      {
+        naoEncontrado: "Recorrência não encontrada ou encerrada.",
+        referencia: "O fim não pode ser antes do início.",
+      },
     );
     return paraRecorrencia(linha);
   }
@@ -122,7 +139,12 @@ export class RepositorioDeRecorrenciasSupabase implements RepositorioDeRecorrenc
     }));
   }
 
-  async baixar(empresaId: string, recorrenciaId: string, data: string, lancar: boolean) {
+  async baixar(
+    empresaId: string,
+    recorrenciaId: string,
+    data: string,
+    lancar: boolean,
+  ) {
     const r = await this.banco.rpc("baixar_ocorrencia", {
       p_empresa: empresaId,
       p_recorrencia: recorrenciaId,

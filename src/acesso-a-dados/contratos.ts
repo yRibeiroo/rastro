@@ -131,7 +131,11 @@ export interface RepositorioDeTransacoes {
     transacaoIds: readonly Id[],
   ): Promise<void>;
   /** "Ocultar dos totais" (ADR 0017): só a coluna oculta. */
-  definirOculta(empresaId: Id, transacaoId: Id, oculta: boolean): Promise<Transacao>;
+  definirOculta(
+    empresaId: Id,
+    transacaoId: Id,
+    oculta: boolean,
+  ): Promise<Transacao>;
   definirCategoriaPeloUsuario(
     empresaId: Id,
     transacaoId: Id,
@@ -352,7 +356,11 @@ export interface RepositorioDeRecorrencias {
     dados: Pick<Recorrencia, "descricao" | "valorCentavos" | "fim">,
   ): Promise<Recorrencia>;
   /** rpc ocorrencias_previstas: não baixadas entre de e ate (até ~2 anos). */
-  ocorrencias(empresaId: Id, de: DataISO, ate: DataISO): Promise<OcorrenciaPrevista[]>;
+  ocorrencias(
+    empresaId: Id,
+    de: DataISO,
+    ate: DataISO,
+  ): Promise<OcorrenciaPrevista[]>;
   /** rpc baixar_ocorrencia: devolve o id do lançamento criado (conta manual) ou null. */
   baixar(
     empresaId: Id,

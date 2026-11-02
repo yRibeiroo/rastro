@@ -1,5 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { confirmarEntrada, COOKIE_DO_PERFIL, lerPerfil } from "@/regras-de-negocio/acesso";
+import {
+  confirmarEntrada,
+  COOKIE_DO_PERFIL,
+  lerPerfil,
+} from "@/regras-de-negocio/acesso";
 import { ErroDeNegocio, registrarFalha } from "@/regras-de-negocio/erros";
 
 // Callback do link mágico (ADR 0008): troca code/token_hash pela sessão, confere a allowlist
@@ -7,7 +11,12 @@ import { ErroDeNegocio, registrarFalha } from "@/regras-de-negocio/erros";
 
 /** Só caminho relativo do próprio site (contra open redirect). */
 function destinoSeguro(proximo: string | null): string {
-  if (!proximo || !proximo.startsWith("/") || proximo.startsWith("//") || proximo.includes("\\"))
+  if (
+    !proximo ||
+    !proximo.startsWith("/") ||
+    proximo.startsWith("//") ||
+    proximo.includes("\\")
+  )
     return "/painel";
   return proximo;
 }
@@ -17,7 +26,8 @@ export async function GET(requisicao: NextRequest) {
   const code = parametros.get("code");
   const tokenHash = parametros.get("token_hash");
   const tipo = parametros.get("type");
-  const ir = (caminho: string) => NextResponse.redirect(new URL(caminho, requisicao.url));
+  const ir = (caminho: string) =>
+    NextResponse.redirect(new URL(caminho, requisicao.url));
 
   // ADR 0017: perfil escolhido no formulário (mesmo navegador). Outro aparelho → padrão 'empresa'.
   const perfil = lerPerfil(requisicao.cookies.get(COOKIE_DO_PERFIL)?.value);
@@ -30,7 +40,8 @@ export async function GET(requisicao: NextRequest) {
   } catch (erro) {
     if (erro instanceof ErroDeNegocio && erro.codigo === "email_nao_autorizado")
       return ir("/entrar?erro=nao_autorizado");
-    if (!(erro instanceof ErroDeNegocio)) registrarFalha("callback do link mágico", erro);
+    if (!(erro instanceof ErroDeNegocio))
+      registrarFalha("callback do link mágico", erro);
     return ir("/entrar?erro=link_expirado");
   }
   return ir(destinoSeguro(parametros.get("proximo")));

@@ -4,18 +4,39 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { Anuncio, Sucesso } from "@/componentes/estados/Estados";
 import { Icone } from "@/componentes/estrutura/Icone";
-import { ajuda, botao, campo, mensagemDeErro, rotulo } from "@/componentes/formulario/classes";
+import {
+  ajuda,
+  botao,
+  campo,
+  mensagemDeErro,
+  rotulo,
+} from "@/componentes/formulario/classes";
 import { textoParaCentavos } from "@/ferramentas-internas/formatar-moeda";
 import { centavosParaTexto } from "@/componentes/contas/GerenciarContas";
-import type { Categoria, Conta, EdicaoDeRecorrencia, Id, NovaRecorrencia, Recorrencia, ResultadoDaAcao } from "@/regras-de-negocio";
+import type {
+  Categoria,
+  Conta,
+  EdicaoDeRecorrencia,
+  Id,
+  NovaRecorrencia,
+  Recorrencia,
+  ResultadoDaAcao,
+} from "@/regras-de-negocio";
 import { Carregando } from "@/identidade-visual/Carregando";
 
 // Recorrências e baixa de ocorrências (Fase 4, ADR 0017).
 
 type Criar = (dados: NovaRecorrencia) => Promise<ResultadoDaAcao<Recorrencia>>;
-type Baixar = (dados: { recorrenciaId: Id; data: string; lancar?: boolean }) => Promise<ResultadoDaAcao<{ transacaoId: Id | null }>>;
+type Baixar = (dados: {
+  recorrenciaId: Id;
+  data: string;
+  lancar?: boolean;
+}) => Promise<ResultadoDaAcao<{ transacaoId: Id | null }>>;
 type Encerrar = (recorrenciaId: Id) => Promise<ResultadoDaAcao<null>>;
-type Editar = (recorrenciaId: Id, dados: EdicaoDeRecorrencia) => Promise<ResultadoDaAcao<Recorrencia>>;
+type Editar = (
+  recorrenciaId: Id,
+  dados: EdicaoDeRecorrencia,
+) => Promise<ResultadoDaAcao<Recorrencia>>;
 
 function useAcao() {
   const router = useRouter();
@@ -23,7 +44,10 @@ function useAcao() {
   const [ocupado, setOcupado] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
-  async function executar<T>(acao: () => Promise<ResultadoDaAcao<T>>, sucesso: string) {
+  async function executar<T>(
+    acao: () => Promise<ResultadoDaAcao<T>>,
+    sucesso: string,
+  ) {
     setOcupado(true);
     setErro(null);
     setAviso(null);
@@ -53,7 +77,9 @@ export function NovaRecorrenciaForm({
 }) {
   const { ocupado, erro, setErro, aviso, executar } = useAcao();
   const [sentido, setSentido] = useState<"saida" | "entrada">("saida");
-  const opcoes = categorias.filter((c) => !c.arquivada && (c.tipo === "ambos" || c.tipo === sentido));
+  const opcoes = categorias.filter(
+    (c) => !c.arquivada && (c.tipo === "ambos" || c.tipo === sentido),
+  );
 
   return (
     <form
@@ -63,7 +89,8 @@ export function NovaRecorrenciaForm({
         const f = e.currentTarget;
         const d = new FormData(f);
         const valor = textoParaCentavos(String(d.get("valor") ?? ""));
-        if (!valor) return setErro("Informe um valor maior que zero. Ex.: 1.500,00.");
+        if (!valor)
+          return setErro("Informe um valor maior que zero. Ex.: 1.500,00.");
         const fim = String(d.get("fim") ?? "");
         const ok = await executar(
           () =>
@@ -72,7 +99,9 @@ export function NovaRecorrenciaForm({
               descricao: String(d.get("descricao") ?? ""),
               valorCentavos: sentido === "saida" ? -valor : valor,
               categoriaId: String(d.get("categoria") ?? "") || null,
-              frequencia: String(d.get("frequencia")) as NovaRecorrencia["frequencia"],
+              frequencia: String(
+                d.get("frequencia"),
+              ) as NovaRecorrencia["frequencia"],
               inicio: String(d.get("inicio")),
               fim: fim || null,
             }),
@@ -89,8 +118,18 @@ export function NovaRecorrenciaForm({
       <fieldset className="flex gap-2">
         <legend className="sr-only">A pagar ou a receber</legend>
         {(["saida", "entrada"] as const).map((s) => (
-          <label key={s} className={`${botao.secundario} cursor-pointer has-[:checked]:border-primaria has-[:checked]:bg-primaria-suave`}>
-            <input type="radio" name="sentido" value={s} checked={sentido === s} onChange={() => setSentido(s)} className="sr-only" />
+          <label
+            key={s}
+            className={`${botao.secundario} cursor-pointer has-[:checked]:border-primaria has-[:checked]:bg-primaria-suave`}
+          >
+            <input
+              type="radio"
+              name="sentido"
+              value={s}
+              checked={sentido === s}
+              onChange={() => setSentido(s)}
+              className="sr-only"
+            />
             {s === "saida" ? "A pagar" : "A receber"}
           </label>
         ))}
@@ -100,19 +139,38 @@ export function NovaRecorrenciaForm({
           <label htmlFor="rec-descricao" className={rotulo}>
             Descrição
           </label>
-          <input id="rec-descricao" name="descricao" required maxLength={200} placeholder="Ex.: Aluguel, Salário, Internet" className={campo} />
+          <input
+            id="rec-descricao"
+            name="descricao"
+            required
+            maxLength={200}
+            placeholder="Ex.: Aluguel, Salário, Internet"
+            className={campo}
+          />
         </div>
         <div className="grid gap-1.5">
           <label htmlFor="rec-valor" className={rotulo}>
             Valor (R$)
           </label>
-          <input id="rec-valor" name="valor" required inputMode="decimal" placeholder="0,00" className={`${campo} valor-monetario`} />
+          <input
+            id="rec-valor"
+            name="valor"
+            required
+            inputMode="decimal"
+            placeholder="0,00"
+            className={`${campo} valor-monetario`}
+          />
         </div>
         <div className="grid gap-1.5">
           <label htmlFor="rec-frequencia" className={rotulo}>
             Repete
           </label>
-          <select id="rec-frequencia" name="frequencia" defaultValue="mensal" className={campo}>
+          <select
+            id="rec-frequencia"
+            name="frequencia"
+            defaultValue="mensal"
+            className={campo}
+          >
             <option value="mensal">Todo mês</option>
             <option value="semanal">Toda semana</option>
             <option value="anual">Todo ano</option>
@@ -122,7 +180,14 @@ export function NovaRecorrenciaForm({
           <label htmlFor="rec-inicio" className={rotulo}>
             Primeira data
           </label>
-          <input id="rec-inicio" name="inicio" type="date" required defaultValue={hoje} className={campo} />
+          <input
+            id="rec-inicio"
+            name="inicio"
+            type="date"
+            required
+            defaultValue={hoje}
+            className={campo}
+          />
         </div>
         <div className="grid gap-1.5">
           <label htmlFor="rec-fim" className={rotulo}>
@@ -146,7 +211,12 @@ export function NovaRecorrenciaForm({
           <label htmlFor="rec-categoria" className={rotulo}>
             Categoria
           </label>
-          <select id="rec-categoria" name="categoria" defaultValue="" className={campo}>
+          <select
+            id="rec-categoria"
+            name="categoria"
+            defaultValue=""
+            className={campo}
+          >
             <option value="">Automática (regras e IA)</option>
             {opcoes.map((c) => (
               <option key={c.id} value={c.id}>
@@ -156,9 +226,17 @@ export function NovaRecorrenciaForm({
           </select>
         </div>
       </div>
-      <p className={ajuda}>Em conta manual, &quot;Paguei&quot; já lança o valor. Em conta de banco, o lançamento chega pelo extrato.</p>
+      <p className={ajuda}>
+        Em conta manual, &quot;Paguei&quot; já lança o valor. Em conta de banco,
+        o lançamento chega pelo extrato.
+      </p>
       <div className="flex flex-wrap items-center gap-3">
-        <button type="submit" disabled={ocupado} aria-busy={ocupado || undefined} className={botao.primario}>
+        <button
+          type="submit"
+          disabled={ocupado}
+          aria-busy={ocupado || undefined}
+          className={botao.primario}
+        >
           {ocupado ? (
             <Carregando tamanho="inline" rotulo="Criando" />
           ) : (
@@ -173,7 +251,9 @@ export function NovaRecorrenciaForm({
             {erro}
           </p>
         )}
-        <Anuncio className="empty:hidden">{aviso && <Sucesso>{aviso}</Sucesso>}</Anuncio>
+        <Anuncio className="empty:hidden">
+          {aviso && <Sucesso>{aviso}</Sucesso>}
+        </Anuncio>
       </div>
     </form>
   );
@@ -201,16 +281,29 @@ export function AcoesDaOcorrencia({
         disabled={ocupado}
         className={botao.secundario}
         aria-label={`${entrada ? "Recebi" : "Paguei"}: ${descricao}`}
-        onClick={() => executar(() => baixar({ recorrenciaId, data }), "Marcado.")}
+        onClick={() =>
+          executar(() => baixar({ recorrenciaId, data }), "Marcado.")
+        }
       >
-        {ocupado ? <Carregando tamanho="inline" rotulo="Salvando" /> : entrada ? "Recebi" : "Paguei"}
+        {ocupado ? (
+          <Carregando tamanho="inline" rotulo="Salvando" />
+        ) : entrada ? (
+          "Recebi"
+        ) : (
+          "Paguei"
+        )}
       </button>
       <button
         type="button"
         disabled={ocupado}
         className={botao.fantasma}
         aria-label={`Pular esta ocorrência: ${descricao}`}
-        onClick={() => executar(() => baixar({ recorrenciaId, data, lancar: false }), "Pulada.")}
+        onClick={() =>
+          executar(
+            () => baixar({ recorrenciaId, data, lancar: false }),
+            "Pulada.",
+          )
+        }
       >
         Pular
       </button>
@@ -223,7 +316,15 @@ export function AcoesDaOcorrencia({
   );
 }
 
-export function EncerrarRecorrencia({ recorrenciaId, descricao, encerrar }: { recorrenciaId: Id; descricao: string; encerrar: Encerrar }) {
+export function EncerrarRecorrencia({
+  recorrenciaId,
+  descricao,
+  encerrar,
+}: {
+  recorrenciaId: Id;
+  descricao: string;
+  encerrar: Encerrar;
+}) {
   const { ocupado, erro, executar } = useAcao();
   return (
     <span className="flex items-center gap-2">
@@ -234,31 +335,48 @@ export function EncerrarRecorrencia({ recorrenciaId, descricao, encerrar }: { re
         className={botao.fantasma}
         aria-label={`Encerrar ${descricao}`}
         onClick={() => {
-          if (window.confirm(`Encerrar "${descricao}"? Ela deixa de aparecer na previsão.`))
+          if (
+            window.confirm(
+              `Encerrar "${descricao}"? Ela deixa de aparecer na previsão.`,
+            )
+          )
             executar(() => encerrar(recorrenciaId), "Encerrada.");
         }}
       >
-        {ocupado ? <Carregando tamanho="inline" rotulo="Encerrando" /> : "Encerrar"}
+        {ocupado ? (
+          <Carregando tamanho="inline" rotulo="Encerrando" />
+        ) : (
+          "Encerrar"
+        )}
       </button>
     </span>
   );
 }
 
 /** Descrição, valor e fim; vale para as próximas ocorrências (as já baixadas ficam). */
-export function EditarRecorrencia({ recorrencia: r, editar }: { recorrencia: Recorrencia; editar: Editar }) {
+export function EditarRecorrencia({
+  recorrencia: r,
+  editar,
+}: {
+  recorrencia: Recorrencia;
+  editar: Editar;
+}) {
   const { ocupado, erro, setErro, aviso, executar } = useAcao();
   const id = `rec-${r.id}`;
   const aPagar = r.valorCentavos < 0;
   return (
     <details className="basis-full text-sm">
-      <summary className="w-fit cursor-pointer text-texto-suave">Editar</summary>
+      <summary className="w-fit cursor-pointer text-texto-suave">
+        Editar
+      </summary>
       <form
         noValidate
         onSubmit={async (e) => {
           e.preventDefault();
           const d = new FormData(e.currentTarget);
           const valor = textoParaCentavos(String(d.get("valor") ?? ""));
-          if (!valor) return setErro("Informe um valor maior que zero. Ex.: 1.500,00.");
+          if (!valor)
+            return setErro("Informe um valor maior que zero. Ex.: 1.500,00.");
           await executar(
             () =>
               editar(r.id, {
@@ -275,7 +393,14 @@ export function EditarRecorrencia({ recorrencia: r, editar }: { recorrencia: Rec
           <label htmlFor={`${id}-descricao`} className={rotulo}>
             Descrição
           </label>
-          <input id={`${id}-descricao`} name="descricao" required maxLength={200} defaultValue={r.descricao} className={campo} />
+          <input
+            id={`${id}-descricao`}
+            name="descricao"
+            required
+            maxLength={200}
+            defaultValue={r.descricao}
+            className={campo}
+          />
         </div>
         <div className="grid gap-1.5">
           <label htmlFor={`${id}-valor`} className={rotulo}>
@@ -294,17 +419,30 @@ export function EditarRecorrencia({ recorrencia: r, editar }: { recorrencia: Rec
           <label htmlFor={`${id}-fim`} className={rotulo}>
             Até (opcional)
           </label>
-          <input id={`${id}-fim`} name="fim" type="date" min={r.inicio} defaultValue={r.fim ?? ""} className={campo} />
+          <input
+            id={`${id}-fim`}
+            name="fim"
+            type="date"
+            min={r.inicio}
+            defaultValue={r.fim ?? ""}
+            className={campo}
+          />
         </div>
         <button type="submit" disabled={ocupado} className={botao.primario}>
-          {ocupado ? <Carregando tamanho="inline" rotulo="Salvando" /> : "Salvar"}
+          {ocupado ? (
+            <Carregando tamanho="inline" rotulo="Salvando" />
+          ) : (
+            "Salvar"
+          )}
         </button>
         {erro && (
           <p className={`${mensagemDeErro} sm:col-span-4`} role="alert">
             {erro}
           </p>
         )}
-        <Anuncio className="empty:hidden sm:col-span-4">{aviso && <Sucesso>{aviso}</Sucesso>}</Anuncio>
+        <Anuncio className="empty:hidden sm:col-span-4">
+          {aviso && <Sucesso>{aviso}</Sucesso>}
+        </Anuncio>
       </form>
     </details>
   );

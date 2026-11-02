@@ -165,7 +165,10 @@ export async function carregarContas(): Promise<
       s.conexoes.listarConexoes(s.ctx),
     ]);
     const origem = new Map(conexoes.map((c) => [c.id, c.provedor]));
-    return contas.map((c) => ({ ...c, origem: origem.get(c.conexaoId) ?? "pluggy" }));
+    return contas.map((c) => ({
+      ...c,
+      origem: origem.get(c.conexaoId) ?? "pluggy",
+    }));
   });
 }
 

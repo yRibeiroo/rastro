@@ -4,12 +4,22 @@ import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 import { Anuncio, Sucesso } from "@/componentes/estados/Estados";
 import { rotulo } from "@/componentes/formulario/classes";
-import type { Categoria, CentroDeCusto, Id, SugestaoDeRegra, Transacao } from "@/regras-de-negocio";
+import type {
+  Categoria,
+  CentroDeCusto,
+  Id,
+  SugestaoDeRegra,
+  Transacao,
+} from "@/regras-de-negocio";
 import { Carregando } from "@/identidade-visual/Carregando";
 import { deixarRastro } from "@/identidade-visual/rastro-movimento";
 import type { CorrigirCategoria } from "./ListaDoExtrato";
 import { OfertaDeRegra, type CriarRegra } from "./OfertaDeRegra";
-import { OrigemDaCategoriaTexto, SeletorDeCategoria, SeletorDeCentro } from "./Seletores";
+import {
+  OrigemDaCategoriaTexto,
+  SeletorDeCategoria,
+  SeletorDeCentro,
+} from "./Seletores";
 
 type Props = {
   transacao: Transacao;
@@ -23,17 +33,31 @@ type Props = {
 };
 
 /** Categoria e centro de custo no detalhe (RF-21, RF-23). */
-export function ClassificacaoDaTransacao({ transacao: t, categorias, centros, idDoValor, categorizando, corrigirCategoria, criarRegra }: Props) {
+export function ClassificacaoDaTransacao({
+  transacao: t,
+  categorias,
+  centros,
+  idDoValor,
+  categorizando,
+  corrigirCategoria,
+  criarRegra,
+}: Props) {
   const router = useRouter();
   const [, iniciar] = useTransition();
   const [categoriaId, setCategoriaId] = useState(t.categoriaId);
   const [centroId, setCentroId] = useState(t.centroDeCustoId);
   const [salvando, setSalvando] = useState(false);
-  const [mensagem, setMensagem] = useState<{ ok: boolean; texto: string } | null>(null);
+  const [mensagem, setMensagem] = useState<{
+    ok: boolean;
+    texto: string;
+  } | null>(null);
   const [oferta, setOferta] = useState<SugestaoDeRegra | null>(null);
   const chip = useRef<HTMLSelectElement>(null);
 
-  async function salvar(dados: { categoriaId: Id | null; centroDeCustoId: Id | null }, rastro: boolean) {
+  async function salvar(
+    dados: { categoriaId: Id | null; centroDeCustoId: Id | null },
+    rastro: boolean,
+  ) {
     const anterior = { categoriaId, centroId };
     setCategoriaId(dados.categoriaId);
     setCentroId(dados.centroDeCustoId);
@@ -41,7 +65,12 @@ export function ClassificacaoDaTransacao({ transacao: t, categorias, centros, id
     setMensagem(null);
     setOferta(null);
     const origem = document.getElementById(idDoValor);
-    const [r] = await Promise.all([corrigirCategoria(t.id, dados), rastro && origem && chip.current ? deixarRastro(origem, chip.current) : null]);
+    const [r] = await Promise.all([
+      corrigirCategoria(t.id, dados),
+      rastro && origem && chip.current
+        ? deixarRastro(origem, chip.current)
+        : null,
+    ]);
     setSalvando(false);
     if (!r.ok) {
       setCategoriaId(anterior.categoriaId);
@@ -53,7 +82,9 @@ export function ClassificacaoDaTransacao({ transacao: t, categorias, centros, id
     iniciar(() => router.refresh());
   }
 
-  const nome = categorias.find((c) => c.id === oferta?.categoriaId)?.nome ?? "esta categoria";
+  const nome =
+    categorias.find((c) => c.id === oferta?.categoriaId)?.nome ??
+    "esta categoria";
 
   return (
     <div className="grid gap-5">
@@ -69,13 +100,24 @@ export function ClassificacaoDaTransacao({ transacao: t, categorias, centros, id
             sentido={t.valorCentavos >= 0 ? "entrada" : "saida"}
             rotulo="Categoria"
             desabilitado={salvando}
-            aoMudar={(id) => salvar({ categoriaId: id, centroDeCustoId: centroId }, true)}
+            aoMudar={(id) =>
+              salvar({ categoriaId: id, centroDeCustoId: centroId }, true)
+            }
             className="w-full"
           />
           {categorizando && categoriaId === null ? (
-            <Carregando contexto="categorizando" tamanho="inline" rotulo="A IA está categorizando esta transação" />
+            <Carregando
+              contexto="categorizando"
+              tamanho="inline"
+              rotulo="A IA está categorizando esta transação"
+            />
           ) : (
-            categoriaId === t.categoriaId && <OrigemDaCategoriaTexto origem={t.categoriaOrigem} confianca={t.confiancaIa} />
+            categoriaId === t.categoriaId && (
+              <OrigemDaCategoriaTexto
+                origem={t.categoriaOrigem}
+                confianca={t.confiancaIa}
+              />
+            )
           )}
         </div>
         <div className="grid content-start gap-1.5">
@@ -85,7 +127,9 @@ export function ClassificacaoDaTransacao({ transacao: t, categorias, centros, id
             valor={centroId}
             rotulo="Centro de custo"
             desabilitado={salvando}
-            aoMudar={(id) => salvar({ categoriaId, centroDeCustoId: id }, false)}
+            aoMudar={(id) =>
+              salvar({ categoriaId, centroDeCustoId: id }, false)
+            }
             className="w-full"
           />
         </div>

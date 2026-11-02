@@ -11,7 +11,10 @@ export type ContextoCarregando =
   | "aguardando";
 
 /** Contexto do Rastro → estado do orbe + texto acessível padrão (PROMPT §5). */
-export const CONTEXTOS: Record<ContextoCarregando, { estado: OrbState; texto: string }> = {
+export const CONTEXTOS: Record<
+  ContextoCarregando,
+  { estado: OrbState; texto: string }
+> = {
   conectando: { estado: "connecting", texto: "Conectando ao banco" },
   sincronizando: { estado: "searching", texto: "Sincronizando transações" },
   categorizando: { estado: "solving", texto: "Categorizando gastos" },

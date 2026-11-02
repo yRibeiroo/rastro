@@ -12,21 +12,45 @@ import { GraficoEntradasSaidas } from "@/componentes/graficos/GraficoEntradasSai
 import { ParaOndeFoi } from "@/componentes/graficos/ParaOndeFoi";
 import { ResultadoPorCentro } from "@/componentes/graficos/ResultadoPorCentro";
 import { BarrasDeLimite } from "@/componentes/limites/BarrasDeLimite";
-import { carregarConexoes, carregarLimitesDeGasto, carregarPainel, carregarPrevisao, carregarRecursos } from "@/regras-de-negocio/interface-web";
-import { textoDaUltimaImportacao, ultimaImportacao } from "@/componentes/estrutura/StatusDaConexao";
-import { formatarData, formatarDataHora, formatarTempoRelativo, hojeISO } from "@/ferramentas-internas/formatar-data";
+import {
+  carregarConexoes,
+  carregarLimitesDeGasto,
+  carregarPainel,
+  carregarPrevisao,
+  carregarRecursos,
+  carregarSituacaoDoExtrato,
+  contarAlertas,
+} from "@/regras-de-negocio/interface-web";
+import { FILTRO_SEM_TRANSACAO } from "@/componentes/comprovantes/comprovante";
+import { Icone } from "@/componentes/estrutura/Icone";
+import { textoDaSituacaoDoExtrato } from "@/componentes/importacao/extrato";
+import {
+  formatarData,
+  formatarDataHora,
+  formatarTempoRelativo,
+  hojeISO,
+} from "@/ferramentas-internas/formatar-data";
 import { Carregando } from "@/identidade-visual/Carregando";
-import { lerPeriodo, periodoDe, PERIODOS, SeletorDePeriodo } from "@/componentes/estrutura/SeletorDePeriodo";
+import {
+  lerPeriodo,
+  periodoDe,
+  PERIODOS,
+  SeletorDePeriodo,
+} from "@/componentes/estrutura/SeletorDePeriodo";
 
 export const metadata: Metadata = { title: "Painel" };
 
-
-const carregando = <Carregando contexto="gerando-painel" className="min-h-[50vh]" />;
+const carregando = (
+  <Carregando contexto="gerando-painel" className="min-h-[50vh]" />
+);
 
 export default function Painel({ searchParams }: PageProps<"/painel">) {
   return (
     <>
-      <CabecalhoDaPagina titulo="Painel" descricao="Quanto entrou, para onde foi e o que sobrou." />
+      <CabecalhoDaPagina
+        titulo="Painel"
+        descricao="Quanto entrou, para onde foi e o que sobrou."
+      />
       <Suspense fallback={carregando}>
         <ConteudoDoPainel searchParams={searchParams} />
       </Suspense>
@@ -34,8 +58,9 @@ export default function Painel({ searchParams }: PageProps<"/painel">) {
   );
 }
 
-
-async function ConteudoDoPainel({ searchParams }: Pick<PageProps<"/painel">, "searchParams">) {
+async function ConteudoDoPainel({
+  searchParams,
+}: Pick<PageProps<"/painel">, "searchParams">) {
   // Dados por requisição (sessão e relógio): fora do shell e do prefetch.
   await connection();
   const sp = await searchParams;
@@ -49,11 +74,22 @@ async function ConteudoDoPainel({ searchParams }: Pick<PageProps<"/painel">, "se
   try {
     if (forcado === "erro") throw new Error("forçado");
     // O gráfico mensal sempre mostra pelo menos 6 meses; o resto segue o período escolhido.
-    const [conexoes, { openFinance }, resumo, historico, previsto, limites] = await Promise.all([
+    const [
+      conexoes,
+      { openFinance },
+      resumo,
+      historico,
+      situacao,
+      alertas,
+      previsto,
+      limites,
+    ] = await Promise.all([
       carregarConexoes(),
       carregarRecursos(),
       carregarPainel(periodo),
       carregarPainel(periodoDe(chave === "12m" ? "12m" : "6m")),
+      carregarSituacaoDoExtrato(),
+      contarAlertas(),
       // Extra: se a previsão falhar, o painel continua (só some a linha).
       carregarPrevisao(30).then(
         (p) => p.previsao,
@@ -68,10 +104,22 @@ async function ConteudoDoPainel({ searchParams }: Pick<PageProps<"/painel">, "se
         return [];
       }),
     ]);
-    const conexao = conexoes.find((c) => c.provedor === (openFinance ? "pluggy" : "arquivo"));
+    const conexao = conexoes.find(
+      (c) => c.provedor === (openFinance ? "pluggy" : "arquivo"),
+    );
     // Só lançamentos manuais (ADR 0017) também alimentam o painel.
     const temDados = !!conexao || conexoes.some((c) => c.provedor === "manual");
-    dados = { conexao, temDados, openFinance, ultima: ultimaImportacao(conexoes), resumo, historico, previsto, limites };
+    dados = {
+      conexao,
+      temDados,
+      openFinance,
+      situacao,
+      semTransacao: alertas.comprovantesSemTransacao,
+      resumo,
+      historico,
+      previsto,
+      limites,
+    };
   } catch (erro) {
     unstable_rethrow(erro);
     return (
@@ -87,15 +135,32 @@ async function ConteudoDoPainel({ searchParams }: Pick<PageProps<"/painel">, "se
     );
   }
 
-  const { conexao, temDados, openFinance, ultima, resumo, historico, previsto, limites } = dados;
+  const {
+    conexao,
+    temDados,
+    openFinance,
+    situacao,
+    semTransacao,
+    resumo,
+    historico,
+    previsto,
+    limites,
+  } = dados;
   const mesAtual = `${hojeISO().slice(0, 7)}-01`;
-  if (forcado === "vazio" || !temDados) return <SemConexao openFinance={openFinance} />;
-  const entradas = resumo.fluxoMensal.reduce((s, m) => s + m.entradasCentavos, 0);
+  if (forcado === "vazio" || !temDados)
+    return <SemConexao openFinance={openFinance} />;
+  const entradas = resumo.fluxoMensal.reduce(
+    (s, m) => s + m.entradasCentavos,
+    0,
+  );
   const saidas = resumo.fluxoMensal.reduce((s, m) => s + m.saidasCentavos, 0);
-  const extrato = (extra: string) => `/extrato?de=${periodo.de}&ate=${periodo.ate}${extra}`;
+  const extrato = (extra: string) =>
+    `/extrato?de=${periodo.de}&ate=${periodo.ate}${extra}`;
   const semMovimento = entradas === 0 && saidas === 0;
   // Sem nenhum centro de custo (ex.: perfil pessoal) o bloco seria só "Sem centro": não mostra.
-  const usaCentros = resumo.resultadoPorCentroDeCusto.some((c) => c.centroDeCustoId !== null);
+  const usaCentros = resumo.resultadoPorCentroDeCusto.some(
+    (c) => c.centroDeCustoId !== null,
+  );
 
   return (
     <div className="grid gap-12 pb-8">
@@ -104,27 +169,58 @@ async function ConteudoDoPainel({ searchParams }: Pick<PageProps<"/painel">, "se
         {openFinance ? (
           conexao?.ultimaSincronizacaoEm && (
             <p className="text-sm text-texto-suave">
-              {conexao.banco} · sincronizou {formatarTempoRelativo(conexao.ultimaSincronizacaoEm)}
+              {conexao.banco} · sincronizou{" "}
+              {formatarTempoRelativo(conexao.ultimaSincronizacaoEm)}
             </p>
           )
         ) : (
-          <Link href="/importar" className="text-sm text-texto-suave underline-offset-4 hover:underline">
-            {textoDaUltimaImportacao(ultima)}
+          <Link
+            href="/importar"
+            className={`flex items-center gap-1.5 text-sm underline-offset-4 hover:underline ${
+              situacao.desatualizado
+                ? "font-medium text-alerta"
+                : "text-texto-suave"
+            }`}
+          >
+            {situacao.desatualizado && (
+              <Icone nome="atencao" className="size-4" />
+            )}
+            {textoDaSituacaoDoExtrato(situacao)}
           </Link>
         )}
       </div>
 
       {/* O saldo é o texto grande; o período vem em linha, sem grade de cartões KPI. */}
-      <section aria-labelledby="saldo" className="grid gap-x-12 gap-y-6 md:grid-cols-[auto_1fr] md:items-end">
+      <section
+        aria-labelledby="saldo"
+        className="grid gap-x-12 gap-y-6 md:grid-cols-[auto_1fr] md:items-end"
+      >
         <div className="grid gap-1">
-          <h2 id="saldo" className="font-sans text-sm font-medium tracking-normal text-texto-suave">
+          <h2
+            id="saldo"
+            className="font-sans text-sm font-medium tracking-normal text-texto-suave"
+          >
             Saldo atual
           </h2>
-          <ValorMonetario centavos={resumo.saldoAtualCentavos} className="font-titulo text-4xl font-bold md:text-5xl" />
-          {resumo.saldoAtualizadoEm && <p className="text-xs text-texto-suave">Saldo do extrato em {formatarDataHora(resumo.saldoAtualizadoEm)}</p>}
+          <ValorMonetario
+            centavos={resumo.saldoAtualCentavos}
+            className="font-titulo text-4xl font-bold md:text-5xl"
+          />
+          {resumo.saldoAtualizadoEm && (
+            <p className="text-xs text-texto-suave">
+              Saldo do extrato em {formatarDataHora(resumo.saldoAtualizadoEm)}
+            </p>
+          )}
           {previsto && previsto.ocorrencias.length > 0 && (
-            <Link href="/previsao" className="text-sm text-texto-suave underline-offset-4 hover:underline">
-              Previsto em 30 dias: <ValorMonetario centavos={previsto.saldoPrevistoCentavos} className="font-semibold text-texto" />
+            <Link
+              href="/previsao"
+              className="text-sm text-texto-suave underline-offset-4 hover:underline"
+            >
+              Previsto em 30 dias:{" "}
+              <ValorMonetario
+                centavos={previsto.saldoPrevistoCentavos}
+                className="font-semibold text-texto"
+              />
             </Link>
           )}
         </div>
@@ -156,20 +252,49 @@ async function ConteudoDoPainel({ searchParams }: Pick<PageProps<"/painel">, "se
             <h2 id="limites-do-mes" className="text-xl font-semibold">
               Limites do mês
             </h2>
-            <Link href="/categorias#limites" className="text-sm text-texto-suave underline-offset-4 hover:underline">
+            <Link
+              href="/categorias#limites"
+              className="text-sm text-texto-suave underline-offset-4 hover:underline"
+            >
               Ajustar limites
             </Link>
           </div>
-          <BarrasDeLimite limites={limites} hrefDoExtrato={(id) => `/extrato?de=${mesAtual}&categoria=${id}`} />
+          <BarrasDeLimite
+            limites={limites}
+            hrefDoExtrato={(id) => `/extrato?de=${mesAtual}&categoria=${id}`}
+          />
         </section>
+      )}
+
+      {semTransacao > 0 && (
+        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-m bg-alerta-suave px-4 py-3 text-sm">
+          <span className="flex items-center gap-2 font-semibold text-alerta">
+            <Icone nome="atencao" className="size-4" />
+            {semTransacao === 1
+              ? "1 comprovante sem transação no extrato"
+              : `${semTransacao} comprovantes sem transação no extrato`}
+          </span>
+          <Link
+            href={`/comprovantes?alerta=${FILTRO_SEM_TRANSACAO}`}
+            className="font-medium text-texto underline underline-offset-4"
+          >
+            Ver comprovantes
+          </Link>
+        </p>
       )}
 
       {resumo.transacoesSemCategoria > 0 && (
         <p className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-m bg-alerta-suave px-4 py-3 text-sm">
           <span className="font-semibold text-alerta">
-            {resumo.transacoesSemCategoria} {resumo.transacoesSemCategoria === 1 ? "transação sem categoria" : "transações sem categoria"}
+            {resumo.transacoesSemCategoria}{" "}
+            {resumo.transacoesSemCategoria === 1
+              ? "transação sem categoria"
+              : "transações sem categoria"}
           </span>
-          <Link href={extrato("&categoria=nenhuma")} className="font-medium text-texto underline underline-offset-4">
+          <Link
+            href={extrato("&categoria=nenhuma")}
+            className="font-medium text-texto underline underline-offset-4"
+          >
             Revisar no extrato
           </Link>
         </p>
@@ -186,12 +311,25 @@ async function ConteudoDoPainel({ searchParams }: Pick<PageProps<"/painel">, "se
           }
         />
       ) : (
-        <div className={usaCentros ? "grid gap-12 lg:grid-cols-[1.25fr_1fr] lg:gap-16" : "grid"}>
+        <div
+          className={
+            usaCentros
+              ? "grid gap-12 lg:grid-cols-[1.25fr_1fr] lg:gap-16"
+              : "grid"
+          }
+        >
           <ParaOndeFoi
             gastos={resumo.gastosPorCategoria}
-            hrefDaCategoria={(id) => extrato(`&sentido=saida&categoria=${id ?? "nenhuma"}`)}
+            hrefDaCategoria={(id) =>
+              extrato(`&sentido=saida&categoria=${id ?? "nenhuma"}`)
+            }
           />
-          {usaCentros && <ResultadoPorCentro centros={resumo.resultadoPorCentroDeCusto} hrefSemCentro={extrato("&centro=nenhum")} />}
+          {usaCentros && (
+            <ResultadoPorCentro
+              centros={resumo.resultadoPorCentroDeCusto}
+              hrefSemCentro={extrato("&centro=nenhum")}
+            />
+          )}
         </div>
       )}
 

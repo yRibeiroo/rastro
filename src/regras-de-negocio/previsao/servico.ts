@@ -32,7 +32,10 @@ export interface NovaRecorrencia {
   fim?: DataISO | null;
 }
 
-export type EdicaoDeRecorrencia = Pick<NovaRecorrencia, "descricao" | "valorCentavos"> & { fim: DataISO | null };
+export type EdicaoDeRecorrencia = Pick<
+  NovaRecorrencia,
+  "descricao" | "valorCentavos"
+> & { fim: DataISO | null };
 
 export interface OcorrenciaNaPrevisao extends OcorrenciaPrevista {
   atrasada: boolean;
@@ -50,10 +53,17 @@ export interface PrevisaoDeSaldo {
 
 export interface ServicoDePrevisao {
   listarRecorrencias(ctx: ContextoDoUsuario): Promise<Recorrencia[]>;
-  criarRecorrencia(ctx: ContextoDoUsuario, dados: NovaRecorrencia): Promise<Recorrencia>;
+  criarRecorrencia(
+    ctx: ContextoDoUsuario,
+    dados: NovaRecorrencia,
+  ): Promise<Recorrencia>;
   encerrarRecorrencia(ctx: ContextoDoUsuario, recorrenciaId: Id): Promise<void>;
   /** Vale para as próximas ocorrências; as já baixadas ficam como estão. */
-  editarRecorrencia(ctx: ContextoDoUsuario, recorrenciaId: Id, dados: EdicaoDeRecorrencia): Promise<Recorrencia>;
+  editarRecorrencia(
+    ctx: ContextoDoUsuario,
+    recorrenciaId: Id,
+    dados: EdicaoDeRecorrencia,
+  ): Promise<Recorrencia>;
   /** lancar = false: "pular" (não gera lançamento). Em conta de banco nunca lança. */
   baixar(
     ctx: ContextoDoUsuario,
@@ -72,7 +82,11 @@ const valorCentavos = z
   .int()
   .refine((v) => v !== 0 && Math.abs(v) < LIMITE_EM_CENTAVOS);
 
-const esquemaEdicao = z.object({ descricao, valorCentavos, fim: data.nullable() });
+const esquemaEdicao = z.object({
+  descricao,
+  valorCentavos,
+  fim: data.nullable(),
+});
 
 const esquemaNova = z
   .object({
@@ -112,21 +126,32 @@ export function criarServicoDePrevisao(deps: {
 
     async encerrarRecorrencia(ctx, recorrenciaId) {
       if (!idValido(recorrenciaId))
-        throw new ErroDeNegocio("nao_encontrado", "Recorrência não encontrada.");
+        throw new ErroDeNegocio(
+          "nao_encontrado",
+          "Recorrência não encontrada.",
+        );
       await deps.recorrencias.encerrar(ctx.empresaId, recorrenciaId);
     },
 
     async editarRecorrencia(ctx, recorrenciaId, dados) {
       if (!idValido(recorrenciaId))
-        throw new ErroDeNegocio("nao_encontrado", "Recorrência não encontrada.");
+        throw new ErroDeNegocio(
+          "nao_encontrado",
+          "Recorrência não encontrada.",
+        );
       const r = esquemaEdicao.safeParse(dados);
       if (!r.success)
-        throw entradaInvalida("Confira a descrição, o valor (diferente de zero) e a data de fim.");
+        throw entradaInvalida(
+          "Confira a descrição, o valor (diferente de zero) e a data de fim.",
+        );
       return deps.recorrencias.atualizar(ctx.empresaId, recorrenciaId, r.data);
     },
 
     async baixar(ctx, dados) {
-      if (!idValido(dados?.recorrenciaId) || !data.safeParse(dados?.data).success)
+      if (
+        !idValido(dados?.recorrenciaId) ||
+        !data.safeParse(dados?.data).success
+      )
         throw entradaInvalida("Ocorrência inválida.");
       const transacaoId = await deps.recorrencias.baixar(
         ctx.empresaId,
@@ -138,7 +163,9 @@ export function criarServicoDePrevisao(deps: {
       if (transacaoId)
         await deps.categorizacao
           .categorizarPendentes(ctx.empresaId)
-          .catch((erro) => registrarFalha("categorizar ocorrência baixada", erro));
+          .catch((erro) =>
+            registrarFalha("categorizar ocorrência baixada", erro),
+          );
       return { transacaoId };
     },
 
@@ -159,7 +186,11 @@ export function criarServicoDePrevisao(deps: {
       const comSaldo = ocorrencias.map((o) => {
         const noSaldo = o.tipoDaConta !== "cartao_de_credito";
         if (noSaldo) saldo += o.valorCentavos;
-        return { ...o, atrasada: o.data < hoje, saldoDepoisCentavos: noSaldo ? saldo : null };
+        return {
+          ...o,
+          atrasada: o.data < hoje,
+          saldoDepoisCentavos: noSaldo ? saldo : null,
+        };
       });
       return {
         hoje,

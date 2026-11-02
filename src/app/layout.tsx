@@ -24,7 +24,11 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     // O script do <head> grava data-tema/data-abertura-vista no <html> antes da hidratação.
-    <html lang="pt-BR" className={`${classesDeFonte} h-full`} suppressHydrationWarning>
+    <html
+      lang="pt-BR"
+      className={`${classesDeFonte} h-full`}
+      suppressHydrationWarning
+    >
       <head>
         <script dangerouslySetInnerHTML={{ __html: SCRIPT_ANTES_DA_PINTURA }} />
       </head>

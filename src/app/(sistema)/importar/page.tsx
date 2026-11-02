@@ -6,23 +6,42 @@ import { Suspense } from "react";
 import { Erro, Vazio } from "@/componentes/estados/Estados";
 import { lerEstadoForcado } from "@/componentes/estados/estado-forcado";
 import { CabecalhoDaPagina } from "@/componentes/estrutura/CabecalhoDaPagina";
-import { diasDesde, textoDaUltimaImportacao } from "@/componentes/estrutura/StatusDaConexao";
+import { Icone } from "@/componentes/estrutura/Icone";
 import { botao } from "@/componentes/formulario/classes";
+import { textoDaSituacaoDoExtrato } from "@/componentes/importacao/extrato";
 import { ImportarExtrato } from "@/componentes/importacao/ImportarExtrato";
-import { formatarData, formatarDataHora } from "@/ferramentas-internas/formatar-data";
+import {
+  formatarData,
+  formatarDataHora,
+} from "@/ferramentas-internas/formatar-data";
 import { Carregando } from "@/identidade-visual/Carregando";
-import type { ImportacaoDeExtrato } from "@/regras-de-negocio";
-import { carregarImportacoes } from "@/regras-de-negocio/interface-web";
+import type {
+  ImportacaoDeExtrato,
+  SituacaoDoExtrato,
+} from "@/regras-de-negocio";
+import {
+  carregarImportacoes,
+  carregarSituacaoDoExtrato,
+} from "@/regras-de-negocio/interface-web";
 import { importarExtrato } from "@/regras-de-negocio/interface-web/acoes";
 
 export const metadata: Metadata = { title: "Importar extrato" };
 
-const carregando = <Carregando contexto="sincronizando" rotulo="Carregando as importações" className="min-h-[30vh]" />;
+const carregando = (
+  <Carregando
+    contexto="sincronizando"
+    rotulo="Carregando as importações"
+    className="min-h-[30vh]"
+  />
+);
 
 export default function Importar({ searchParams }: PageProps<"/importar">) {
   return (
     <>
-      <CabecalhoDaPagina titulo="Importar extrato" descricao="Envie o arquivo OFX do seu banco (conta ou fatura do cartão). Reenviar o mesmo período atualiza sem duplicar." />
+      <CabecalhoDaPagina
+        titulo="Importar extrato"
+        descricao="Envie o arquivo OFX do seu banco (conta ou fatura do cartão). Reenviar o mesmo período atualiza sem duplicar."
+      />
       <div className="grid gap-12 pb-8 lg:grid-cols-[1.3fr_1fr] lg:gap-16">
         <div className="grid content-start gap-10">
           <ImportarExtrato importarExtrato={importarExtrato} />
@@ -43,43 +62,71 @@ export default function Importar({ searchParams }: PageProps<"/importar">) {
 
 function ComoExportar() {
   return (
-    <section aria-labelledby="como-exportar" className="grid content-start gap-3 lg:sticky lg:top-8">
+    <section
+      aria-labelledby="como-exportar"
+      className="grid content-start gap-3 lg:sticky lg:top-8"
+    >
       <h2 id="como-exportar" className="text-xl font-semibold">
         Como exportar do seu banco
       </h2>
       <ol className="grid list-decimal gap-2 pl-5 text-sm marker:text-texto-suave">
         <li>Entre no Internet Banking (no computador) ou no app do banco.</li>
         <li>Abra o extrato da conta ou a fatura do cartão.</li>
-        <li>Escolha o período. Pode repetir dias já importados: nada se duplica.</li>
         <li>
-          Em Exportar ou Baixar, escolha o formato <strong className="font-semibold">OFX</strong> (às vezes chamado de
+          Escolha o período. Pode repetir dias já importados: nada se duplica.
+        </li>
+        <li>
+          Em Exportar ou Baixar, escolha o formato{" "}
+          <strong className="font-semibold">OFX</strong> (às vezes chamado de
           &quot;Money&quot; ou &quot;Quicken&quot;) e salve o arquivo.
         </li>
         <li>Envie o arquivo aqui. Uma vez por semana basta.</li>
       </ol>
       <p className="text-sm text-texto-suave">
-        Funciona com Nubank, Itaú, Bradesco, Banco do Brasil, Caixa, Santander, Inter, C6, Sicredi, Sicoob e outros que exportam
-        OFX. O que não passa pelo banco você lança em{" "}
-        <Link href="/contas" className="text-primaria-texto underline underline-offset-4">
+        Funciona com Nubank, Itaú, Bradesco, Banco do Brasil, Caixa, Santander,
+        Inter, C6, Sicredi, Sicoob e outros que exportam OFX. O que não passa
+        pelo banco você lança em{" "}
+        <Link
+          href="/contas"
+          className="text-primaria-texto underline underline-offset-4"
+        >
           Contas
         </Link>
         .
       </p>
-      <p className="text-xs text-texto-suave">O Rastro só lê o arquivo. Ele não acessa o banco nem movimenta dinheiro.</p>
+      <p className="text-xs text-texto-suave">
+        O Rastro só lê o arquivo. Ele não acessa o banco nem movimenta dinheiro.
+      </p>
     </section>
   );
 }
 
-async function Historico({ searchParams }: Pick<PageProps<"/importar">, "searchParams">) {
+async function Historico({
+  searchParams,
+}: Pick<PageProps<"/importar">, "searchParams">) {
   // Dados por requisição (sessão e relógio): fora do shell e do prefetch.
   await connection();
   const forcado = lerEstadoForcado((await searchParams).estado);
   if (forcado === "carregando") return carregando;
 
   let importacoes: ImportacaoDeExtrato[];
+  let situacao: SituacaoDoExtrato;
   try {
     if (forcado === "erro") throw new Error("forçado");
-    importacoes = forcado === "vazio" ? [] : await carregarImportacoes();
+    [importacoes, situacao] =
+      forcado === "vazio"
+        ? [
+            [],
+            {
+              ultimaImportacaoEm: null,
+              diasDesdeAUltima: null,
+              desatualizado: false,
+            },
+          ]
+        : await Promise.all([
+            carregarImportacoes(),
+            carregarSituacaoDoExtrato(),
+          ]);
   } catch (erro) {
     unstable_rethrow(erro);
     return (
@@ -95,17 +142,32 @@ async function Historico({ searchParams }: Pick<PageProps<"/importar">, "searchP
     );
   }
 
-  if (importacoes.length === 0)
-    return <Vazio titulo="Nenhuma importação ainda" descricao="Depois do primeiro arquivo, cada envio aparece aqui com o período e o que mudou." />;
+  const linha = (
+    <p
+      className={`flex items-center gap-2 text-sm ${situacao.desatualizado ? "font-medium text-alerta" : "text-texto-suave"}`}
+    >
+      {situacao.desatualizado && <Icone nome="atencao" className="size-4" />}
+      <span>
+        {textoDaSituacaoDoExtrato(situacao)}
+        {situacao.desatualizado && ". Importe o extrato desta semana."}
+      </span>
+    </p>
+  );
 
-  const ultima = importacoes[0].criadaEm;
-  const atrasada = (diasDesde(ultima) ?? 0) > 7;
+  if (importacoes.length === 0)
+    return (
+      <div className="grid gap-3">
+        {linha}
+        <Vazio
+          titulo="Nenhuma importação ainda"
+          descricao="Depois do primeiro arquivo, cada envio aparece aqui com o período e o que mudou."
+        />
+      </div>
+    );
+
   return (
     <div className="grid gap-3">
-      <p className={`text-sm ${atrasada ? "font-medium text-alerta" : "text-texto-suave"}`}>
-        {textoDaUltimaImportacao(ultima)}
-        {atrasada && ". Importe o extrato desta semana."}
-      </p>
+      {linha}
       <ul className="divide-y divide-borda rounded-m border border-borda bg-superficie">
         {importacoes.map((i) => (
           <Linha key={i.id} importacao={i} />
@@ -127,7 +189,8 @@ function Linha({ importacao: i }: { importacao: ImportacaoDeExtrato }) {
         </span>
       </div>
       <span className="valor-monetario text-texto-suave">
-        {i.novas} {i.novas === 1 ? "nova" : "novas"}, {i.atualizadas} {i.atualizadas === 1 ? "atualizada" : "atualizadas"}
+        {i.novas} {i.novas === 1 ? "nova" : "novas"}, {i.atualizadas}{" "}
+        {i.atualizadas === 1 ? "atualizada" : "atualizadas"}
       </span>
     </li>
   );

@@ -10,7 +10,10 @@ export type Sentido = "entrada" | "saida";
 export type PapelNaEmpresa = "dono" | "membro";
 /** ADR 0017: define as categorias e regras iniciais da conta. */
 export type PerfilDaEmpresa = "pessoal" | "empresa";
-export const PERFIS_DA_EMPRESA: readonly PerfilDaEmpresa[] = ["pessoal", "empresa"];
+export const PERFIS_DA_EMPRESA: readonly PerfilDaEmpresa[] = [
+  "pessoal",
+  "empresa",
+];
 
 export interface Empresa {
   id: Id;
@@ -52,7 +55,8 @@ export interface Conexao {
   atualizadaEm: Date;
 }
 
-export type TipoDeConta = "corrente" | "poupanca" | "cartao_de_credito" | "dinheiro"; // dinheiro = carteira (manual)
+export type TipoDeConta =
+  "corrente" | "poupanca" | "cartao_de_credito" | "dinheiro"; // dinheiro = carteira (manual)
 
 export interface Conta {
   id: Id;

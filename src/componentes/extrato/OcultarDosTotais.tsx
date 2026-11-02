@@ -5,10 +5,21 @@ import { useState, useTransition } from "react";
 import { ajuda, mensagemDeErro } from "@/componentes/formulario/classes";
 import type { Id, ResultadoDaAcao, Transacao } from "@/regras-de-negocio";
 
-type Ocultar = (transacaoId: Id, oculta: boolean) => Promise<ResultadoDaAcao<Transacao>>;
+type Ocultar = (
+  transacaoId: Id,
+  oculta: boolean,
+) => Promise<ResultadoDaAcao<Transacao>>;
 
 /** "Ocultar dos totais" (ADR 0017): checkbox nativo, salva ao marcar. */
-export function OcultarDosTotais({ transacaoId, oculta, ocultar }: { transacaoId: Id; oculta: boolean; ocultar: Ocultar }) {
+export function OcultarDosTotais({
+  transacaoId,
+  oculta,
+  ocultar,
+}: {
+  transacaoId: Id;
+  oculta: boolean;
+  ocultar: Ocultar;
+}) {
   const router = useRouter();
   const [, iniciar] = useTransition();
   const [marcado, setMarcado] = useState(oculta);
@@ -41,8 +52,8 @@ export function OcultarDosTotais({ transacaoId, oculta, ocultar }: { transacaoId
         <span className="text-sm font-medium">Fora dos totais do painel</span>
       </label>
       <p id="ocultar-ajuda" className={ajuda}>
-        Para aplicações, resgates e transferências entre contas suas: continua no extrato e no saldo, mas não conta como gasto
-        nem como entrada.
+        Para aplicações, resgates e transferências entre contas suas: continua
+        no extrato e no saldo, mas não conta como gasto nem como entrada.
       </p>
       {erro && (
         <p className={mensagemDeErro} role="alert">

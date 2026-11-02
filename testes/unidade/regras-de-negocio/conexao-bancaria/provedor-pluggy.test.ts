@@ -20,9 +20,12 @@ type Pagina<T> = { results: T[]; next?: string | null };
 const transacoes = fixture<Pagina<Transaction>>("transacoes-pagina-1.json");
 const contas = fixture<Pagina<Account>>("contas.json");
 const item = fixture<Item>("item.json");
-const webhooks = fixtureCrua<Record<string, Record<string, unknown>>>("webhooks.json");
+const webhooks =
+  fixtureCrua<Record<string, Record<string, unknown>>>("webhooks.json");
 
-function clienteFalso(parcial: Partial<Record<keyof ClienteDaPluggy, unknown>> = {}) {
+function clienteFalso(
+  parcial: Partial<Record<keyof ClienteDaPluggy, unknown>> = {},
+) {
   return {
     createConnectToken: vi.fn(async () => ({ accessToken: "tok" })),
     fetchItem: vi.fn(async () => item),
@@ -36,7 +39,9 @@ function clienteFalso(parcial: Partial<Record<keyof ClienteDaPluggy, unknown>> =
 }
 
 describe("mapeamento Pluggy → Transação", () => {
-  const [debito, credito, tarifa] = transacoes.results.map(paraTransacaoDoProvedor);
+  const [debito, credito, tarifa] = transacoes.results.map(
+    paraTransacaoDoProvedor,
+  );
 
   it("saída é sempre negativa e entrada positiva, em centavos inteiros", () => {
     expect(debito.valorCentavos).toBe(-25090);
@@ -79,7 +84,8 @@ describe("mapeamento Pluggy → Transação", () => {
     expect(credito.descricaoOriginal).toBeNull();
     expect(debito.categoriaDoProvedor).toBe("Gas stations");
     expect(
-      paraTransacaoDoProvedor({ ...transacoes.results[0], description: "  " }).descricao,
+      paraTransacaoDoProvedor({ ...transacoes.results[0], description: "  " })
+        .descricao,
     ).toBe("(sem descrição)");
   });
 });
@@ -88,14 +94,17 @@ describe("mapeamentos fixos", () => {
   it("status do item", () => {
     expect(paraStatusDaConexao("UPDATED")).toBe("atualizada");
     expect(paraStatusDaConexao("MERGING")).toBe("atualizando");
-    expect(paraStatusDaConexao("WAITING_USER_ACTION")).toBe("aguardando_usuario");
+    expect(paraStatusDaConexao("WAITING_USER_ACTION")).toBe(
+      "aguardando_usuario",
+    );
     expect(paraStatusDaConexao("LOGIN_ERROR")).toBe("erro_de_login");
     expect(paraStatusDaConexao("OUTDATED")).toBe("desatualizada");
     expect(paraStatusDaConexao("QUALQUER")).toBe("erro");
   });
 
   it("contas: tipo, 4 últimos dígitos e saldo em centavos", () => {
-    const [corrente, poupanca, cartao] = contas.results.map(paraContaDoProvedor);
+    const [corrente, poupanca, cartao] =
+      contas.results.map(paraContaDoProvedor);
     expect(corrente).toEqual({
       idExterno: CONTA_EXTERNA,
       nome: "Sicredi Empresas",
@@ -105,8 +114,16 @@ describe("mapeamentos fixos", () => {
     });
     expect(poupanca?.tipo).toBe("poupanca");
     expect(cartao?.tipo).toBe("cartao_de_credito");
-    expect(paraContaDoProvedor({ ...contas.results[0], subtype: "OUTRO" } as unknown as Account)).toBeNull();
-    expect(paraContaDoProvedor({ ...contas.results[0], number: "" } as Account)?.numeroFinal).toBeNull();
+    expect(
+      paraContaDoProvedor({
+        ...contas.results[0],
+        subtype: "OUTRO",
+      } as unknown as Account),
+    ).toBeNull();
+    expect(
+      paraContaDoProvedor({ ...contas.results[0], number: "" } as Account)
+        ?.numeroFinal,
+    ).toBeNull();
   });
 
   it("cursor vem do parâmetro after do link next", () => {
@@ -134,8 +151,14 @@ describe("ProvedorBancarioPluggy", () => {
       clientUserId: EMPRESA,
       avoidDuplicates: true,
     });
-    await provedor.criarTokenDeConexao({ identificadorDoUsuario: EMPRESA, idExternoParaReconectar: ITEM });
-    expect(cliente.createConnectToken).toHaveBeenLastCalledWith(ITEM, expect.not.objectContaining({ webhookUrl: expect.anything() }));
+    await provedor.criarTokenDeConexao({
+      identificadorDoUsuario: EMPRESA,
+      idExternoParaReconectar: ITEM,
+    });
+    expect(cliente.createConnectToken).toHaveBeenLastCalledWith(
+      ITEM,
+      expect.not.objectContaining({ webhookUrl: expect.anything() }),
+    );
   });
 
   it("obterConexao: GET /items é traduzido; 404 vira null; 5xx vira provedor_indisponivel", async () => {
@@ -148,19 +171,31 @@ describe("ProvedorBancarioPluggy", () => {
       consentimentoExpiraEm: new Date("2027-10-01T00:00:00.000Z"),
     });
     const com404 = new ProvedorBancarioPluggy(() =>
-      clienteFalso({ fetchItem: vi.fn(async () => Promise.reject({ code: 404, message: "not found" })) }),
+      clienteFalso({
+        fetchItem: vi.fn(async () =>
+          Promise.reject({ code: 404, message: "not found" }),
+        ),
+      }),
     );
     expect(await com404.obterConexao(ITEM)).toBeNull();
     const com500 = new ProvedorBancarioPluggy(() =>
-      clienteFalso({ fetchItem: vi.fn(async () => Promise.reject({ code: 500 })) }),
+      clienteFalso({
+        fetchItem: vi.fn(async () => Promise.reject({ code: 500 })),
+      }),
     );
-    await expect(com500.obterConexao(ITEM)).rejects.toMatchObject({ codigo: "provedor_indisponivel" });
+    await expect(com500.obterConexao(ITEM)).rejects.toMatchObject({
+      codigo: "provedor_indisponivel",
+    });
   });
 
   it("item com erro traz código e mensagem", async () => {
     const provedor = new ProvedorBancarioPluggy(() =>
       clienteFalso({
-        fetchItem: vi.fn(async () => ({ ...item, status: "LOGIN_ERROR", error: { code: "INVALID_CREDENTIALS", message: "x" } })),
+        fetchItem: vi.fn(async () => ({
+          ...item,
+          status: "LOGIN_ERROR",
+          error: { code: "INVALID_CREDENTIALS", message: "x" },
+        })),
       }),
     );
     expect(await provedor.obterConexao(ITEM)).toMatchObject({
@@ -177,7 +212,11 @@ describe("ProvedorBancarioPluggy", () => {
       "cartao_de_credito",
     ]);
     const falha = new ProvedorBancarioPluggy(() =>
-      clienteFalso({ fetchAccounts: vi.fn(async () => Promise.reject(new Error("ECONNRESET"))) }),
+      clienteFalso({
+        fetchAccounts: vi.fn(async () =>
+          Promise.reject(new Error("ECONNRESET")),
+        ),
+      }),
     );
     const erro = await falha.listarContas(ITEM).catch((e) => e);
     expect(erro).toBeInstanceOf(ErroDeNegocio);
@@ -193,18 +232,30 @@ describe("ProvedorBancarioPluggy", () => {
     });
     expect(pagina.itens).toHaveLength(3);
     expect(pagina.proximoCursor).toBe("eyJpZCI6ImM0ZDUifQ");
-    expect(cliente.fetchTransactionsCursor).toHaveBeenCalledWith(CONTA_EXTERNA, {
-      createdAtFrom: "2026-10-08T12:30:00.000Z",
-      after: "abc",
-    });
+    expect(cliente.fetchTransactionsCursor).toHaveBeenCalledWith(
+      CONTA_EXTERNA,
+      {
+        createdAtFrom: "2026-10-08T12:30:00.000Z",
+        after: "abc",
+      },
+    );
     await provedor.listarTransacoes(CONTA_EXTERNA, {
       ids: Array.from({ length: 600 }, (_, i) => `id-${i}`),
     });
-    expect(vi.mocked(cliente.fetchTransactionsCursor).mock.calls[1][1]?.ids).toHaveLength(500);
-    await provedor.listarTransacoes(CONTA_EXTERNA, { dataDe: "2026-01-01", dataAte: "2026-02-01" });
-    expect(vi.mocked(cliente.fetchTransactionsCursor).mock.calls[2][1]).toEqual({ dateFrom: "2026-01-01", dateTo: "2026-02-01" });
+    expect(
+      vi.mocked(cliente.fetchTransactionsCursor).mock.calls[1][1]?.ids,
+    ).toHaveLength(500);
+    await provedor.listarTransacoes(CONTA_EXTERNA, {
+      dataDe: "2026-01-01",
+      dataAte: "2026-02-01",
+    });
+    expect(vi.mocked(cliente.fetchTransactionsCursor).mock.calls[2][1]).toEqual(
+      { dateFrom: "2026-01-01", dateTo: "2026-02-01" },
+    );
     await provedor.listarTransacoes(CONTA_EXTERNA);
-    expect(vi.mocked(cliente.fetchTransactionsCursor).mock.calls[3][1]).toEqual({});
+    expect(vi.mocked(cliente.fetchTransactionsCursor).mock.calls[3][1]).toEqual(
+      {},
+    );
   });
 
   it("registrarWebhooks cria os ausentes e atualiza (mesmo evento + URL) com o cabeçalho secreto", async () => {
@@ -219,20 +270,39 @@ describe("ProvedorBancarioPluggy", () => {
     });
     const provedor = new ProvedorBancarioPluggy(() => cliente);
     const cabecalhos = { Authorization: "Bearer segredo" };
-    const r = await provedor.registrarWebhooks({ url, eventos: EVENTOS_DO_WEBHOOK, cabecalhos });
+    const r = await provedor.registrarWebhooks({
+      url,
+      eventos: EVENTOS_DO_WEBHOOK,
+      cabecalhos,
+    });
     expect(r.atualizados).toEqual(["item/created"]);
     expect(r.criados).toHaveLength(5);
-    expect(cliente.updateWebhook).toHaveBeenCalledWith("w1", { url, event: "item/created", headers: cabecalhos, enabled: true });
-    expect(cliente.createWebhook).toHaveBeenCalledWith("item/updated", url, cabecalhos);
+    expect(cliente.updateWebhook).toHaveBeenCalledWith("w1", {
+      url,
+      event: "item/created",
+      headers: cabecalhos,
+      enabled: true,
+    });
+    expect(cliente.createWebhook).toHaveBeenCalledWith(
+      "item/updated",
+      url,
+      cabecalhos,
+    );
     await expect(
-      provedor.registrarWebhooks({ url: "http://inseguro", eventos: EVENTOS_DO_WEBHOOK, cabecalhos }),
+      provedor.registrarWebhooks({
+        url: "http://inseguro",
+        eventos: EVENTOS_DO_WEBHOOK,
+        cabecalhos,
+      }),
     ).rejects.toMatchObject({ codigo: "entrada_invalida" });
   });
 
   it("o cliente só é criado na primeira chamada (credenciais preguiçosas)", async () => {
     const fabrica = vi.fn(() => clienteFalso());
     const provedor = new ProvedorBancarioPluggy(fabrica);
-    expect(provedor.interpretarWebhook(webhooks["item-created"])).not.toBeNull();
+    expect(
+      provedor.interpretarWebhook(webhooks["item-created"]),
+    ).not.toBeNull();
     expect(fabrica).not.toHaveBeenCalled();
     await provedor.listarContas(ITEM);
     await provedor.listarContas(ITEM);
@@ -248,21 +318,35 @@ describe("interpretarWebhook (Zod)", () => {
       nomeOriginal: "item/created",
       conexaoIdExterno: ITEM,
     });
-    expect(interpretarEventoDaPluggy(webhooks["item-updated"])?.tipo).toBe("conexao_atualizada");
+    expect(interpretarEventoDaPluggy(webhooks["item-updated"])?.tipo).toBe(
+      "conexao_atualizada",
+    );
     expect(interpretarEventoDaPluggy(webhooks["item-error"])).toMatchObject({
       tipo: "conexao_com_erro",
-      erro: { codigo: "INVALID_CREDENTIALS_MFA", mensagem: "Credenciais inválidas" },
+      erro: {
+        codigo: "INVALID_CREDENTIALS_MFA",
+        mensagem: "Credenciais inválidas",
+      },
     });
-    expect(interpretarEventoDaPluggy(webhooks["transactions-created"])).toMatchObject({
+    expect(
+      interpretarEventoDaPluggy(webhooks["transactions-created"]),
+    ).toMatchObject({
       tipo: "transacoes_criadas",
       contaIdExterno: CONTA_EXTERNA,
       criadasDesde: new Date("2026-10-08T12:30:00.000Z"),
     });
-    expect(interpretarEventoDaPluggy(webhooks["transactions-updated"])).toMatchObject({
+    expect(
+      interpretarEventoDaPluggy(webhooks["transactions-updated"]),
+    ).toMatchObject({
       tipo: "transacoes_atualizadas",
-      transacaoIdsExternos: ["f1a2b3c4-d5e6-4f70-8192-a3b4c5d6e7f8", "a2b3c4d5-e6f7-4081-92a3-b4c5d6e7f809"],
+      transacaoIdsExternos: [
+        "f1a2b3c4-d5e6-4f70-8192-a3b4c5d6e7f8",
+        "a2b3c4d5-e6f7-4081-92a3-b4c5d6e7f809",
+      ],
     });
-    expect(interpretarEventoDaPluggy(webhooks["transactions-deleted"])?.tipo).toBe("transacoes_removidas");
+    expect(
+      interpretarEventoDaPluggy(webhooks["transactions-deleted"])?.tipo,
+    ).toBe("transacoes_removidas");
   });
 
   it("evento não assinado vira 'ignorado'; item/error sem objeto de erro ainda é aceito", () => {
@@ -273,10 +357,18 @@ describe("interpretarWebhook (Zod)", () => {
       conexaoIdExterno: null,
     });
     expect(
-      interpretarEventoDaPluggy({ event: "item/deleted", eventId: "e1", itemId: ITEM }),
+      interpretarEventoDaPluggy({
+        event: "item/deleted",
+        eventId: "e1",
+        itemId: ITEM,
+      }),
     ).toMatchObject({ tipo: "ignorado", conexaoIdExterno: ITEM });
     expect(
-      interpretarEventoDaPluggy({ event: "item/error", eventId: "e2", itemId: ITEM }),
+      interpretarEventoDaPluggy({
+        event: "item/error",
+        eventId: "e2",
+        itemId: ITEM,
+      }),
     ).toMatchObject({ erro: { codigo: "desconhecido", mensagem: "" } });
   });
 
@@ -284,14 +376,26 @@ describe("interpretarWebhook (Zod)", () => {
     expect(interpretarEventoDaPluggy(null)).toBeNull();
     expect(interpretarEventoDaPluggy("texto")).toBeNull();
     expect(interpretarEventoDaPluggy({ event: "item/created" })).toBeNull(); // sem eventId
-    expect(interpretarEventoDaPluggy({ event: "item/created", eventId: "x" })).toBeNull(); // sem itemId
-    expect(interpretarEventoDaPluggy({ ...webhooks["item-error"], itemId: 42 })).toBeNull();
     expect(
-      interpretarEventoDaPluggy({ ...webhooks["transactions-created"], transactionsCreatedAtFrom: "ontem" }),
+      interpretarEventoDaPluggy({ event: "item/created", eventId: "x" }),
+    ).toBeNull(); // sem itemId
+    expect(
+      interpretarEventoDaPluggy({ ...webhooks["item-error"], itemId: 42 }),
     ).toBeNull();
     expect(
-      interpretarEventoDaPluggy({ ...webhooks["transactions-updated"], transactionIds: "a,b" }),
+      interpretarEventoDaPluggy({
+        ...webhooks["transactions-created"],
+        transactionsCreatedAtFrom: "ontem",
+      }),
     ).toBeNull();
-    expect(interpretarEventoDaPluggy({ ...webhooks["item-updated"], itemId: "" })).toBeNull();
+    expect(
+      interpretarEventoDaPluggy({
+        ...webhooks["transactions-updated"],
+        transactionIds: "a,b",
+      }),
+    ).toBeNull();
+    expect(
+      interpretarEventoDaPluggy({ ...webhooks["item-updated"], itemId: "" }),
+    ).toBeNull();
   });
 });

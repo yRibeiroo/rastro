@@ -1,22 +1,36 @@
 import "server-only";
 import type { LimiteDeGasto } from "@/regras-de-negocio/tipos";
 import type { RepositorioDeLimitesDeGasto } from "./contratos";
-import { dadosOuFalha, falhaDoBanco, paraCentavos, paraReais } from "./erros-do-banco";
+import {
+  dadosOuFalha,
+  falhaDoBanco,
+  paraCentavos,
+  paraReais,
+} from "./erros-do-banco";
 import type { ClienteDoBanco } from "./supabase/cliente-do-usuario";
 
-const paraLimite = (l: { categoria_id: string; valor_mensal: number }): LimiteDeGasto => ({
+const paraLimite = (l: {
+  categoria_id: string;
+  valor_mensal: number;
+}): LimiteDeGasto => ({
   categoriaId: l.categoria_id,
   valorMensalCentavos: paraCentavos(l.valor_mensal),
 });
 
-const MENSAGENS = { referencia: "Categoria inválida.", duplicado: "Essa categoria já tem limite." };
+const MENSAGENS = {
+  referencia: "Categoria inválida.",
+  duplicado: "Essa categoria já tem limite.",
+};
 
 export class RepositorioDeLimitesDeGastoSupabase implements RepositorioDeLimitesDeGasto {
   constructor(private readonly banco: ClienteDoBanco) {}
 
   async listar(empresaId: string) {
     return dadosOuFalha(
-      await this.banco.from("limites_de_gasto").select("categoria_id, valor_mensal").eq("empresa_id", empresaId),
+      await this.banco
+        .from("limites_de_gasto")
+        .select("categoria_id, valor_mensal")
+        .eq("empresa_id", empresaId),
     ).map(paraLimite);
   }
 

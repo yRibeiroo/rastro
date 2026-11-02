@@ -1,6 +1,9 @@
 /** Centavos (inteiro, negativo = saída) → texto em R$ no padrão pt-BR. */
 
-const completo = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+const completo = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+});
 const compacto = new Intl.NumberFormat("pt-BR", {
   style: "currency",
   currency: "BRL",
@@ -18,7 +21,10 @@ export interface OpcoesDeMoeda {
   compacto?: boolean;
 }
 
-export function formatarMoeda(centavos: number, { sinal = false, compacto: curto = false }: OpcoesDeMoeda = {}): string {
+export function formatarMoeda(
+  centavos: number,
+  { sinal = false, compacto: curto = false }: OpcoesDeMoeda = {},
+): string {
   const absoluto = Math.abs(Math.round(centavos)) / 100;
   const texto = (curto ? compacto : completo).format(absoluto);
   if (centavos < 0 && absoluto > 0) return `${MENOS}${texto}`;

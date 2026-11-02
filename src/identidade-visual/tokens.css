@@ -14,11 +14,26 @@
   color-scheme: light dark;
 
   /* Marca */
-  --cor-primaria: light-dark(#00d1a0, #00d1a0); /* preenchimentos, logo, botão principal */
-  --cor-secundaria: light-dark(#4ee6b7, #4ee6b7); /* destaques, fim do gradiente */
-  --cor-primaria-texto: light-dark(#016654, #4ee6b7); /* links e texto em verde (círculo "Verde Principal" do board) */
-  --cor-primaria-suave: light-dark(#e0f7ef, #0c3a31); /* fundo de chips, seleção, linha ativa */
-  --cor-sobre-primaria: light-dark(#04241c, #04241c); /* texto sobre --cor-primaria */
+  --cor-primaria: light-dark(
+    #00d1a0,
+    #00d1a0
+  ); /* preenchimentos, logo, botão principal */
+  --cor-secundaria: light-dark(
+    #4ee6b7,
+    #4ee6b7
+  ); /* destaques, fim do gradiente */
+  --cor-primaria-texto: light-dark(
+    #016654,
+    #4ee6b7
+  ); /* links e texto em verde (círculo "Verde Principal" do board) */
+  --cor-primaria-suave: light-dark(
+    #e0f7ef,
+    #0c3a31
+  ); /* fundo de chips, seleção, linha ativa */
+  --cor-sobre-primaria: light-dark(
+    #04241c,
+    #04241c
+  ); /* texto sobre --cor-primaria */
 
   /* Superfícies (fundo do app → cartões → áreas rebaixadas) */
   --cor-fundo: light-dark(#f4f7f6, #071315);
@@ -26,7 +41,10 @@
   --cor-superficie-2: light-dark(#e9efed, #14292a);
 
   /* Texto */
-  --cor-texto: light-dark(#0f172a, #e5e7eb); /* Grafite / Cinza Claro do board */
+  --cor-texto: light-dark(
+    #0f172a,
+    #e5e7eb
+  ); /* Grafite / Cinza Claro do board */
   --cor-texto-suave: light-dark(#4a5568, #9fb0ae);
 
   /* Bordas: decorativa (divisórias) e de controle (inputs, ≥ 3:1) */
@@ -35,7 +53,10 @@
 
   /* Dinheiro */
   --cor-entrada: light-dark(#016654, #4ee6b7); /* receita */
-  --cor-saida: light-dark(#a8402a, #ff9b85); /* despesa: terracota, não é "erro" */
+  --cor-saida: light-dark(
+    #a8402a,
+    #ff9b85
+  ); /* despesa: terracota, não é "erro" */
 
   /* Estados */
   --cor-erro: light-dark(#c01c28, #ff7b7b);
@@ -43,12 +64,20 @@
   --cor-alerta: light-dark(#8a5300, #f5b83d);
   --cor-alerta-suave: light-dark(#fdf1dc, #33260b);
   --cor-sucesso: light-dark(#016654, #4ee6b7);
-  --cor-foco: light-dark(#016654, #4ee6b7); /* anel de foco, ≥ 3:1 contra fundo e superfície */
+  --cor-foco: light-dark(
+    #016654,
+    #4ee6b7
+  ); /* anel de foco, ≥ 3:1 contra fundo e superfície */
 
   /* Rastro: a trilha do dinheiro (decorativa, nunca carrega informação sozinha) */
   --cor-rastro: light-dark(rgb(0 209 160 / 0.55), rgb(78 230 183 / 0.6));
   --cor-rastro-fraco: light-dark(rgb(0 209 160 / 0.14), rgb(78 230 183 / 0.12));
-  --gradiente-marca: linear-gradient(45deg, #008f6c 0%, #00d1a0 55%, #4ee6b7 100%);
+  --gradiente-marca: linear-gradient(
+    45deg,
+    #008f6c 0%,
+    #00d1a0 55%,
+    #4ee6b7 100%
+  );
 
   /* Forma */
   --raio-p: 6px; /* inputs, chips */
@@ -67,7 +96,8 @@
 
   /* Sombras tingidas de grafite-verde, nunca preto puro */
   --sombra-1: 0 1px 2px rgb(7 19 21 / 0.06), 0 1px 1px rgb(7 19 21 / 0.04);
-  --sombra-2: 0 8px 24px -8px rgb(7 19 21 / 0.18), 0 2px 6px rgb(7 19 21 / 0.06);
+  --sombra-2:
+    0 8px 24px -8px rgb(7 19 21 / 0.18), 0 2px 6px rgb(7 19 21 / 0.06);
   --sombra-3: 0 24px 48px -16px rgb(7 19 21 / 0.28);
 }
 

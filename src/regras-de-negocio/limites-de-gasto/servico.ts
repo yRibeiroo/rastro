@@ -22,14 +22,21 @@ export const LIMIAR_DE_ATENCAO = 0.8;
 
 export interface ServicoDeLimitesDeGasto {
   listar(ctx: ContextoDoUsuario): Promise<LimiteDeGasto[]>;
-  definir(ctx: ContextoDoUsuario, limite: LimiteDeGasto): Promise<LimiteDeGasto>;
+  definir(
+    ctx: ContextoDoUsuario,
+    limite: LimiteDeGasto,
+  ): Promise<LimiteDeGasto>;
   remover(ctx: ContextoDoUsuario, categoriaId: Id): Promise<void>;
   /** Gasto do mês corrente contra cada limite, do mais estourado para o mais folgado. */
   situacao(ctx: ContextoDoUsuario): Promise<SituacaoDoLimite[]>;
 }
 
 export const estadoDoLimite = (proporcao: number): EstadoDoLimite =>
-  proporcao >= 1 ? "estourado" : proporcao >= LIMIAR_DE_ATENCAO ? "atencao" : "ok";
+  proporcao >= 1
+    ? "estourado"
+    : proporcao >= LIMIAR_DE_ATENCAO
+      ? "atencao"
+      : "ok";
 
 const esquema = z.object({
   categoriaId: z.uuid(),
@@ -47,7 +54,10 @@ export function criarServicoDeLimitesDeGasto(deps: {
 
     async definir(ctx, limite) {
       const r = esquema.safeParse(limite);
-      if (!r.success) throw entradaInvalida("Escolha a categoria e um valor mensal maior que zero.");
+      if (!r.success)
+        throw entradaInvalida(
+          "Escolha a categoria e um valor mensal maior que zero.",
+        );
       return deps.limites.definir(ctx.empresaId, r.data);
     },
 
@@ -62,10 +72,15 @@ export function criarServicoDeLimitesDeGasto(deps: {
       if (!limites.length) return [];
       const hoje = deps.hoje();
       const [gastos, categorias] = await Promise.all([
-        deps.painel.gastosPorCategoria(ctx.empresaId, { de: `${hoje.slice(0, 7)}-01`, ate: hoje }),
+        deps.painel.gastosPorCategoria(ctx.empresaId, {
+          de: `${hoje.slice(0, 7)}-01`,
+          ate: hoje,
+        }),
         deps.categorias.listar(ctx.empresaId, { incluirArquivadas: true }),
       ]);
-      const gastoPor = new Map(gastos.map((g) => [g.categoriaId, g.totalCentavos]));
+      const gastoPor = new Map(
+        gastos.map((g) => [g.categoriaId, g.totalCentavos]),
+      );
       const nomePor = new Map(categorias.map((c) => [c.id, c.nome]));
       return limites
         .map((l) => {
@@ -79,7 +94,10 @@ export function criarServicoDeLimitesDeGasto(deps: {
             estado: estadoDoLimite(proporcao),
           };
         })
-        .sort((a, b) => b.proporcao - a.proporcao || a.nome.localeCompare(b.nome, "pt-BR"));
+        .sort(
+          (a, b) =>
+            b.proporcao - a.proporcao || a.nome.localeCompare(b.nome, "pt-BR"),
+        );
     },
   };
 }

@@ -1,6 +1,11 @@
 "use client";
 
-import { useState, type AnimationEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useState,
+  type AnimationEvent,
+  type ReactNode,
+} from "react";
 import { LogoRastro } from "./LogoRastro";
 import "./abertura.css";
 
@@ -18,23 +23,48 @@ export function AberturaAnimada({ children }: { children: ReactNode }) {
   const [encerrada, setEncerrada] = useState(false);
   const [pulada, setPulada] = useState(false);
 
+  // HU-02: Enter (ou Esc) pula, mesmo sem o foco no botão. Na segunda visita o overlay nem aparece.
+  useEffect(() => {
+    if (encerrada || pulada) return;
+    if ("aberturaVista" in document.documentElement.dataset) return;
+    const aoTeclar = (e: KeyboardEvent) => {
+      if (e.key === "Enter" || e.key === "Escape") setPulada(true);
+    };
+    window.addEventListener("keydown", aoTeclar);
+    return () => window.removeEventListener("keydown", aoTeclar);
+  }, [encerrada, pulada]);
+
   function aoTerminar(e: AnimationEvent<HTMLDivElement>) {
-    if (e.target === e.currentTarget && FIM.has(e.animationName)) setEncerrada(true);
+    if (e.target === e.currentTarget && FIM.has(e.animationName))
+      setEncerrada(true);
   }
 
   return (
     <>
       {!encerrada && (
-        <div className="abertura" data-pulada={pulada || undefined} onAnimationEnd={aoTerminar}>
+        <div
+          className="abertura"
+          data-pulada={pulada || undefined}
+          onAnimationEnd={aoTerminar}
+        >
           <div className="abertura__veu" aria-hidden="true" />
           <div className="abertura__marca" aria-hidden="true">
             <div className="abertura__logo">
-              <LogoRastro variante="tracada" title="" className="abertura__tracado" espessura={7} />
+              <LogoRastro
+                variante="tracada"
+                title=""
+                className="abertura__tracado"
+                espessura={7}
+              />
               <LogoRastro title="" className="abertura__preenchida" />
             </div>
             <span className="abertura__nome">Rastro</span>
           </div>
-          <button type="button" className="abertura__pular" onClick={() => setPulada(true)}>
+          <button
+            type="button"
+            className="abertura__pular"
+            onClick={() => setPulada(true)}
+          >
             Pular abertura
           </button>
         </div>
