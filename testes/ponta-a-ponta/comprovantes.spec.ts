@@ -4,6 +4,14 @@ import { EMPRESA_DEMO, hidratada, semAbertura, sql } from "./apoio";
 // HU-22 (lista e filtros), HU-20 (escolher a transação), HU-17 com RECURSO_COMPROVANTES_IA=0.
 const AMBIGUO = "00000000-0000-4000-a000-000000000404";
 
+// O seed põe o recibo ambíguo no dia 25 do mês anterior (datas relativas, fuso de Araguaína).
+const [ano, mes] = new Date()
+  .toLocaleDateString("en-CA", { timeZone: "America/Araguaina" })
+  .split("-")
+  .map(Number);
+const DIA_DO_RECIBO = new Date(ano, mes - 2, 25).toLocaleDateString("pt-BR");
+const RECIBO = `Recibo de ${DIA_DO_RECIBO}`;
+
 test.describe.configure({ mode: "serial" });
 test.beforeAll(() => {
   // O recibo ambíguo do seed volta a 'ambiguo' (a execução anterior o conciliou).
@@ -46,13 +54,7 @@ test("filtros por situação ficam no endereço", async ({ page }) => {
   await filtros.getByRole("link", { name: "Escolher transação" }).click();
   await expect(page).toHaveURL(/situacao=ambiguo/);
   await expect(cartoes(page)).toHaveCount(1);
-  // O seed põe o recibo ambíguo no dia 25 do mês anterior (datas relativas, fuso de Araguaína).
-  const [ano, mes] = new Date()
-    .toLocaleDateString("en-CA", { timeZone: "America/Araguaina" })
-    .split("-")
-    .map(Number);
-  const dia25 = new Date(ano, mes - 2, 25).toLocaleDateString("pt-BR");
-  await expect(cartoes(page)).toContainText(`Recibo de ${dia25}`);
+  await expect(cartoes(page)).toContainText(RECIBO);
 });
 
 test("ambíguo: escolher a transação concilia e o clipe aparece no extrato", async ({
@@ -61,12 +63,17 @@ test("ambíguo: escolher a transação concilia e o clipe aparece no extrato", a
   await page.goto("/comprovantes?situacao=ambiguo");
   await hidratada(page);
   const cartao = cartoes(page).first();
-  await cartao.getByRole("radio", { name: /APLICACAO POUPANCA/ }).check();
+  // A do mesmo dia do recibo: no começo do mês, o seed também tem a transferência de hoje.
+  await cartao
+    .getByRole("radio", {
+      name: new RegExp(`APLICACAO POUPANCA.*${DIA_DO_RECIBO}`),
+    })
+    .check();
   await cartao.getByRole("button", { name: "Ligar à transação" }).click();
   await expect(page.getByText("Nenhum comprovante em")).toBeVisible();
 
   await page.goto("/comprovantes?situacao=conciliado");
-  const recibo = cartoes(page).filter({ hasText: "Recibo de 25/09/2026" });
+  const recibo = cartoes(page).filter({ hasText: RECIBO });
   await expect(recibo).toContainText("Conciliado");
   await recibo.getByRole("link", { name: "Abrir transação" }).click();
   await expect(page.getByRole("heading", { level: 1 })).toContainText(
@@ -77,7 +84,7 @@ test("ambíguo: escolher a transação concilia e o clipe aparece no extrato", a
 test("desfazer a conciliação volta a pendente (RF-40)", async ({ page }) => {
   await page.goto("/comprovantes?situacao=conciliado");
   await hidratada(page);
-  const recibo = cartoes(page).filter({ hasText: "Recibo de 25/09/2026" });
+  const recibo = cartoes(page).filter({ hasText: RECIBO });
   await recibo.getByRole("button", { name: "Desligar da transação" }).click();
   await expect(
     page.getByText("Conciliação desfeita. O comprovante voltou a pendente."),
