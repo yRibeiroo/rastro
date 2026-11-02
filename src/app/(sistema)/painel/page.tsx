@@ -11,7 +11,7 @@ import { botao } from "@/componentes/formulario/classes";
 import { GraficoEntradasSaidas } from "@/componentes/graficos/GraficoEntradasSaidas";
 import { ParaOndeFoi } from "@/componentes/graficos/ParaOndeFoi";
 import { ResultadoPorCentro } from "@/componentes/graficos/ResultadoPorCentro";
-import { carregarConexoes, carregarPainel, carregarRecursos } from "@/regras-de-negocio/interface-web";
+import { carregarConexoes, carregarPainel, carregarPrevisao, carregarRecursos } from "@/regras-de-negocio/interface-web";
 import { textoDaUltimaImportacao, ultimaImportacao } from "@/componentes/estrutura/StatusDaConexao";
 import { formatarData, formatarDataHora, formatarTempoRelativo } from "@/ferramentas-internas/formatar-data";
 import { Carregando } from "@/identidade-visual/Carregando";
@@ -48,16 +48,24 @@ async function ConteudoDoPainel({ searchParams }: Pick<PageProps<"/painel">, "se
   try {
     if (forcado === "erro") throw new Error("forçado");
     // O gráfico mensal sempre mostra pelo menos 6 meses; o resto segue o período escolhido.
-    const [conexoes, { openFinance }, resumo, historico] = await Promise.all([
+    const [conexoes, { openFinance }, resumo, historico, previsto] = await Promise.all([
       carregarConexoes(),
       carregarRecursos(),
       carregarPainel(periodo),
       carregarPainel(periodoDe(chave === "12m" ? "12m" : "6m")),
+      // Extra: se a previsão falhar, o painel continua (só some a linha).
+      carregarPrevisao(30).then(
+        (p) => p.previsao,
+        (erro) => {
+          unstable_rethrow(erro);
+          return null;
+        },
+      ),
     ]);
     const conexao = conexoes.find((c) => c.provedor === (openFinance ? "pluggy" : "arquivo"));
     // Só lançamentos manuais (ADR 0017) também alimentam o painel.
     const temDados = !!conexao || conexoes.some((c) => c.provedor === "manual");
-    dados = { conexao, temDados, openFinance, ultima: ultimaImportacao(conexoes), resumo, historico };
+    dados = { conexao, temDados, openFinance, ultima: ultimaImportacao(conexoes), resumo, historico, previsto };
   } catch (erro) {
     unstable_rethrow(erro);
     return (
@@ -73,7 +81,7 @@ async function ConteudoDoPainel({ searchParams }: Pick<PageProps<"/painel">, "se
     );
   }
 
-  const { conexao, temDados, openFinance, ultima, resumo, historico } = dados;
+  const { conexao, temDados, openFinance, ultima, resumo, historico, previsto } = dados;
   if (forcado === "vazio" || !temDados) return <SemConexao openFinance={openFinance} />;
   const entradas = resumo.fluxoMensal.reduce((s, m) => s + m.entradasCentavos, 0);
   const saidas = resumo.fluxoMensal.reduce((s, m) => s + m.saidasCentavos, 0);
@@ -105,6 +113,11 @@ async function ConteudoDoPainel({ searchParams }: Pick<PageProps<"/painel">, "se
           </h2>
           <ValorMonetario centavos={resumo.saldoAtualCentavos} className="font-titulo text-4xl font-bold md:text-5xl" />
           {resumo.saldoAtualizadoEm && <p className="text-xs text-texto-suave">Saldo do extrato em {formatarDataHora(resumo.saldoAtualizadoEm)}</p>}
+          {previsto && previsto.ocorrencias.length > 0 && (
+            <Link href="/previsao" className="text-sm text-texto-suave underline-offset-4 hover:underline">
+              Previsto em 30 dias: <ValorMonetario centavos={previsto.saldoPrevistoCentavos} className="font-semibold text-texto" />
+            </Link>
+          )}
         </div>
         <dl className="flex flex-wrap gap-x-8 gap-y-3 text-sm md:justify-end">
           <div className="grid gap-0.5">

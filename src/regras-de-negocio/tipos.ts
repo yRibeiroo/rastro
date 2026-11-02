@@ -206,3 +206,33 @@ export interface Comprovante extends Omit<
   criadoEm: Date;
   atualizadoEm: Date;
 }
+
+// ── Recorrências e saldo previsto (Fase 4, ADR 0017) ─────────────────────────
+
+export type FrequenciaDaRecorrencia = "semanal" | "mensal" | "anual";
+
+export interface Recorrencia {
+  id: Id;
+  empresaId: Id;
+  contaId: Id;
+  descricao: string;
+  /** Negativo = a pagar. */
+  valorCentavos: Centavos;
+  categoriaId: Id | null;
+  frequencia: FrequenciaDaRecorrencia;
+  inicio: DataISO;
+  fim: DataISO | null;
+  ativa: boolean;
+}
+
+/** Ocorrência ainda não baixada (calculada a partir da regra). */
+export interface OcorrenciaPrevista {
+  recorrenciaId: Id;
+  data: DataISO;
+  descricao: string;
+  valorCentavos: Centavos;
+  contaId: Id;
+  tipoDaConta: TipoDeConta;
+  contaManual: boolean;
+  categoriaId: Id | null;
+}

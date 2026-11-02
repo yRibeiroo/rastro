@@ -12,6 +12,7 @@ import {
 import type { NovaRegra, SugestaoDeRegra } from "../categorizacao";
 import type { ResultadoDaImportacao } from "../importacao-de-extrato";
 import type { NovaContaManual, NovoLancamento } from "../lancamentos";
+import type { NovaRecorrencia } from "../previsao";
 import { ErroDeNegocio, type ResultadoDaAcao } from "../erros";
 import { servicosDoUsuario } from "../montagem";
 import type {
@@ -22,6 +23,7 @@ import type {
   Conexao,
   DadosDoComprovante,
   Id,
+  Recorrencia,
   Regra,
   TipoDeCategoria,
   Transacao,
@@ -267,6 +269,33 @@ export async function removerLancamentoManual(
     await s.lancamentos.remover(s.ctx, transacaoId);
     return null;
   });
+}
+
+// ── Recorrências e saldo previsto (ADR 0017) ───────────────────────────────
+
+export async function criarRecorrencia(
+  dados: NovaRecorrencia,
+): Promise<ResultadoDaAcao<Recorrencia>> {
+  return mutacao("criarRecorrencia", (s) => s.previsao.criarRecorrencia(s.ctx, dados));
+}
+
+/** Para de prever (as baixas já feitas ficam). */
+export async function encerrarRecorrencia(
+  recorrenciaId: Id,
+): Promise<ResultadoDaAcao<null>> {
+  return mutacao("encerrarRecorrencia", async (s) => {
+    await s.previsao.encerrarRecorrencia(s.ctx, recorrenciaId);
+    return null;
+  });
+}
+
+/** "Paguei/Recebi" (lancar = true: lança na conta manual) ou "Pular" (lancar = false). */
+export async function baixarOcorrencia(dados: {
+  recorrenciaId: Id;
+  data: string;
+  lancar?: boolean;
+}): Promise<ResultadoDaAcao<{ transacaoId: Id | null }>> {
+  return mutacao("baixarOcorrencia", (s) => s.previsao.baixar(s.ctx, dados));
 }
 
 // ── Importar extrato e comprovantes (ADR 0016) ─────────────────────────────

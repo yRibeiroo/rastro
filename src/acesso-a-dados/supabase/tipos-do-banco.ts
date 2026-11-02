@@ -55,6 +55,38 @@ isOneToOne: false
       referencedColumns: ["empresa_id","id"]
     }
                   ]
+                },"baixas_de_recorrencia": {
+                  Row: {
+                    "criado_em": string,"data": string,"empresa_id": string,"recorrencia_id": string,"transacao_id": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "criado_em"?: string,"data": string,"empresa_id": string,"recorrencia_id": string,"transacao_id"?: string | null
+                  }
+                  Update: {
+                    "criado_em"?: string,"data"?: string,"empresa_id"?: string,"recorrencia_id"?: string,"transacao_id"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "baixas_de_recorrencia_empresa_id_fkey"
+      columns: ["empresa_id"]
+isOneToOne: false
+      referencedRelation: "empresas"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "baixas_de_recorrencia_empresa_id_recorrencia_id_fkey"
+      columns: ["empresa_id","recorrencia_id"]
+isOneToOne: false
+      referencedRelation: "recorrencias"
+      referencedColumns: ["empresa_id","id"]
+    },{
+      foreignKeyName: "baixas_de_recorrencia_empresa_id_transacao_id_fkey"
+      columns: ["empresa_id","transacao_id"]
+isOneToOne: false
+      referencedRelation: "transacoes"
+      referencedColumns: ["empresa_id","id"]
+    }
+                  ]
                 },"categorias": {
                   Row: {
                     "arquivada": boolean,"criado_em": string,"empresa_id": string,"entra_no_resultado": boolean,"id": string,"nome": string,"padrao": boolean,"tipo": string
@@ -267,6 +299,38 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"recorrencias": {
+                  Row: {
+                    "ativa": boolean,"categoria_id": string | null,"conta_id": string,"criado_em": string,"descricao": string,"empresa_id": string,"fim": string | null,"frequencia": string,"id": string,"inicio": string,"valor": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "ativa"?: boolean,"categoria_id"?: string | null,"conta_id": string,"criado_em"?: string,"descricao": string,"empresa_id": string,"fim"?: string | null,"frequencia": string,"id"?: string,"inicio": string,"valor": number
+                  }
+                  Update: {
+                    "ativa"?: boolean,"categoria_id"?: string | null,"conta_id"?: string,"criado_em"?: string,"descricao"?: string,"empresa_id"?: string,"fim"?: string | null,"frequencia"?: string,"id"?: string,"inicio"?: string,"valor"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "recorrencias_empresa_id_categoria_id_fkey"
+      columns: ["empresa_id","categoria_id"]
+isOneToOne: false
+      referencedRelation: "categorias"
+      referencedColumns: ["empresa_id","id"]
+    },{
+      foreignKeyName: "recorrencias_empresa_id_conta_id_fkey"
+      columns: ["empresa_id","conta_id"]
+isOneToOne: false
+      referencedRelation: "contas"
+      referencedColumns: ["empresa_id","id"]
+    },{
+      foreignKeyName: "recorrencias_empresa_id_fkey"
+      columns: ["empresa_id"]
+isOneToOne: false
+      referencedRelation: "empresas"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"regras_categorizacao": {
                   Row: {
                     "ativa": boolean,"campo": string,"categoria_id": string,"centro_de_custo_id": string | null,"criado_em": string,"empresa_id": string,"id": string,"origem": string,"padrao": string,"prioridade": number
@@ -358,6 +422,9 @@ isOneToOne: false
             "aplicar_categorizacao_automatica":
 { Args: { "p_empresa": string,"p_resultados": Json }; Returns: number
                            },
+"baixar_ocorrencia":
+{ Args: { "p_data": string,"p_empresa": string,"p_lancar"?: boolean,"p_recorrencia": string }; Returns: string
+                           },
 "candidatos_para_conciliacao":
 { Args: { "p_data": string,"p_empresa": string,"p_tolerancia_dias"?: number,"p_valor_centavos": number }; Returns: {
               "contraparte": string,"data": string,"descricao": string,"id": string,"valor_centavos": number
@@ -377,6 +444,11 @@ isOneToOne: false
                            },
 "leituras_de_comprovante_desde":
 { Args: { "p_desde": string,"p_empresa": string }; Returns: number
+                           },
+"ocorrencias_previstas":
+{ Args: { "p_ate": string,"p_de": string,"p_empresa": string }; Returns: {
+              "categoria_id": string,"conta_id": string,"conta_manual": boolean,"data": string,"descricao": string,"recorrencia_id": string,"tipo_da_conta": string,"valor_centavos": number
+            }[]
                            },
 "painel_fluxo_mensal":
 { Args: { "p_ate": string,"p_de": string,"p_empresa": string }; Returns: {

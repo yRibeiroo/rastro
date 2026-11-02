@@ -12,6 +12,7 @@ export {
   carregarExtrato,
   carregarImportacoes,
   carregarPainel,
+  carregarPrevisao,
   carregarRecursos,
   carregarSituacaoDoExtrato,
   carregarTransacao,

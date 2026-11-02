@@ -18,6 +18,8 @@ import { RepositorioDeContasSupabase } from "@/acesso-a-dados/repositorio-de-con
 import { RepositorioDeEmpresasSupabase } from "@/acesso-a-dados/repositorio-de-empresas";
 import { RepositorioDeImportacoesSupabase } from "@/acesso-a-dados/repositorio-de-importacoes";
 import { RepositorioDeLancamentosSupabase } from "@/acesso-a-dados/repositorio-de-lancamentos";
+import { RepositorioDeRecorrenciasSupabase } from "@/acesso-a-dados/repositorio-de-recorrencias";
+import { hojeISO } from "@/ferramentas-internas/formatar-data";
 import {
   RepositorioDeEventosDeWebhookSupabase,
   RepositorioDeLimitesSupabase,
@@ -77,6 +79,7 @@ import {
   type ServicoDeLancamentos,
 } from "./lancamentos";
 import { criarServicoDoPainel, type ServicoDoPainel } from "./painel";
+import { criarServicoDePrevisao, type ServicoDePrevisao } from "./previsao";
 import type { ContextoDoUsuario } from "./tipos";
 
 // Raiz de composição (contratos.md §11): o único lugar que instancia repositórios,
@@ -94,6 +97,7 @@ export interface ServicosDoUsuario {
   importacao: ServicoDeImportacao;
   comprovantes: ServicoDeComprovantes;
   lancamentos: ServicoDeLancamentos;
+  previsao: ServicoDePrevisao;
 }
 
 export interface ServicosDoSistema {
@@ -286,6 +290,12 @@ export async function servicosDoUsuario(): Promise<ServicosDoUsuario> {
       lancamentos: new RepositorioDeLancamentosSupabase(banco),
       contas: new RepositorioDeContasSupabase(banco),
       categorizacao,
+    }),
+    previsao: criarServicoDePrevisao({
+      recorrencias: new RepositorioDeRecorrenciasSupabase(banco),
+      contas: new RepositorioDeContasSupabase(banco),
+      categorizacao,
+      hoje: () => hojeISO(),
     }),
   };
 }

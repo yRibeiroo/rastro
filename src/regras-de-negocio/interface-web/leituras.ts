@@ -7,6 +7,7 @@ import type { FiltrosDoExtrato, PaginaDoExtrato } from "../extrato";
 import type { SituacaoDoExtrato } from "../importacao-de-extrato";
 import { servicosDoUsuario, type ServicosDoUsuario } from "../montagem";
 import type { PeriodoDoPainel, ResumoDoPainel } from "../painel";
+import type { PrevisaoDeSaldo } from "../previsao";
 import type {
   Anexo,
   Categoria,
@@ -16,6 +17,7 @@ import type {
   Conta,
   Id,
   ImportacaoDeExtrato,
+  Recorrencia,
   Regra,
   SituacaoDoComprovante,
   Transacao,
@@ -131,6 +133,20 @@ export async function contarAlertas(): Promise<{
   comprovantesSemTransacao: number;
 }> {
   return comServicos((s) => s.comprovantes.contarAlertas(s.ctx));
+}
+
+/** Saldo previsto para os próximos `dias` (com as ocorrências e as atrasadas) e as recorrências ativas. */
+export async function carregarPrevisao(dias: number): Promise<{
+  previsao: PrevisaoDeSaldo;
+  recorrencias: Recorrencia[];
+}> {
+  return comServicos(async (s) => {
+    const [previsao, recorrencias] = await Promise.all([
+      s.previsao.prever(s.ctx, dias),
+      s.previsao.listarRecorrencias(s.ctx),
+    ]);
+    return { previsao, recorrencias };
+  });
 }
 
 /** Contas da empresa com a origem (banco, extrato importado ou manual). */

@@ -64,7 +64,7 @@ describe("montagem (raiz de composição)", () => {
     const s = await montagem.servicosDoUsuario();
     expect(s.ctx).toEqual({ usuarioId: USUARIO, email: "davi@hometec.com.br", empresaId: EMPRESA, papel: "dono" });
     expect(Object.keys(s).sort()).toEqual(
-      ["anexos", "categorizacao", "centrosDeCusto", "comprovantes", "conexoes", "ctx", "extrato", "importacao", "lancamentos", "painel", "sincronizacao"].sort(),
+      ["anexos", "categorizacao", "centrosDeCusto", "comprovantes", "conexoes", "ctx", "extrato", "importacao", "lancamentos", "painel", "previsao", "sincronizacao"].sort(),
     );
     expect(await s.categorizacao.listarRegras(s.ctx)).toEqual([]);
     expect(await s.centrosDeCusto.listar(s.ctx)).toEqual([]);
