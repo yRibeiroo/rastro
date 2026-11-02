@@ -3,7 +3,7 @@ import { z } from "zod";
 import type { RepositorioDeEmpresas } from "@/acesso-a-dados/contratos";
 import { ambiente } from "@/configuracao/ambiente";
 import { ErroDeNegocio, entradaInvalida, registrarFalha } from "../erros";
-import type { ContextoDoUsuario, Id } from "../tipos";
+import type { ContextoDoUsuario, Id, PerfilDaEmpresa } from "../tipos";
 import {
   chaveComHash,
   exigirLimite,
@@ -34,6 +34,17 @@ export interface PortaDeAutenticacao {
 
 export const NOME_PADRAO_DA_EMPRESA = "Minha empresa";
 
+/** Cookie curto que leva o perfil escolhido no formulário até o callback do link (ADR 0017). */
+export const COOKIE_DO_PERFIL = "rastro_perfil";
+
+/** Valor não confiável (formulário ou cookie) → perfil válido ou undefined. */
+export const lerPerfil = (valor: unknown): PerfilDaEmpresa | undefined =>
+  valor === "pessoal" || valor === "empresa" ? valor : undefined;
+
+/** Nome inicial da conta por perfil (editável depois). */
+export const nomePadrao = (perfil: PerfilDaEmpresa | undefined) =>
+  perfil === "pessoal" ? "Minhas finanças" : NOME_PADRAO_DA_EMPRESA;
+
 /** EMAIL_AUTORIZADO aceita uma lista separada por vírgulas; comparação case-insensitive após trim. */
 export function emailAutorizado(
   email: string | null | undefined,
@@ -51,7 +62,11 @@ const esquemaEmail = z.email().max(254);
 export interface ServicoDeAcesso {
   obterContextoDoUsuario(): Promise<ContextoDoUsuario>;
   enviarLinkMagico(email: string, ip: string | null): Promise<void>;
-  confirmarEntrada(credencial: CredencialDoLink): Promise<{ empresaId: Id }>;
+  /** perfil: escolhido no formulário; só vale para quem ainda não tem conta (ADR 0017). */
+  confirmarEntrada(
+    credencial: CredencialDoLink,
+    perfil?: PerfilDaEmpresa,
+  ): Promise<{ empresaId: Id }>;
   sair(): Promise<void>;
   consumirLimite(chave: string, limite: LimiteDeRequisicoes): Promise<boolean>;
 }
@@ -61,10 +76,14 @@ export function criarServicoDeAcesso(deps: {
   empresas: RepositorioDeEmpresas; // cliente do usuário (a RPC usa auth.uid())
   consumirLimite: ConsumirLimite; // service role
   emailsAutorizados: () => readonly string[];
+  /** ADR 0017: com cadastro aberto, qualquer e-mail (válido) entra. */
+  cadastroAberto?: () => boolean;
   urlDoSite: () => string;
 }): ServicoDeAcesso {
   const autorizado = (email: string | null | undefined) =>
-    emailAutorizado(email, deps.emailsAutorizados());
+    !!email?.trim() &&
+    (deps.cadastroAberto?.() === true ||
+      emailAutorizado(email, deps.emailsAutorizados()));
 
   return {
     async obterContextoDoUsuario() {
@@ -128,7 +147,7 @@ export function criarServicoDeAcesso(deps: {
       }
     },
 
-    async confirmarEntrada(credencial) {
+    async confirmarEntrada(credencial, perfil) {
       const usuario = await deps.autenticacao.trocarPorSessao(credencial);
       if (!autorizado(usuario.email)) {
         await deps.autenticacao.sair();
@@ -137,9 +156,9 @@ export function criarServicoDeAcesso(deps: {
           "Este e-mail não tem acesso ao Rastro.",
         );
       }
-      const empresaId = await deps.empresas.garantirEmpresaDoUsuario(
-        NOME_PADRAO_DA_EMPRESA,
-      );
+      const empresaId = perfil
+        ? await deps.empresas.garantirEmpresaDoUsuario(nomePadrao(perfil), perfil)
+        : await deps.empresas.garantirEmpresaDoUsuario(NOME_PADRAO_DA_EMPRESA);
       return { empresaId };
     },
 

@@ -8,6 +8,9 @@ export type Centavos = number; // inteiro; negativo = saída
 
 export type Sentido = "entrada" | "saida";
 export type PapelNaEmpresa = "dono" | "membro";
+/** ADR 0017: define as categorias e regras iniciais da conta. */
+export type PerfilDaEmpresa = "pessoal" | "empresa";
+export const PERFIS_DA_EMPRESA: readonly PerfilDaEmpresa[] = ["pessoal", "empresa"];
 
 export interface Empresa {
   id: Id;

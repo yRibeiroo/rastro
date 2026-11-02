@@ -1,10 +1,12 @@
 "use server";
 import "server-only";
 import { refresh } from "next/cache";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import {
+  COOKIE_DO_PERFIL,
   enviarLinkMagico as enviarLink,
+  lerPerfil,
   sair as sairDaSessao,
 } from "../acesso";
 import type { NovaRegra, SugestaoDeRegra } from "../categorizacao";
@@ -42,14 +44,25 @@ async function mutacao<T>(
 
 // ── Entrada ─────────────────────────────────────────────────────────────────
 
-/** Resposta neutra: e-mail fora da allowlist recebe o mesmo { ok: true }. Rate limit por IP e e-mail. */
+/** Resposta neutra: e-mail fora da allowlist recebe o mesmo { ok: true }. Rate limit por IP e e-mail.
+ *  perfil (ADR 0017): guardado num cookie curto até o callback; só vale para quem ainda não tem conta. */
 export async function enviarLinkMagico(
   email: string,
+  perfil?: string,
 ): Promise<ResultadoDaAcao<null>> {
   return executarAcao("enviarLinkMagico", async () => {
     if (typeof email !== "string")
       throw new ErroDeNegocio("entrada_invalida", "Digite um e-mail válido.");
     await enviarLink(email, ipDaRequisicao(await headers()));
+    const escolhido = lerPerfil(perfil);
+    if (escolhido)
+      (await cookies()).set(COOKIE_DO_PERFIL, escolhido, {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+        path: "/entrar",
+        maxAge: 60 * 60, // o link vale menos que isso
+      });
     return null;
   });
 }

@@ -13,7 +13,9 @@ type Estado =
 
 type Props = {
   /** Server Action injetada (protótipo ou real): mesma resposta para e-mail permitido ou não. */
-  enviar: (email: string) => Promise<ResultadoDaAcao<null>>;
+  enviar: (email: string, perfil?: string) => Promise<ResultadoDaAcao<null>>;
+  /** Cadastro aberto (ADR 0017): pergunta o perfil, usado só na criação da conta. */
+  escolherPerfil?: boolean;
   /** Protótipo: ?estado=carregando|erro e ?estado=enviado. */
   forcar?: "carregando" | "erro" | "enviado" | null;
   /** Vindo do callback (ex.: link expirado): faixa acima do formulário. */
@@ -22,7 +24,12 @@ type Props = {
 
 const ESPERA_PARA_REENVIAR = 60;
 
-export function FormularioDeEntrada({ enviar, forcar = null, avisoInicial = null }: Props) {
+const PERFIS = [
+  { valor: "pessoal", titulo: "Pessoal", descricao: "Minhas finanças do dia a dia" },
+  { valor: "empresa", titulo: "Empresa", descricao: "Caixa e resultado do negócio" },
+] as const;
+
+export function FormularioDeEntrada({ enviar, forcar = null, avisoInicial = null, escolherPerfil = false }: Props) {
   const inicial: Estado =
     forcar === "enviado"
       ? { tipo: "enviado", email: "davi@hometec.com.br" }
@@ -32,7 +39,8 @@ export function FormularioDeEntrada({ enviar, forcar = null, avisoInicial = null
 
   const [estado, acao, enviando] = useActionState(async (_: Estado, dados: FormData): Promise<Estado> => {
     const email = String(dados.get("email") ?? "").trim();
-    const r = await enviar(email);
+    const perfil = dados.get("perfil");
+    const r = await enviar(email, typeof perfil === "string" ? perfil : undefined);
     if (r.ok) return { tipo: "enviado", email };
     return { tipo: "erro", email, campo: r.erro.codigo === "entrada_invalida", mensagem: r.erro.mensagem };
   }, inicial);
@@ -95,6 +103,26 @@ export function FormularioDeEntrada({ enviar, forcar = null, avisoInicial = null
           </p>
         )}
       </div>
+      {escolherPerfil && (
+        <fieldset className="grid gap-2">
+          <legend className={`${rotulo} mb-2`}>Primeiro acesso? Como vai usar o Rastro</legend>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {PERFIS.map((p, i) => (
+              <label
+                key={p.valor}
+                className="flex cursor-pointer items-start gap-3 rounded-xl border border-borda-controle p-3 has-[:checked]:border-primaria"
+              >
+                <input type="radio" name="perfil" value={p.valor} defaultChecked={i === 0} className="mt-1 size-4 accent-[var(--cor-primaria-texto)]" />
+                <span className="grid">
+                  <span className="font-medium">{p.titulo}</span>
+                  <span className="text-sm text-texto-suave">{p.descricao}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+          <p className={ajuda}>Define as categorias iniciais. Quem já tem conta pode ignorar.</p>
+        </fieldset>
+      )}
       <button type="submit" disabled={ocupado} aria-busy={ocupado || undefined} className={`${botao.primario} w-full sm:w-64`}>
         {ocupado ? <Carregando contexto="generico" tamanho="inline" rotulo="Enviando" /> : "Enviar link de acesso"}
       </button>

@@ -139,8 +139,10 @@ export async function carregarRecursos(): Promise<{
   incluirSandbox: boolean;
   openFinance: boolean;
   comprovantesIa: boolean;
+  cadastroAberto: boolean;
 }> {
   return {
+    cadastroAberto: ambiente.RECURSO_CADASTRO_ABERTO,
     anexos: ambiente.RECURSO_ANEXOS,
     categorizacaoIa: ambiente.RECURSO_CATEGORIZACAO_IA,
     incluirSandbox: ambiente.PLUGGY_INCLUIR_SANDBOX,

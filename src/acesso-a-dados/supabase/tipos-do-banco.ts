@@ -169,14 +169,14 @@ isOneToOne: false
                   ]
                 },"empresas": {
                   Row: {
-                    "criado_em": string,"id": string,"nome": string
+                    "criado_em": string,"id": string,"nome": string,"perfil": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "criado_em"?: string,"id"?: string,"nome": string
+                    "criado_em"?: string,"id"?: string,"nome": string,"perfil"?: string
                   }
                   Update: {
-                    "criado_em"?: string,"id"?: string,"nome"?: string
+                    "criado_em"?: string,"id"?: string,"nome"?: string,"perfil"?: string
                   }
                   Relationships: [
                     
@@ -367,7 +367,7 @@ isOneToOne: false
 { Args: { "p_chave": string,"p_janela_segundos": number,"p_maximo": number }; Returns: boolean
                            },
 "garantir_empresa":
-{ Args: { "p_nome": string }; Returns: string
+{ Args: { "p_nome": string,"p_perfil"?: string }; Returns: string
                            },
 "leituras_de_comprovante_desde":
 { Args: { "p_desde": string,"p_empresa": string }; Returns: number

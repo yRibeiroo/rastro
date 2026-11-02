@@ -170,6 +170,7 @@ function acessoCom(banco: ClienteDoBanco): ServicoDeAcesso {
       new RepositorioDeLimitesSupabase(clienteDoSistema()),
     ),
     emailsAutorizados: () => ambiente.EMAIL_AUTORIZADO,
+    cadastroAberto: () => ambiente.RECURSO_CADASTRO_ABERTO,
     urlDoSite: () => ambiente.URL_DO_SITE,
   });
 }

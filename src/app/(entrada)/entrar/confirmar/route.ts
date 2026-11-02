@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { confirmarEntrada } from "@/regras-de-negocio/acesso";
+import { confirmarEntrada, COOKIE_DO_PERFIL, lerPerfil } from "@/regras-de-negocio/acesso";
 import { ErroDeNegocio, registrarFalha } from "@/regras-de-negocio/erros";
 
 // Callback do link mágico (ADR 0008): troca code/token_hash pela sessão, confere a allowlist
@@ -19,10 +19,13 @@ export async function GET(requisicao: NextRequest) {
   const tipo = parametros.get("type");
   const ir = (caminho: string) => NextResponse.redirect(new URL(caminho, requisicao.url));
 
+  // ADR 0017: perfil escolhido no formulário (mesmo navegador). Outro aparelho → padrão 'empresa'.
+  const perfil = lerPerfil(requisicao.cookies.get(COOKIE_DO_PERFIL)?.value);
+
   try {
-    if (code) await confirmarEntrada({ code });
+    if (code) await confirmarEntrada({ code }, perfil);
     else if (tokenHash && (tipo === "magiclink" || tipo === "email"))
-      await confirmarEntrada({ tokenHash, tipo });
+      await confirmarEntrada({ tokenHash, tipo }, perfil);
     else return ir("/entrar?erro=link_expirado");
   } catch (erro) {
     if (erro instanceof ErroDeNegocio && erro.codigo === "email_nao_autorizado")

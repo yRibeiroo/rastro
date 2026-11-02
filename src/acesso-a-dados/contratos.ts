@@ -27,6 +27,7 @@ import type {
   ImportacaoDeExtrato,
   PapelNaEmpresa,
   Regra,
+  PerfilDaEmpresa,
   SituacaoDoComprovante,
   StatusDaConexao,
   TipoDeCategoria,
@@ -36,7 +37,11 @@ import type {
 // Contratos dos repositórios (contratos.md §10). Todo método recebe empresaId explicitamente.
 
 export interface RepositorioDeEmpresas {
-  garantirEmpresaDoUsuario(nomeSugerido: string): Promise<Id>; // rpc garantir_empresa
+  /** rpc garantir_empresa. O perfil só vale na criação (ADR 0017). */
+  garantirEmpresaDoUsuario(
+    nomeSugerido: string,
+    perfil?: PerfilDaEmpresa,
+  ): Promise<Id>;
   obterMembershipDoUsuario(
     usuarioId: Id,
   ): Promise<{ empresaId: Id; papel: PapelNaEmpresa } | null>;
