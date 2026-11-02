@@ -32,6 +32,8 @@ export interface NovaRecorrencia {
   fim?: DataISO | null;
 }
 
+export type EdicaoDeRecorrencia = Pick<NovaRecorrencia, "descricao" | "valorCentavos"> & { fim: DataISO | null };
+
 export interface OcorrenciaNaPrevisao extends OcorrenciaPrevista {
   atrasada: boolean;
   /** Saldo projetado logo depois desta ocorrência; null = cartão de crédito (fora do saldo). */
@@ -50,6 +52,8 @@ export interface ServicoDePrevisao {
   listarRecorrencias(ctx: ContextoDoUsuario): Promise<Recorrencia[]>;
   criarRecorrencia(ctx: ContextoDoUsuario, dados: NovaRecorrencia): Promise<Recorrencia>;
   encerrarRecorrencia(ctx: ContextoDoUsuario, recorrenciaId: Id): Promise<void>;
+  /** Vale para as próximas ocorrências; as já baixadas ficam como estão. */
+  editarRecorrencia(ctx: ContextoDoUsuario, recorrenciaId: Id, dados: EdicaoDeRecorrencia): Promise<Recorrencia>;
   /** lancar = false: "pular" (não gera lançamento). Em conta de banco nunca lança. */
   baixar(
     ctx: ContextoDoUsuario,
@@ -62,14 +66,19 @@ export interface ServicoDePrevisao {
 const LIMITE_EM_CENTAVOS = 1e14;
 const data = z.iso.date();
 
+const descricao = z.string().trim().min(1).max(200);
+const valorCentavos = z
+  .number()
+  .int()
+  .refine((v) => v !== 0 && Math.abs(v) < LIMITE_EM_CENTAVOS);
+
+const esquemaEdicao = z.object({ descricao, valorCentavos, fim: data.nullable() });
+
 const esquemaNova = z
   .object({
     contaId: z.uuid(),
-    descricao: z.string().trim().min(1).max(200),
-    valorCentavos: z
-      .number()
-      .int()
-      .refine((v) => v !== 0 && Math.abs(v) < LIMITE_EM_CENTAVOS),
+    descricao,
+    valorCentavos,
     categoriaId: z.uuid().nullish(),
     frequencia: z.enum(["semanal", "mensal", "anual"]),
     inicio: data,
@@ -105,6 +114,15 @@ export function criarServicoDePrevisao(deps: {
       if (!idValido(recorrenciaId))
         throw new ErroDeNegocio("nao_encontrado", "Recorrência não encontrada.");
       await deps.recorrencias.encerrar(ctx.empresaId, recorrenciaId);
+    },
+
+    async editarRecorrencia(ctx, recorrenciaId, dados) {
+      if (!idValido(recorrenciaId))
+        throw new ErroDeNegocio("nao_encontrado", "Recorrência não encontrada.");
+      const r = esquemaEdicao.safeParse(dados);
+      if (!r.success)
+        throw entradaInvalida("Confira a descrição, o valor (diferente de zero) e a data de fim.");
+      return deps.recorrencias.atualizar(ctx.empresaId, recorrenciaId, r.data);
     },
 
     async baixar(ctx, dados) {

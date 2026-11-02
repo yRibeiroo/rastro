@@ -34,10 +34,10 @@ export function ResultadoPorCentro({ centros, hrefSemCentro, titulo = "Resultado
         <p className="text-sm text-texto-suave">
           {melhor ? (
             <>
-              <strong className="font-semibold text-texto">{melhor.nome}</strong> é o serviço que mais dá lucro no período.
+              <strong className="font-semibold text-texto">{melhor.nome}</strong> é o centro que mais dá lucro no período.
             </>
           ) : (
-            "Nenhum serviço teve lucro no período."
+            "Nenhum centro teve lucro no período."
           )}
         </p>
       </figcaption>

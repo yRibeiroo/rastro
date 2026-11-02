@@ -6,7 +6,7 @@ import { Anuncio, Sucesso } from "@/componentes/estados/Estados";
 import { Icone } from "@/componentes/estrutura/Icone";
 import { ajuda, botao, campo, mensagemDeErro, rotulo } from "@/componentes/formulario/classes";
 import { textoParaCentavos } from "@/ferramentas-internas/formatar-moeda";
-import type { Categoria, Conta, Id, NovaContaManual, NovoLancamento, ResultadoDaAcao, TipoDeConta } from "@/regras-de-negocio";
+import type { Categoria, Conta, EdicaoDeLancamento, Id, NovaContaManual, NovoLancamento, ResultadoDaAcao, TipoDeConta } from "@/regras-de-negocio";
 import { Carregando } from "@/identidade-visual/Carregando";
 
 import { TIPOS_DE_CONTA } from "./tipos-de-conta";
@@ -16,6 +16,10 @@ import { TIPOS_DE_CONTA } from "./tipos-de-conta";
 type Criar = (dados: NovaContaManual) => Promise<ResultadoDaAcao<{ id: Id }>>;
 type Lancar = (dados: NovoLancamento) => Promise<ResultadoDaAcao<{ id: Id }>>;
 type Remover = (transacaoId: Id) => Promise<ResultadoDaAcao<null>>;
+type Editar = (transacaoId: Id, dados: EdicaoDeLancamento) => Promise<ResultadoDaAcao<null>>;
+
+/** 3550 → "35,50" (valor sem sinal, para preencher o campo). */
+export const centavosParaTexto = (c: number) => (Math.abs(c) / 100).toFixed(2).replace(".", ",");
 
 function useAcao() {
   const router = useRouter();
@@ -208,12 +212,14 @@ function Rodape({
   aviso,
   rotuloBotao,
   rotuloOcupado,
+  semIcone,
 }: {
   ocupado: boolean;
   erro: string | null;
   aviso: string | null;
   rotuloBotao: string;
   rotuloOcupado: string;
+  semIcone?: boolean;
 }) {
   return (
     <div className="flex flex-wrap items-center gap-3">
@@ -222,7 +228,7 @@ function Rodape({
           <Carregando tamanho="inline" rotulo={rotuloOcupado} />
         ) : (
           <>
-            <Icone nome="adicionar" className="size-4" />
+            {!semIcone && <Icone nome="adicionar" className="size-4" />}
             {rotuloBotao}
           </>
         )}
@@ -234,6 +240,82 @@ function Rodape({
       )}
       <Anuncio className="empty:hidden">{aviso && <Sucesso>{aviso}</Sucesso>}</Anuncio>
     </div>
+  );
+}
+
+/** Detalhe da transação: corrigir data, descrição e valor de um lançamento manual. */
+export function EditarLancamento({
+  transacaoId,
+  data,
+  descricao,
+  valorCentavos,
+  editar,
+}: {
+  transacaoId: Id;
+  data: string;
+  descricao: string;
+  valorCentavos: number;
+  editar: Editar;
+}) {
+  const { ocupado, erro, setErro, aviso, executar } = useAcao();
+  return (
+    <details className="rounded-m border border-borda bg-superficie p-4">
+      <summary className="cursor-pointer font-medium">Editar lançamento</summary>
+      <form
+        noValidate
+        onSubmit={async (e) => {
+          e.preventDefault();
+          const d = new FormData(e.currentTarget);
+          const valor = textoParaCentavos(String(d.get("valor") ?? ""));
+          if (!valor) return setErro("Informe um valor maior que zero. Ex.: 35,90.");
+          await executar(
+            () =>
+              editar(transacaoId, {
+                data: String(d.get("data")),
+                descricao: String(d.get("descricao") ?? ""),
+                valorCentavos: d.get("sentido") === "entrada" ? valor : -valor,
+              }),
+            "Lançamento atualizado.",
+          );
+        }}
+        className="grid gap-4 pt-4 sm:grid-cols-2"
+      >
+        <div className="grid gap-1.5 sm:col-span-2">
+          <label htmlFor="editar-descricao" className={rotulo}>
+            Descrição
+          </label>
+          <input id="editar-descricao" name="descricao" required maxLength={500} defaultValue={descricao} className={campo} />
+        </div>
+        <div className="grid gap-1.5">
+          <label htmlFor="editar-valor" className={rotulo}>
+            Valor (R$)
+          </label>
+          <div className="flex gap-2">
+            <select name="sentido" aria-label="Tipo do lançamento" defaultValue={valorCentavos < 0 ? "saida" : "entrada"} className={campo}>
+              <option value="saida">Saída</option>
+              <option value="entrada">Entrada</option>
+            </select>
+            <input
+              id="editar-valor"
+              name="valor"
+              required
+              inputMode="decimal"
+              defaultValue={centavosParaTexto(valorCentavos)}
+              className={`${campo} valor-monetario`}
+            />
+          </div>
+        </div>
+        <div className="grid gap-1.5">
+          <label htmlFor="editar-data" className={rotulo}>
+            Data
+          </label>
+          <input id="editar-data" name="data" type="date" required defaultValue={data} className={campo} />
+        </div>
+        <div className="sm:col-span-2">
+          <Rodape ocupado={ocupado} erro={erro} aviso={aviso} rotuloBotao="Salvar" rotuloOcupado="Salvando" semIcone />
+        </div>
+      </form>
+    </details>
   );
 }
 

@@ -6,7 +6,8 @@ import { Anuncio, Sucesso } from "@/componentes/estados/Estados";
 import { Icone } from "@/componentes/estrutura/Icone";
 import { ajuda, botao, campo, mensagemDeErro, rotulo } from "@/componentes/formulario/classes";
 import { textoParaCentavos } from "@/ferramentas-internas/formatar-moeda";
-import type { Categoria, Conta, Id, NovaRecorrencia, Recorrencia, ResultadoDaAcao } from "@/regras-de-negocio";
+import { centavosParaTexto } from "@/componentes/contas/GerenciarContas";
+import type { Categoria, Conta, EdicaoDeRecorrencia, Id, NovaRecorrencia, Recorrencia, ResultadoDaAcao } from "@/regras-de-negocio";
 import { Carregando } from "@/identidade-visual/Carregando";
 
 // Recorrências e baixa de ocorrências (Fase 4, ADR 0017).
@@ -14,6 +15,7 @@ import { Carregando } from "@/identidade-visual/Carregando";
 type Criar = (dados: NovaRecorrencia) => Promise<ResultadoDaAcao<Recorrencia>>;
 type Baixar = (dados: { recorrenciaId: Id; data: string; lancar?: boolean }) => Promise<ResultadoDaAcao<{ transacaoId: Id | null }>>;
 type Encerrar = (recorrenciaId: Id) => Promise<ResultadoDaAcao<null>>;
+type Editar = (recorrenciaId: Id, dados: EdicaoDeRecorrencia) => Promise<ResultadoDaAcao<Recorrencia>>;
 
 function useAcao() {
   const router = useRouter();
@@ -239,5 +241,71 @@ export function EncerrarRecorrencia({ recorrenciaId, descricao, encerrar }: { re
         {ocupado ? <Carregando tamanho="inline" rotulo="Encerrando" /> : "Encerrar"}
       </button>
     </span>
+  );
+}
+
+/** Descrição, valor e fim; vale para as próximas ocorrências (as já baixadas ficam). */
+export function EditarRecorrencia({ recorrencia: r, editar }: { recorrencia: Recorrencia; editar: Editar }) {
+  const { ocupado, erro, setErro, aviso, executar } = useAcao();
+  const id = `rec-${r.id}`;
+  const aPagar = r.valorCentavos < 0;
+  return (
+    <details className="basis-full text-sm">
+      <summary className="w-fit cursor-pointer text-texto-suave">Editar</summary>
+      <form
+        noValidate
+        onSubmit={async (e) => {
+          e.preventDefault();
+          const d = new FormData(e.currentTarget);
+          const valor = textoParaCentavos(String(d.get("valor") ?? ""));
+          if (!valor) return setErro("Informe um valor maior que zero. Ex.: 1.500,00.");
+          await executar(
+            () =>
+              editar(r.id, {
+                descricao: String(d.get("descricao") ?? ""),
+                valorCentavos: aPagar ? -valor : valor,
+                fim: String(d.get("fim") ?? "") || null,
+              }),
+            "Recorrência atualizada.",
+          );
+        }}
+        className="grid gap-3 pt-3 sm:grid-cols-[1fr_9rem_10rem_auto] sm:items-end"
+      >
+        <div className="grid gap-1.5">
+          <label htmlFor={`${id}-descricao`} className={rotulo}>
+            Descrição
+          </label>
+          <input id={`${id}-descricao`} name="descricao" required maxLength={200} defaultValue={r.descricao} className={campo} />
+        </div>
+        <div className="grid gap-1.5">
+          <label htmlFor={`${id}-valor`} className={rotulo}>
+            {aPagar ? "A pagar (R$)" : "A receber (R$)"}
+          </label>
+          <input
+            id={`${id}-valor`}
+            name="valor"
+            required
+            inputMode="decimal"
+            defaultValue={centavosParaTexto(r.valorCentavos)}
+            className={`${campo} valor-monetario`}
+          />
+        </div>
+        <div className="grid gap-1.5">
+          <label htmlFor={`${id}-fim`} className={rotulo}>
+            Até (opcional)
+          </label>
+          <input id={`${id}-fim`} name="fim" type="date" min={r.inicio} defaultValue={r.fim ?? ""} className={campo} />
+        </div>
+        <button type="submit" disabled={ocupado} className={botao.primario}>
+          {ocupado ? <Carregando tamanho="inline" rotulo="Salvando" /> : "Salvar"}
+        </button>
+        {erro && (
+          <p className={`${mensagemDeErro} sm:col-span-4`} role="alert">
+            {erro}
+          </p>
+        )}
+        <Anuncio className="empty:hidden sm:col-span-4">{aviso && <Sucesso>{aviso}</Sucesso>}</Anuncio>
+      </form>
+    </details>
   );
 }

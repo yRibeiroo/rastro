@@ -330,6 +330,12 @@ export interface RepositorioDeLancamentos {
     },
   ): Promise<Id>;
   remover(empresaId: Id, transacaoId: Id): Promise<void>;
+  /** O saldo da conta recebe a diferença. */
+  editar(
+    empresaId: Id,
+    transacaoId: Id,
+    dados: { data: DataISO; descricao: string; valorCentavos: Centavos },
+  ): Promise<void>;
 }
 
 /** Recorrências (Fase 4, ADR 0017). Sessão do usuário: RLS na tabela, RPC para a baixa. */
@@ -340,6 +346,11 @@ export interface RepositorioDeRecorrencias {
     dados: Omit<Recorrencia, "id" | "empresaId" | "ativa">,
   ): Promise<Recorrencia>;
   encerrar(empresaId: Id, recorrenciaId: Id): Promise<void>;
+  atualizar(
+    empresaId: Id,
+    recorrenciaId: Id,
+    dados: Pick<Recorrencia, "descricao" | "valorCentavos" | "fim">,
+  ): Promise<Recorrencia>;
   /** rpc ocorrencias_previstas: não baixadas entre de e ate (até ~2 anos). */
   ocorrencias(empresaId: Id, de: DataISO, ate: DataISO): Promise<OcorrenciaPrevista[]>;
   /** rpc baixar_ocorrencia: devolve o id do lançamento criado (conta manual) ou null. */

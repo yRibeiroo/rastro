@@ -38,7 +38,10 @@ export interface ServicoDeLancamentos {
   criarConta(ctx: ContextoDoUsuario, dados: NovaContaManual): Promise<{ id: Id }>;
   lancar(ctx: ContextoDoUsuario, dados: NovoLancamento): Promise<{ id: Id }>;
   remover(ctx: ContextoDoUsuario, transacaoId: Id): Promise<void>;
+  editar(ctx: ContextoDoUsuario, transacaoId: Id, dados: EdicaoDeLancamento): Promise<void>;
 }
+
+export type EdicaoDeLancamento = Pick<NovoLancamento, "data" | "descricao" | "valorCentavos">;
 
 const LIMITE_EM_CENTAVOS = 1e14; // numeric(14,2)
 const centavos = z.number().int().refine((v) => Math.abs(v) < LIMITE_EM_CENTAVOS);
@@ -57,6 +60,8 @@ const esquemaLancamento = z.object({
   categoriaId: z.uuid().nullish(),
   centroDeCustoId: z.uuid().nullish(),
 });
+
+const esquemaEdicao = esquemaLancamento.pick({ data: true, descricao: true, valorCentavos: true });
 
 export function criarServicoDeLancamentos(deps: {
   lancamentos: RepositorioDeLancamentos;
@@ -97,6 +102,15 @@ export function criarServicoDeLancamentos(deps: {
       if (!z.uuid().safeParse(transacaoId).success)
         throw new ErroDeNegocio("nao_encontrado", "Lançamento não encontrado.");
       await deps.lancamentos.remover(ctx.empresaId, transacaoId);
+    },
+
+    async editar(ctx, transacaoId, dados) {
+      if (!z.uuid().safeParse(transacaoId).success)
+        throw new ErroDeNegocio("nao_encontrado", "Lançamento não encontrado.");
+      const r = esquemaEdicao.safeParse(dados);
+      if (!r.success)
+        throw entradaInvalida("Confira a data, a descrição e o valor (diferente de zero).");
+      await deps.lancamentos.editar(ctx.empresaId, transacaoId, r.data);
     },
   };
 }

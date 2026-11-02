@@ -94,6 +94,8 @@ async function ConteudoDoPainel({ searchParams }: Pick<PageProps<"/painel">, "se
   const saidas = resumo.fluxoMensal.reduce((s, m) => s + m.saidasCentavos, 0);
   const extrato = (extra: string) => `/extrato?de=${periodo.de}&ate=${periodo.ate}${extra}`;
   const semMovimento = entradas === 0 && saidas === 0;
+  // Sem nenhum centro de custo (ex.: perfil pessoal) o bloco seria só "Sem centro": não mostra.
+  const usaCentros = resumo.resultadoPorCentroDeCusto.some((c) => c.centroDeCustoId !== null);
 
   return (
     <div className="grid gap-12 pb-8">
@@ -184,12 +186,12 @@ async function ConteudoDoPainel({ searchParams }: Pick<PageProps<"/painel">, "se
           }
         />
       ) : (
-        <div className="grid gap-12 lg:grid-cols-[1.25fr_1fr] lg:gap-16">
+        <div className={usaCentros ? "grid gap-12 lg:grid-cols-[1.25fr_1fr] lg:gap-16" : "grid"}>
           <ParaOndeFoi
             gastos={resumo.gastosPorCategoria}
             hrefDaCategoria={(id) => extrato(`&sentido=saida&categoria=${id ?? "nenhuma"}`)}
           />
-          <ResultadoPorCentro centros={resumo.resultadoPorCentroDeCusto} hrefSemCentro={extrato("&centro=nenhum")} />
+          {usaCentros && <ResultadoPorCentro centros={resumo.resultadoPorCentroDeCusto} hrefSemCentro={extrato("&centro=nenhum")} />}
         </div>
       )}
 

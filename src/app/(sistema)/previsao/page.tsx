@@ -9,11 +9,11 @@ import { lerEstadoForcado } from "@/componentes/estados/estado-forcado";
 import { CabecalhoDaPagina } from "@/componentes/estrutura/CabecalhoDaPagina";
 import { ValorMonetario } from "@/componentes/extrato/ValorMonetario";
 import { botao } from "@/componentes/formulario/classes";
-import { AcoesDaOcorrencia, EncerrarRecorrencia, NovaRecorrenciaForm } from "@/componentes/previsao/GerenciarPrevisao";
+import { AcoesDaOcorrencia, EditarRecorrencia, EncerrarRecorrencia, NovaRecorrenciaForm } from "@/componentes/previsao/GerenciarPrevisao";
 import { formatarData } from "@/ferramentas-internas/formatar-data";
 import { Carregando } from "@/identidade-visual/Carregando";
 import { carregarCategoriasERegras, carregarContas, carregarPrevisao } from "@/regras-de-negocio/interface-web";
-import { baixarOcorrencia, criarRecorrencia, encerrarRecorrencia } from "@/regras-de-negocio/interface-web/acoes";
+import { baixarOcorrencia, criarRecorrencia, editarRecorrencia, encerrarRecorrencia } from "@/regras-de-negocio/interface-web/acoes";
 
 export const metadata: Metadata = { title: "Previsão" };
 
@@ -179,6 +179,7 @@ async function Conteudo({ searchParams }: Pick<PageProps<"/previsao">, "searchPa
                   <ValorMonetario centavos={r.valorCentavos} comSinal className="font-semibold" />
                   <EncerrarRecorrencia recorrenciaId={r.id} descricao={r.descricao} encerrar={encerrarRecorrencia} />
                 </span>
+                <EditarRecorrencia recorrencia={r} editar={editarRecorrencia} />
               </li>
             ))}
           </ul>

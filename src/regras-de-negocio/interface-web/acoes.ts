@@ -11,8 +11,8 @@ import {
 } from "../acesso";
 import type { NovaRegra, SugestaoDeRegra } from "../categorizacao";
 import type { ResultadoDaImportacao } from "../importacao-de-extrato";
-import type { NovaContaManual, NovoLancamento } from "../lancamentos";
-import type { NovaRecorrencia } from "../previsao";
+import type { EdicaoDeLancamento, NovaContaManual, NovoLancamento } from "../lancamentos";
+import type { EdicaoDeRecorrencia, NovaRecorrencia } from "../previsao";
 import { ErroDeNegocio, type ResultadoDaAcao } from "../erros";
 import { servicosDoUsuario } from "../montagem";
 import type {
@@ -272,6 +272,17 @@ export async function removerLancamentoManual(
   });
 }
 
+/** Só lançamentos manuais: data, descrição e valor (o saldo é ajustado). */
+export async function editarLancamentoManual(
+  transacaoId: Id,
+  dados: EdicaoDeLancamento,
+): Promise<ResultadoDaAcao<null>> {
+  return mutacao("editarLancamentoManual", async (s) => {
+    await s.lancamentos.editar(s.ctx, transacaoId, dados);
+    return null;
+  });
+}
+
 // ── Recorrências e saldo previsto (ADR 0017) ───────────────────────────────
 
 export async function criarRecorrencia(
@@ -288,6 +299,14 @@ export async function encerrarRecorrencia(
     await s.previsao.encerrarRecorrencia(s.ctx, recorrenciaId);
     return null;
   });
+}
+
+/** Vale para as próximas ocorrências. */
+export async function editarRecorrencia(
+  recorrenciaId: Id,
+  dados: EdicaoDeRecorrencia,
+): Promise<ResultadoDaAcao<Recorrencia>> {
+  return mutacao("editarRecorrencia", (s) => s.previsao.editarRecorrencia(s.ctx, recorrenciaId, dados));
 }
 
 /** "Paguei/Recebi" (lancar = true: lança na conta manual) ou "Pular" (lancar = false). */

@@ -21,6 +21,7 @@ function montar(ocorrencias: OcorrenciaPrevista[] = []) {
     listar: vi.fn(async () => []),
     criar: vi.fn(async (_e: string, d: object) => ({ id: "r1", empresaId: EMPRESA, ativa: true, ...d }) as never),
     encerrar: vi.fn(async () => {}),
+    atualizar: vi.fn(async (_e: string, id: string, d: object) => ({ id, ...d }) as never),
     ocorrencias: vi.fn(async () => ocorrencias),
     baixar: vi.fn(async (): Promise<string | null> => "t1"),
   };
@@ -90,5 +91,15 @@ describe("recorrências", () => {
 
     await expect(servico.baixar(ctx, { recorrenciaId: "x", data: "2026-11-05" })).rejects.toMatchObject({ codigo: "entrada_invalida" });
     await expect(servico.encerrarRecorrencia(ctx, "x")).rejects.toMatchObject({ codigo: "nao_encontrado" });
+  });
+
+  it("editar recorrência: valida e delega descrição, valor e fim", async () => {
+    const { servico, recorrencias } = montar();
+    const id = novoId();
+    await servico.editarRecorrencia(ctx, id, { descricao: " Aluguel ", valorCentavos: -160000, fim: null });
+    expect(recorrencias.atualizar).toHaveBeenCalledWith(EMPRESA, id, { descricao: "Aluguel", valorCentavos: -160000, fim: null });
+    await expect(servico.editarRecorrencia(ctx, "x", { descricao: "A", valorCentavos: 1, fim: null })).rejects.toMatchObject({ codigo: "nao_encontrado" });
+    for (const d of [{ descricao: " ", valorCentavos: 1, fim: null }, { descricao: "A", valorCentavos: 0, fim: null }, { descricao: "A", valorCentavos: 1, fim: "x" }])
+      await expect(servico.editarRecorrencia(ctx, id, d)).rejects.toMatchObject({ codigo: "entrada_invalida" });
   });
 });

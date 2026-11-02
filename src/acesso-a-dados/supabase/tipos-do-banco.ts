@@ -462,6 +462,9 @@ isOneToOne: false
 "criar_conta_manual":
 { Args: { "p_empresa": string,"p_nome": string,"p_saldo_inicial"?: number,"p_tipo": string }; Returns: string
                            },
+"editar_lancamento_manual":
+{ Args: { "p_data": string,"p_descricao": string,"p_empresa": string,"p_transacao": string,"p_valor": number }; Returns: undefined
+                           },
 "garantir_empresa":
 { Args: { "p_nome": string,"p_perfil"?: string }; Returns: string
                            },

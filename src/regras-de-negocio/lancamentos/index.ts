@@ -1,6 +1,7 @@
 import "server-only";
 
 export type {
+  EdicaoDeLancamento,
   NovaContaManual,
   NovoLancamento,
   ServicoDeLancamentos,

@@ -1,7 +1,7 @@
 -- Contas e lançamentos manuais (Fase 2, ADR 0017): saldo, isolamento entre empresas e limites.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(21);
+select plan(25);
 
 insert into auth.users (id, email, aud, role)
 values
@@ -66,6 +66,11 @@ select lives_ok(format($$select public.remover_lancamento_manual('77777777-0000-
 select is((select saldo from public.contas where id = (select id from ids where nome = 'carteira')), 120.00, 'saldo devolvido (100 + 20)');
 select is((select count(*) from public.transacoes where id = (select id from ids where nome = 'gasto')), 0::bigint, 'lançamento apagado');
 
+-- Edição: o saldo recebe a diferença.
+select lives_ok(format($$select public.editar_lancamento_manual('77777777-0000-4000-a000-0000000000e1', %L, '2026-11-03', ' Bolo de pote ', -10)$$, (select id from ids where nome = 'sem_categoria')), 'edita o manual');
+select is((select saldo from public.contas where id = (select id from ids where nome = 'carteira')), 90.00, 'saldo ajustado (120 - 20 - 10)');
+select is((select data || ' ' || descricao from public.transacoes where id = (select id from ids where nome = 'sem_categoria')), '2026-11-03 Bolo de pote', 'data e descrição trocadas');
+
 -- Usuário B não enxerga nem mexe nas contas de A.
 select set_config('request.jwt.claims', '{"sub":"77777777-0000-4000-a000-000000000002","role":"authenticated"}', true);
 select throws_ok(format($$select public.lancar_manual('77777777-0000-4000-a000-0000000000e1', %L, '2026-11-01', 'x', 10)$$, (select id from ids where nome = 'carteira')),
@@ -74,6 +79,8 @@ select throws_ok(format($$select public.lancar_manual('77777777-0000-4000-a000-0
   '22023', 'conta_nao_manual', 'B não lança na conta de A pela própria empresa');
 select throws_ok(format($$select public.remover_lancamento_manual('77777777-0000-4000-a000-0000000000e2', %L)$$, (select id from ids where nome = 'sem_categoria')),
   '22023', 'lancamento_nao_manual', 'B não remove lançamento de A');
+select throws_ok(format($$select public.editar_lancamento_manual('77777777-0000-4000-a000-0000000000e2', %L, '2026-11-01', 'x', 10)$$, (select id from ids where nome = 'sem_categoria')),
+  '22023', 'lancamento_nao_manual', 'B não edita lançamento de A');
 
 -- anon não executa.
 reset role;

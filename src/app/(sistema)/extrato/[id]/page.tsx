@@ -11,7 +11,7 @@ import { ClassificacaoDaTransacao } from "@/componentes/extrato/ClassificacaoDaT
 import { ValorMonetario } from "@/componentes/extrato/ValorMonetario";
 import { botao } from "@/componentes/formulario/classes";
 import { ComprovantesDaTransacao } from "@/componentes/comprovantes/ComprovantesDaTransacao";
-import { ApagarLancamento } from "@/componentes/contas/GerenciarContas";
+import { ApagarLancamento, EditarLancamento } from "@/componentes/contas/GerenciarContas";
 import { carregarCategoriasERegras, carregarCentrosDeCusto, carregarComprovantes, carregarTransacao } from "@/regras-de-negocio/interface-web";
 import {
   anexar,
@@ -20,6 +20,7 @@ import {
   gerarLinkTemporario,
   removerAnexo,
   ocultarTransacao,
+  editarLancamentoManual,
   removerLancamentoManual,
 } from "@/regras-de-negocio/interface-web/acoes";
 import { OcultarDosTotais } from "@/componentes/extrato/OcultarDosTotais";
@@ -169,8 +170,11 @@ async function Conteudo({ params, searchParams }: PageProps<"/extrato/[id]">) {
       <Anexos transacaoId={t.id} anexos={anexos.filter((a) => !a.comprovanteId)} anexar={anexar} gerarLinkTemporario={gerarLinkTemporario} removerAnexo={removerAnexo} />
 
       {manual && (
-        <div className="w-fit">
-          <ApagarLancamento transacaoId={t.id} remover={removerLancamentoManual} />
+        <div className="grid gap-4">
+          <EditarLancamento transacaoId={t.id} data={t.data} descricao={t.descricao} valorCentavos={t.valorCentavos} editar={editarLancamentoManual} />
+          <div className="w-fit">
+            <ApagarLancamento transacaoId={t.id} remover={removerLancamentoManual} />
+          </div>
         </div>
       )}
     </article>

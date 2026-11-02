@@ -84,6 +84,25 @@ export class RepositorioDeRecorrenciasSupabase implements RepositorioDeRecorrenc
     );
   }
 
+  async atualizar(
+    empresaId: string,
+    recorrenciaId: string,
+    dados: Parameters<RepositorioDeRecorrencias["atualizar"]>[2],
+  ) {
+    const linha = dadosOuFalha(
+      await this.banco
+        .from("recorrencias")
+        .update({ descricao: dados.descricao, valor: paraReais(dados.valorCentavos), fim: dados.fim })
+        .eq("empresa_id", empresaId)
+        .eq("id", recorrenciaId)
+        .eq("ativa", true)
+        .select()
+        .single(),
+      { naoEncontrado: "Recorrência não encontrada ou encerrada.", referencia: "O fim não pode ser antes do início." },
+    );
+    return paraRecorrencia(linha);
+  }
+
   async ocorrencias(empresaId: string, de: string, ate: string) {
     const { data, error } = await this.banco.rpc("ocorrencias_previstas", {
       p_empresa: empresaId,

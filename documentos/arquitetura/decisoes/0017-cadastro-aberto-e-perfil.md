@@ -23,10 +23,17 @@ O Rastro nasceu para a HOMETEC: um usuário, `EMAIL_AUTORIZADO` e sementes de ca
 
 ## Roteiro da v2
 
-**Situação (2026-11-02):** fases 1 a 6 entregues no branch `evolucao-v2`, com migrações 20261102120000 a 20261102160000
-e testes pgTAP 02 e 07 a 10. Pendências conhecidas: o painel ainda mostra "Resultado por centro de custo" no perfil
-pessoal; não há como editar um lançamento ou uma recorrência (só apagar ou encerrar e criar de novo); a exportação é
-só em CSV.
+**Situação (2026-11-02):** fases 1 a 6 entregues no branch `evolucao-v2`, com migrações 20261102120000 a 20261102170000
+e testes pgTAP 02 e 07 a 10. Pendências resolvidas:
+- o painel só mostra "Resultado por centro de custo" quando a conta tem algum centro;
+- lançamentos manuais podem ser editados (data, descrição e valor, via `editar_lancamento_manual`, que ajusta o saldo);
+- recorrências podem ser editadas (descrição, valor e fim, valendo para as próximas ocorrências).
+
+Ficaram de fora:
+- XLSX: o CSV com BOM e `;` abre direto no Excel;
+- o item "Centros de custo" no menu do perfil pessoal;
+- desfazer uma baixa;
+- tela para trocar o perfil.
 
 1. **Cadastro aberto + perfil**: esta ADR.
 2. **Lançamentos e contas manuais**: conexão `provedor = 'manual'` por empresa, no mesmo padrão da conexão `arquivo` (ADR 0016). `transacoes` passa a aceitar insert pelo serviço (service role, filtrado por `empresaId`).

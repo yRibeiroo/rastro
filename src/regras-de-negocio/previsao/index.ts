@@ -1,6 +1,7 @@
 import "server-only";
 
 export type {
+  EdicaoDeRecorrencia,
   NovaRecorrencia,
   OcorrenciaNaPrevisao,
   PrevisaoDeSaldo,

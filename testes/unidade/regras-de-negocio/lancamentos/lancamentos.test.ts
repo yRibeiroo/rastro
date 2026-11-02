@@ -7,6 +7,7 @@ function montar() {
     criarContaManual: vi.fn(async () => "conta-1"),
     lancar: vi.fn(async () => "lanc-1"),
     remover: vi.fn(async () => {}),
+    editar: vi.fn(async () => {}),
   };
   const categorizacao = { categorizarPendentes: vi.fn(async () => ({ categorizadas: 1, semSugestao: 0 })) };
   const contas = { listar: vi.fn(async () => []) };
@@ -73,5 +74,16 @@ describe("lançamentos manuais", () => {
     const id = novoId();
     await servico.remover(ctx, id);
     expect(lancamentos.remover).toHaveBeenCalledWith(EMPRESA, id);
+  });
+
+  it("editar: valida (data, descrição aparada, valor inteiro ≠ 0) e delega com a empresa do ctx", async () => {
+    const { servico, lancamentos } = montar();
+    const id = novoId();
+    await servico.editar(ctx, id, { data: "2026-11-03", descricao: " Bolo ", valorCentavos: -1000 });
+    expect(lancamentos.editar).toHaveBeenCalledWith(EMPRESA, id, { data: "2026-11-03", descricao: "Bolo", valorCentavos: -1000 });
+    await expect(servico.editar(ctx, "x", { data: "2026-11-03", descricao: "B", valorCentavos: 1 })).rejects.toMatchObject({ codigo: "nao_encontrado" });
+    for (const d of [{ data: "x", descricao: "B", valorCentavos: 1 }, { data: "2026-11-03", descricao: " ", valorCentavos: 1 }, { data: "2026-11-03", descricao: "B", valorCentavos: 0 }])
+      await expect(servico.editar(ctx, id, d)).rejects.toMatchObject({ codigo: "entrada_invalida" });
+    expect(lancamentos.editar).toHaveBeenCalledTimes(1);
   });
 });
