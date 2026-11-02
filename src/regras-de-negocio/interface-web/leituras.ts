@@ -13,6 +13,7 @@ import type {
   CentroDeCusto,
   Comprovante,
   Conexao,
+  Conta,
   Id,
   ImportacaoDeExtrato,
   Regra,
@@ -130,6 +131,20 @@ export async function contarAlertas(): Promise<{
   comprovantesSemTransacao: number;
 }> {
   return comServicos((s) => s.comprovantes.contarAlertas(s.ctx));
+}
+
+/** Contas da empresa com a origem (banco, extrato importado ou manual). */
+export async function carregarContas(): Promise<
+  Array<Conta & { origem: Conexao["provedor"] }>
+> {
+  return comServicos(async (s) => {
+    const [contas, conexoes] = await Promise.all([
+      s.lancamentos.listarContas(s.ctx),
+      s.conexoes.listarConexoes(s.ctx),
+    ]);
+    const origem = new Map(conexoes.map((c) => [c.id, c.provedor]));
+    return contas.map((c) => ({ ...c, origem: origem.get(c.conexaoId) ?? "pluggy" }));
+  });
 }
 
 /** Flags (ADR 0010/0016) que a interface precisa, lidas no servidor e passadas como props. */

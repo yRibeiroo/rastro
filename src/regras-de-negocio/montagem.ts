@@ -17,6 +17,7 @@ import { RepositorioDeConexoesSupabase } from "@/acesso-a-dados/repositorio-de-c
 import { RepositorioDeContasSupabase } from "@/acesso-a-dados/repositorio-de-contas";
 import { RepositorioDeEmpresasSupabase } from "@/acesso-a-dados/repositorio-de-empresas";
 import { RepositorioDeImportacoesSupabase } from "@/acesso-a-dados/repositorio-de-importacoes";
+import { RepositorioDeLancamentosSupabase } from "@/acesso-a-dados/repositorio-de-lancamentos";
 import {
   RepositorioDeEventosDeWebhookSupabase,
   RepositorioDeLimitesSupabase,
@@ -71,6 +72,10 @@ import {
   LeitorDeExtratoOfx,
   type ServicoDeImportacao,
 } from "./importacao-de-extrato";
+import {
+  criarServicoDeLancamentos,
+  type ServicoDeLancamentos,
+} from "./lancamentos";
 import { criarServicoDoPainel, type ServicoDoPainel } from "./painel";
 import type { ContextoDoUsuario } from "./tipos";
 
@@ -88,6 +93,7 @@ export interface ServicosDoUsuario {
   anexos: ServicoDeAnexos;
   importacao: ServicoDeImportacao;
   comprovantes: ServicoDeComprovantes;
+  lancamentos: ServicoDeLancamentos;
 }
 
 export interface ServicosDoSistema {
@@ -275,5 +281,11 @@ export async function servicosDoUsuario(): Promise<ServicosDoUsuario> {
     }),
     importacao,
     comprovantes,
+    // RPCs security definer pela sessão do usuário (conferem a membership).
+    lancamentos: criarServicoDeLancamentos({
+      lancamentos: new RepositorioDeLancamentosSupabase(banco),
+      contas: new RepositorioDeContasSupabase(banco),
+      categorizacao,
+    }),
   };
 }

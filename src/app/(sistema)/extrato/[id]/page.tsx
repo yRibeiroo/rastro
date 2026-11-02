@@ -11,8 +11,16 @@ import { ClassificacaoDaTransacao } from "@/componentes/extrato/ClassificacaoDaT
 import { ValorMonetario } from "@/componentes/extrato/ValorMonetario";
 import { botao } from "@/componentes/formulario/classes";
 import { ComprovantesDaTransacao } from "@/componentes/comprovantes/ComprovantesDaTransacao";
+import { ApagarLancamento } from "@/componentes/contas/GerenciarContas";
 import { carregarCategoriasERegras, carregarCentrosDeCusto, carregarComprovantes, carregarTransacao } from "@/regras-de-negocio/interface-web";
-import { anexar, corrigirCategoria, criarRegra, gerarLinkTemporario, removerAnexo } from "@/regras-de-negocio/interface-web/acoes";
+import {
+  anexar,
+  corrigirCategoria,
+  criarRegra,
+  gerarLinkTemporario,
+  removerAnexo,
+  removerLancamentoManual,
+} from "@/regras-de-negocio/interface-web/acoes";
 import { formatarData, formatarDataHora } from "@/ferramentas-internas/formatar-data";
 import { Carregando } from "@/identidade-visual/Carregando";
 
@@ -90,6 +98,8 @@ async function Conteudo({ params, searchParams }: PageProps<"/extrato/[id]">) {
   }
   const { t, anexos, categorias, centros, regras, comprovantes } = dados;
 
+  // Convenção da RPC lancar_manual (migração 20261102130000).
+  const manual = t.idExterno.startsWith("manual:");
   const regra = t.regraId ? regras.find((r) => r.id === t.regraId) : null;
   const categorizando = sp.estado === "categorizando" || (t.categoriaId === null && t.categorizacaoAutomaticaEm === null && !t.categoriaDefinidaPeloUsuario);
 
@@ -123,9 +133,15 @@ async function Conteudo({ params, searchParams }: PageProps<"/extrato/[id]">) {
           Detalhes
         </h2>
         <dl className="divide-y divide-borda">
-          <Linha termo={t.valorCentavos >= 0 ? "Quem pagou" : "Quem recebeu"}>{t.contraparte ?? "Não informado pelo banco"}</Linha>
-          <Linha termo="Forma">{t.metodoDePagamento ?? "Não informada"}</Linha>
-          {t.descricaoOriginal && t.descricaoOriginal !== t.descricao && <Linha termo="Descrição no banco">{t.descricaoOriginal}</Linha>}
+          {manual ? (
+            <Linha termo="Origem">Lançamento manual</Linha>
+          ) : (
+            <>
+              <Linha termo={t.valorCentavos >= 0 ? "Quem pagou" : "Quem recebeu"}>{t.contraparte ?? "Não informado pelo banco"}</Linha>
+              <Linha termo="Forma">{t.metodoDePagamento ?? "Não informada"}</Linha>
+            </>
+          )}
+          {!manual && t.descricaoOriginal && t.descricaoOriginal !== t.descricao && <Linha termo="Descrição no banco">{t.descricaoOriginal}</Linha>}
           {t.categoriaDoProvedor && <Linha termo="Categoria do banco">{t.categoriaDoProvedor}</Linha>}
           {regra && (
             <Linha termo="Regra aplicada">
@@ -140,13 +156,19 @@ async function Conteudo({ params, searchParams }: PageProps<"/extrato/[id]">) {
               <span className="valor-monetario">{Math.round(t.confiancaIa * 100)}%</span>
             </Linha>
           )}
-          <Linha termo="Recebida em">{formatarDataHora(t.criadaEm)}</Linha>
+          <Linha termo={manual ? "Lançada em" : "Recebida em"}>{formatarDataHora(t.criadaEm)}</Linha>
         </dl>
       </section>
 
       <ComprovantesDaTransacao comprovantes={comprovantes} anexos={anexos} gerarLinkTemporario={gerarLinkTemporario} />
 
       <Anexos transacaoId={t.id} anexos={anexos.filter((a) => !a.comprovanteId)} anexar={anexar} gerarLinkTemporario={gerarLinkTemporario} removerAnexo={removerAnexo} />
+
+      {manual && (
+        <div className="w-fit">
+          <ApagarLancamento transacaoId={t.id} remover={removerLancamentoManual} />
+        </div>
+      )}
     </article>
   );
 }

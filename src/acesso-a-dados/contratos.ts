@@ -26,11 +26,12 @@ import type {
   Id,
   ImportacaoDeExtrato,
   PapelNaEmpresa,
-  Regra,
   PerfilDaEmpresa,
+  Regra,
   SituacaoDoComprovante,
   StatusDaConexao,
   TipoDeCategoria,
+  TipoDeConta,
   Transacao,
 } from "@/regras-de-negocio/tipos";
 
@@ -304,4 +305,24 @@ export interface RepositorioDeComprovantes {
   ): Promise<Comprovante>;
   /** Apaga também a linha do anexo (cascade); o arquivo no Storage fica com o serviço. */
   remover(empresaId: Id, comprovanteId: Id): Promise<void>;
+}
+
+/** Contas e lançamentos manuais (Fase 2, ADR 0017): RPCs security definer que conferem a membership. */
+export interface RepositorioDeLancamentos {
+  criarContaManual(
+    empresaId: Id,
+    dados: { nome: string; tipo: TipoDeConta; saldoInicialCentavos: Centavos },
+  ): Promise<Id>;
+  lancar(
+    empresaId: Id,
+    dados: {
+      contaId: Id;
+      data: DataISO;
+      descricao: string;
+      valorCentavos: Centavos;
+      categoriaId: Id | null;
+      centroDeCustoId: Id | null;
+    },
+  ): Promise<Id>;
+  remover(empresaId: Id, transacaoId: Id): Promise<void>;
 }

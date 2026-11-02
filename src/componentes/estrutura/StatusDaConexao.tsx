@@ -11,7 +11,7 @@ export function diasDesde(instante: Date | null, agora = new Date()): number | n
 
 /** "Última importação há X dias" a partir da conexão de arquivo mais recente. */
 export function ultimaImportacao(conexoes: Conexao[]): Date | null {
-  const datas = conexoes.filter((c) => c.provedor !== "pluggy").map((c) => c.ultimaSincronizacaoEm?.getTime() ?? 0);
+  const datas = conexoes.filter((c) => c.provedor === "arquivo").map((c) => c.ultimaSincronizacaoEm?.getTime() ?? 0);
   const maior = Math.max(0, ...datas);
   return maior ? new Date(maior) : null;
 }

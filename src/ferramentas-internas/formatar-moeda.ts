@@ -26,6 +26,25 @@ export function formatarMoeda(centavos: number, { sinal = false, compacto: curto
   return texto;
 }
 
+/**
+ * Valor digitado → centavos (sempre positivo; o sentido vem de outro campo).
+ * Aceita "1.234,56", "1234,5", "1234.56", "R$ 12". Vazio, negativo ou ilegível → null.
+ */
+export function textoParaCentavos(texto: string): number | null {
+  let t = texto.replace(/R\$|\s/g, "");
+  if (!/^\d[\d.,]*$/.test(t)) return null;
+  const virgula = t.lastIndexOf(",");
+  const ponto = t.lastIndexOf(".");
+  // O último separador seguido de 1 ou 2 dígitos é o decimal; os outros são de milhar.
+  const decimal = Math.max(virgula, ponto);
+  const temDecimal = decimal >= 0 && /^\d{1,2}$/.test(t.slice(decimal + 1));
+  const inteiro = (temDecimal ? t.slice(0, decimal) : t).replace(/[.,]/g, "");
+  const fracao = temDecimal ? t.slice(decimal + 1).padEnd(2, "0") : "00";
+  t = `${inteiro}${fracao}`;
+  if (inteiro.length > 12) return null;
+  return Number(t);
+}
+
 /** Versão para leitores de tela: "menos R$ 286,40" / "mais R$ 6.300,00". */
 export function descreverMoeda(centavos: number): string {
   const texto = formatarMoeda(Math.abs(centavos));

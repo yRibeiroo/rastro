@@ -366,8 +366,14 @@ isOneToOne: false
 "consumir_limite_de_requisicao":
 { Args: { "p_chave": string,"p_janela_segundos": number,"p_maximo": number }; Returns: boolean
                            },
+"criar_conta_manual":
+{ Args: { "p_empresa": string,"p_nome": string,"p_saldo_inicial"?: number,"p_tipo": string }; Returns: string
+                           },
 "garantir_empresa":
 { Args: { "p_nome": string,"p_perfil"?: string }; Returns: string
+                           },
+"lancar_manual":
+{ Args: { "p_categoria"?: string,"p_centro"?: string,"p_conta": string,"p_data": string,"p_descricao": string,"p_empresa": string,"p_valor": number }; Returns: string
                            },
 "leituras_de_comprovante_desde":
 { Args: { "p_desde": string,"p_empresa": string }; Returns: number
@@ -386,6 +392,9 @@ isOneToOne: false
 { Args: { "p_ate": string,"p_de": string,"p_empresa": string }; Returns: {
               "centro_de_custo_id": string,"entradas_centavos": number,"nome": string,"saidas_centavos": number
             }[]
+                           },
+"remover_lancamento_manual":
+{ Args: { "p_empresa": string,"p_transacao": string }; Returns: undefined
                            }
           }
           Enums: {

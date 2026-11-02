@@ -13,6 +13,7 @@ type Item = { href: string; rotulo: string; curto: string; icone: NomeDoIcone };
 const ITENS: Item[] = [
   { href: "/painel", rotulo: "Painel", curto: "Painel", icone: "painel" },
   { href: "/extrato", rotulo: "Extrato", curto: "Extrato", icone: "extrato" },
+  { href: "/contas", rotulo: "Contas e lançamentos", curto: "Contas", icone: "contas" },
   { href: "/comprovantes", rotulo: "Comprovantes", curto: "Comprovantes", icone: "comprovante" },
   { href: "/importar", rotulo: "Importar", curto: "Importar", icone: "importar" },
   { href: "/categorias", rotulo: "Categorias", curto: "Categorias", icone: "categorias" },

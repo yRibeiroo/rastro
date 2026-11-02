@@ -11,6 +11,7 @@ import {
 } from "../acesso";
 import type { NovaRegra, SugestaoDeRegra } from "../categorizacao";
 import type { ResultadoDaImportacao } from "../importacao-de-extrato";
+import type { NovaContaManual, NovoLancamento } from "../lancamentos";
 import { ErroDeNegocio, type ResultadoDaAcao } from "../erros";
 import { servicosDoUsuario } from "../montagem";
 import type {
@@ -229,6 +230,31 @@ export async function removerAnexo(
 ): Promise<ResultadoDaAcao<null>> {
   return mutacao("removerAnexo", async (s) => {
     await s.anexos.remover(s.ctx, anexoId);
+    return null;
+  });
+}
+
+// ── Contas e lançamentos manuais (ADR 0017) ────────────────────────────────
+
+export async function criarContaManual(
+  dados: NovaContaManual,
+): Promise<ResultadoDaAcao<{ id: Id }>> {
+  return mutacao("criarContaManual", (s) => s.lancamentos.criarConta(s.ctx, dados));
+}
+
+/** valorCentavos negativo = saída. Sem categoria, as regras/IA categorizam em seguida. */
+export async function lancarManual(
+  dados: NovoLancamento,
+): Promise<ResultadoDaAcao<{ id: Id }>> {
+  return mutacao("lancarManual", (s) => s.lancamentos.lancar(s.ctx, dados));
+}
+
+/** Só lançamentos manuais e sem anexos. */
+export async function removerLancamentoManual(
+  transacaoId: Id,
+): Promise<ResultadoDaAcao<null>> {
+  return mutacao("removerLancamentoManual", async (s) => {
+    await s.lancamentos.remover(s.ctx, transacaoId);
     return null;
   });
 }

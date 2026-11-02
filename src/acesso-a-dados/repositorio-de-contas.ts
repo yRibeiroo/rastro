@@ -67,7 +67,7 @@ export class RepositorioDeContasSupabase implements RepositorioDeContas {
         .from("contas")
         .select("saldo, saldo_atualizado_em")
         .eq("empresa_id", empresaId)
-        .in("tipo", ["corrente", "poupanca"]),
+        .in("tipo", ["corrente", "poupanca", "dinheiro"]),
     );
     let atualizadoEm: Date | null = null;
     for (const linha of linhas) {

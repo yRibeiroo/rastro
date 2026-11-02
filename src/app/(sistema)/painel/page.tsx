@@ -54,8 +54,10 @@ async function ConteudoDoPainel({ searchParams }: Pick<PageProps<"/painel">, "se
       carregarPainel(periodo),
       carregarPainel(periodoDe(chave === "12m" ? "12m" : "6m")),
     ]);
-    const daFonte = conexoes.filter((c) => (openFinance ? c.provedor === "pluggy" : c.provedor !== "pluggy"));
-    dados = { conexao: daFonte[0] as (typeof daFonte)[number] | undefined, openFinance, ultima: ultimaImportacao(conexoes), resumo, historico };
+    const conexao = conexoes.find((c) => c.provedor === (openFinance ? "pluggy" : "arquivo"));
+    // Só lançamentos manuais (ADR 0017) também alimentam o painel.
+    const temDados = !!conexao || conexoes.some((c) => c.provedor === "manual");
+    dados = { conexao, temDados, openFinance, ultima: ultimaImportacao(conexoes), resumo, historico };
   } catch (erro) {
     unstable_rethrow(erro);
     return (
@@ -71,8 +73,8 @@ async function ConteudoDoPainel({ searchParams }: Pick<PageProps<"/painel">, "se
     );
   }
 
-  const { conexao, openFinance, ultima, resumo, historico } = dados;
-  if (forcado === "vazio" || !conexao) return <SemConexao openFinance={openFinance} />;
+  const { conexao, temDados, openFinance, ultima, resumo, historico } = dados;
+  if (forcado === "vazio" || !temDados) return <SemConexao openFinance={openFinance} />;
   const entradas = resumo.fluxoMensal.reduce((s, m) => s + m.entradasCentavos, 0);
   const saidas = resumo.fluxoMensal.reduce((s, m) => s + m.saidasCentavos, 0);
   const extrato = (extra: string) => `/extrato?de=${periodo.de}&ate=${periodo.ate}${extra}`;
@@ -83,7 +85,7 @@ async function ConteudoDoPainel({ searchParams }: Pick<PageProps<"/painel">, "se
       <div className="flex flex-wrap items-center justify-between gap-4">
         <SeletorDePeriodo atual={chave} caminho="/painel" />
         {openFinance ? (
-          conexao.ultimaSincronizacaoEm && (
+          conexao?.ultimaSincronizacaoEm && (
             <p className="text-sm text-texto-suave">
               {conexao.banco} · sincronizou {formatarTempoRelativo(conexao.ultimaSincronizacaoEm)}
             </p>

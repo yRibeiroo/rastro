@@ -41,7 +41,7 @@ export interface ErroDaConexao {
 export interface Conexao {
   id: Id;
   empresaId: Id;
-  provedor: "pluggy" | "arquivo"; // 'arquivo' = extrato importado (ADR 0016)
+  provedor: "pluggy" | "arquivo" | "manual"; // 'arquivo' = extrato importado (ADR 0016); 'manual' = contas manuais (ADR 0017)
   idExterno: string;
   banco: string | null;
   status: StatusDaConexao;
@@ -52,7 +52,7 @@ export interface Conexao {
   atualizadaEm: Date;
 }
 
-export type TipoDeConta = "corrente" | "poupanca" | "cartao_de_credito";
+export type TipoDeConta = "corrente" | "poupanca" | "cartao_de_credito" | "dinheiro"; // dinheiro = carteira (manual)
 
 export interface Conta {
   id: Id;

@@ -80,8 +80,10 @@ async function ConteudoDoExtrato({ searchParams }: Pick<PageProps<"/extrato">, "
   }
 
   const { conexoes, openFinance, pagina, categorias, centros, anexos } = dados;
-  const conexao = conexoes.find((c) => (openFinance ? c.provedor === "pluggy" : c.provedor !== "pluggy"));
-  if (forcado === "vazio" || !conexao)
+  const conexao = conexoes.find((c) => c.provedor === (openFinance ? "pluggy" : "arquivo"));
+  // Só lançamentos manuais (ADR 0017) também contam como extrato.
+  const temDados = conexao || conexoes.some((c) => c.provedor === "manual");
+  if (forcado === "vazio" || !temDados)
     return openFinance ? (
       <Vazio
         titulo="Nenhum banco conectado ainda"
@@ -112,7 +114,7 @@ async function ConteudoDoExtrato({ searchParams }: Pick<PageProps<"/extrato">, "
           <span className="valor-monetario font-medium text-texto">{pagina.itens.length}</span>{" "}
           {pagina.itens.length === 1 ? "transação" : "transações"}
         </p>
-        {openFinance ? (
+        {openFinance && conexao ? (
           <BotaoSincronizar conexaoId={conexao.id} banco={conexao.banco} sincronizar={sincronizarAgora} />
         ) : (
           <Link href="/importar" className={botao.secundario}>

@@ -31,3 +31,21 @@ describe("formatarMoeda", () => {
     expect(s(descreverMoeda(100))).toBe("mais R$ 1,00");
   });
 });
+
+describe("textoParaCentavos", () => {
+  it("entende vírgula ou ponto decimal e separador de milhar", async () => {
+    const { textoParaCentavos } = await import("@/ferramentas-internas/formatar-moeda");
+    expect(textoParaCentavos("1.234,56")).toBe(123456);
+    expect(textoParaCentavos("1234,5")).toBe(123450);
+    expect(textoParaCentavos("1234.56")).toBe(123456);
+    expect(textoParaCentavos("1,234.56")).toBe(123456);
+    expect(textoParaCentavos("R$ 12")).toBe(1200);
+    expect(textoParaCentavos("1.234")).toBe(123400); // 3 dígitos depois do ponto = milhar
+    expect(textoParaCentavos("0,05")).toBe(5);
+  });
+
+  it("recusa vazio, negativo, letras e valores grandes demais", async () => {
+    const { textoParaCentavos } = await import("@/ferramentas-internas/formatar-moeda");
+    for (const t of ["", "-10", "abc", "10,5x", "1234567890123,00"]) expect(textoParaCentavos(t)).toBeNull();
+  });
+});

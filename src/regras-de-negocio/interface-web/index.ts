@@ -8,6 +8,7 @@ export {
   carregarComprovantes,
   carregarCentrosDeCusto,
   carregarConexoes,
+  carregarContas,
   carregarExtrato,
   carregarImportacoes,
   carregarPainel,
