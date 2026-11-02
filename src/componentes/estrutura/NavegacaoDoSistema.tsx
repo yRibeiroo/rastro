@@ -14,6 +14,18 @@ const ITENS: Item[] = [
   { href: "/painel", rotulo: "Painel", curto: "Painel", icone: "painel" },
   { href: "/extrato", rotulo: "Extrato", curto: "Extrato", icone: "extrato" },
   {
+    href: "/contas",
+    rotulo: "Contas e lançamentos",
+    curto: "Contas",
+    icone: "contas",
+  },
+  {
+    href: "/previsao",
+    rotulo: "Previsão",
+    curto: "Previsão",
+    icone: "previsao",
+  },
+  {
     href: "/comprovantes",
     rotulo: "Comprovantes",
     curto: "Comprovantes",

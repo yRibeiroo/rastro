@@ -14,12 +14,16 @@ const flag = (padrao: "0" | "1") =>
 
 const esquemas = {
   SUPABASE_SERVICE_ROLE_KEY: texto,
-  EMAIL_AUTORIZADO: texto.transform((v) =>
-    v
-      .split(",")
-      .map((e) => e.trim().toLowerCase())
-      .filter(Boolean),
-  ),
+  // Vazio = ninguém na lista (com RECURSO_CADASTRO_ABERTO desligado, ninguém entra: fail-closed).
+  EMAIL_AUTORIZADO: z
+    .string()
+    .default("")
+    .transform((v) =>
+      v
+        .split(",")
+        .map((e) => e.trim().toLowerCase())
+        .filter(Boolean),
+    ),
   PLUGGY_CLIENT_ID: texto,
   PLUGGY_CLIENT_SECRET: texto,
   PLUGGY_WEBHOOK_SECRET: z
@@ -35,6 +39,7 @@ const esquemas = {
   RECURSO_CATEGORIZACAO_IA: flag("1"),
   RECURSO_ANEXOS: flag("1"),
   RECURSO_MULTIEMPRESA: flag("0"),
+  RECURSO_CADASTRO_ABERTO: flag("0"), // ADR 0017: qualquer e-mail entra; EMAIL_AUTORIZADO deixa de valer
   RECURSO_OPEN_FINANCE: flag("0"), // ADR 0016: Pluggy (webhook, cron, "Conectar banco")
   RECURSO_COMPROVANTES_IA: flag("1"), // ADR 0016: leitura de comprovantes pelo Claude
 };

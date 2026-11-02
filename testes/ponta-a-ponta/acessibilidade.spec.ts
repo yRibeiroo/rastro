@@ -37,11 +37,16 @@ test.beforeAll(async ({ browser }) => {
   const page = await browser.newPage();
   await semAbertura(page);
   await page.goto("/extrato");
-  primeira =
-    (await page
-      .locator('main a[href^="/extrato/"]')
-      .first()
-      .getAttribute("href")) ?? "/extrato";
+  // Espera o extrato carregar; sem transações no mês, cai no próprio /extrato em vez de travar.
+  await expect(
+    page.getByRole("searchbox", {
+      name: "Buscar por descrição ou contraparte",
+    }),
+  ).toBeVisible();
+  const item = page.locator('main li a[href^="/extrato/"]').first();
+  primeira = (await item.count())
+    ? ((await item.getAttribute("href")) ?? "/extrato")
+    : "/extrato";
   await page.close();
 });
 
@@ -83,6 +88,12 @@ test("teclado: 'Pular para o conteúdo' é o primeiro foco e leva ao conteúdo",
 }) => {
   await semAbertura(page);
   await page.goto("/extrato");
+  // Espera o conteúdo sair do "Carregando": sem nada focável no main, o Tab escaparia dele.
+  await expect(
+    page.getByRole("searchbox", {
+      name: "Buscar por descrição ou contraparte",
+    }),
+  ).toBeVisible();
   await page.keyboard.press("Tab");
   const pular = page.getByRole("link", { name: "Pular para o conteúdo" });
   await expect(pular).toBeFocused();

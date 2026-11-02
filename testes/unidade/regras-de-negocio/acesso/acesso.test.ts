@@ -4,6 +4,7 @@ import {
   criarServicoDeAcesso,
   emailAutorizado,
   exigirLimite,
+  lerPerfil,
   LIMITES,
   type PortaDeAutenticacao,
 } from "@/regras-de-negocio/acesso";
@@ -59,6 +60,7 @@ function montar(
     id: USUARIO,
     email: "davi@hometec.com.br",
   },
+  cadastroAberto = false,
 ) {
   const autenticacao = {
     usuarioAtual: vi.fn(async () => usuario),
@@ -80,10 +82,64 @@ function montar(
     empresas,
     consumirLimite,
     emailsAutorizados: () => ["davi@hometec.com.br"],
+    cadastroAberto: () => cadastroAberto,
     urlDoSite: () => "https://rastro.app",
   });
   return { acesso, autenticacao, empresas, consumirLimite };
 }
+
+describe("cadastro aberto e perfil (ADR 0017)", () => {
+  const novo = { id: USUARIO, email: "qualquer@gmail.com" };
+
+  it("cadastro aberto: qualquer e-mail recebe o link e entra; sem e-mail continua barrado", async () => {
+    const { acesso, autenticacao } = montar(novo, true);
+    await acesso.enviarLinkMagico("qualquer@gmail.com", null);
+    expect(autenticacao.enviarLinkMagico).toHaveBeenCalledWith(
+      "qualquer@gmail.com",
+      "https://rastro.app/entrar/confirmar",
+    );
+    expect(await acesso.obterContextoDoUsuario()).toMatchObject({
+      email: "qualquer@gmail.com",
+    });
+    await expect(
+      montar(
+        { id: USUARIO, email: null },
+        true,
+      ).acesso.obterContextoDoUsuario(),
+    ).rejects.toMatchObject({
+      codigo: "email_nao_autorizado",
+    });
+  });
+
+  it("cadastro fechado continua respeitando a allowlist", async () => {
+    const { acesso, autenticacao } = montar(novo, false);
+    await acesso.enviarLinkMagico("qualquer@gmail.com", null);
+    expect(autenticacao.enviarLinkMagico).not.toHaveBeenCalled();
+  });
+
+  it("confirmarEntrada com perfil cria a conta com nome e perfil", async () => {
+    const pessoal = montar(novo, true);
+    await pessoal.acesso.confirmarEntrada({ code: "c" }, "pessoal");
+    expect(pessoal.empresas.garantirEmpresaDoUsuario).toHaveBeenCalledWith(
+      "Minhas finanças",
+      "pessoal",
+    );
+    const empresa = montar(novo, true);
+    await empresa.acesso.confirmarEntrada({ code: "c" }, "empresa");
+    expect(empresa.empresas.garantirEmpresaDoUsuario).toHaveBeenCalledWith(
+      "Minha empresa",
+      "empresa",
+    );
+  });
+
+  it("lerPerfil aceita só os perfis conhecidos", () => {
+    expect(lerPerfil("pessoal")).toBe("pessoal");
+    expect(lerPerfil("empresa")).toBe("empresa");
+    expect(lerPerfil("admin")).toBeUndefined();
+    expect(lerPerfil(undefined)).toBeUndefined();
+    expect(lerPerfil(["pessoal"])).toBeUndefined();
+  });
+});
 
 describe("obterContextoDoUsuario", () => {
   it("sessão válida + allowlist + membership", async () => {

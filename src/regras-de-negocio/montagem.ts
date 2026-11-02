@@ -17,6 +17,10 @@ import { RepositorioDeConexoesSupabase } from "@/acesso-a-dados/repositorio-de-c
 import { RepositorioDeContasSupabase } from "@/acesso-a-dados/repositorio-de-contas";
 import { RepositorioDeEmpresasSupabase } from "@/acesso-a-dados/repositorio-de-empresas";
 import { RepositorioDeImportacoesSupabase } from "@/acesso-a-dados/repositorio-de-importacoes";
+import { RepositorioDeLancamentosSupabase } from "@/acesso-a-dados/repositorio-de-lancamentos";
+import { RepositorioDeLimitesDeGastoSupabase } from "@/acesso-a-dados/repositorio-de-limites-de-gasto";
+import { RepositorioDeRecorrenciasSupabase } from "@/acesso-a-dados/repositorio-de-recorrencias";
+import { hojeISO } from "@/ferramentas-internas/formatar-data";
 import {
   RepositorioDeEventosDeWebhookSupabase,
   RepositorioDeLimitesSupabase,
@@ -71,7 +75,20 @@ import {
   LeitorDeExtratoOfx,
   type ServicoDeImportacao,
 } from "./importacao-de-extrato";
+import {
+  criarServicoDeLancamentos,
+  type ServicoDeLancamentos,
+} from "./lancamentos";
+import {
+  criarServicoDeExportacao,
+  type ServicoDeExportacao,
+} from "./exportacao";
+import {
+  criarServicoDeLimitesDeGasto,
+  type ServicoDeLimitesDeGasto,
+} from "./limites-de-gasto";
 import { criarServicoDoPainel, type ServicoDoPainel } from "./painel";
+import { criarServicoDePrevisao, type ServicoDePrevisao } from "./previsao";
 import type { ContextoDoUsuario } from "./tipos";
 
 // Raiz de composição (contratos.md §11): o único lugar que instancia repositórios,
@@ -88,6 +105,10 @@ export interface ServicosDoUsuario {
   anexos: ServicoDeAnexos;
   importacao: ServicoDeImportacao;
   comprovantes: ServicoDeComprovantes;
+  lancamentos: ServicoDeLancamentos;
+  previsao: ServicoDePrevisao;
+  exportacao: ServicoDeExportacao;
+  limitesDeGasto: ServicoDeLimitesDeGasto;
 }
 
 export interface ServicosDoSistema {
@@ -170,6 +191,7 @@ function acessoCom(banco: ClienteDoBanco): ServicoDeAcesso {
       new RepositorioDeLimitesSupabase(clienteDoSistema()),
     ),
     emailsAutorizados: () => ambiente.EMAIL_AUTORIZADO,
+    cadastroAberto: () => ambiente.RECURSO_CADASTRO_ABERTO,
     urlDoSite: () => ambiente.URL_DO_SITE,
   });
 }
@@ -243,6 +265,16 @@ export async function servicosDoUsuario(): Promise<ServicosDoUsuario> {
     comprovantes,
     consumirLimite,
   });
+  const extrato = criarServicoDeExtrato({ transacoes });
+  const centrosDeCusto = criarServicoDeCentrosDeCusto({
+    centrosDeCusto: new RepositorioDeCentrosDeCustoSupabase(banco),
+  });
+  // RPCs security definer pela sessão do usuário (conferem a membership).
+  const lancamentos = criarServicoDeLancamentos({
+    lancamentos: new RepositorioDeLancamentosSupabase(banco),
+    contas: new RepositorioDeContasSupabase(banco),
+    categorizacao,
+  });
   return {
     ctx,
     conexoes: criarServicoDeConexaoBancaria({
@@ -251,15 +283,13 @@ export async function servicosDoUsuario(): Promise<ServicosDoUsuario> {
       conexoes: new RepositorioDeConexoesSupabase(clienteDoSistema()),
       consumirLimite,
     }),
-    extrato: criarServicoDeExtrato({ transacoes }),
+    extrato,
     sincronizacao: {
       sincronizarAgora: (c, id) =>
         doSistema.sincronizacao.sincronizarAgora(c, id),
     },
     categorizacao,
-    centrosDeCusto: criarServicoDeCentrosDeCusto({
-      centrosDeCusto: new RepositorioDeCentrosDeCustoSupabase(banco),
-    }),
+    centrosDeCusto,
     painel: criarServicoDoPainel({
       painel: new RepositorioDoPainelSupabase(banco),
       contas: new RepositorioDeContasSupabase(banco),
@@ -274,5 +304,37 @@ export async function servicosDoUsuario(): Promise<ServicosDoUsuario> {
     }),
     importacao,
     comprovantes,
+    lancamentos,
+    previsao: criarServicoDePrevisao({
+      recorrencias: new RepositorioDeRecorrenciasSupabase(banco),
+      contas: new RepositorioDeContasSupabase(banco),
+      categorizacao,
+      hoje: () => hojeISO(),
+    }),
+    exportacao: criarServicoDeExportacao({
+      listarPagina: (c, filtros) => extrato.listar(c, filtros),
+      nomes: async (c) => {
+        const [categorias, centros, contas] = await Promise.all([
+          categorizacao.listarCategorias(c, { incluirArquivadas: true }),
+          centrosDeCusto.listar(c, { incluirArquivados: true }),
+          lancamentos.listarContas(c),
+        ]);
+        const porId = (l: Array<{ id: string; nome: string }>) =>
+          new Map(l.map((x) => [x.id, x.nome]));
+        return {
+          categorias: porId(categorias),
+          centros: porId(centros),
+          contas: porId(contas),
+        };
+      },
+      consumirLimite,
+      hoje: () => hojeISO(),
+    }),
+    limitesDeGasto: criarServicoDeLimitesDeGasto({
+      limites: new RepositorioDeLimitesDeGastoSupabase(banco),
+      categorias: new RepositorioDeCategoriasSupabase(banco),
+      painel: new RepositorioDoPainelSupabase(banco),
+      hoje: () => hojeISO(),
+    }),
   };
 }

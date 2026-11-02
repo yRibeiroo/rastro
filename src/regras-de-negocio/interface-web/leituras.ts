@@ -7,16 +7,20 @@ import type { FiltrosDoExtrato, PaginaDoExtrato } from "../extrato";
 import type { SituacaoDoExtrato } from "../importacao-de-extrato";
 import { servicosDoUsuario, type ServicosDoUsuario } from "../montagem";
 import type { PeriodoDoPainel, ResumoDoPainel } from "../painel";
+import type { PrevisaoDeSaldo } from "../previsao";
 import type {
   Anexo,
   Categoria,
   CentroDeCusto,
   Comprovante,
   Conexao,
+  Conta,
   Id,
   ImportacaoDeExtrato,
+  Recorrencia,
   Regra,
   SituacaoDoComprovante,
+  SituacaoDoLimite,
   Transacao,
 } from "../tipos";
 
@@ -132,6 +136,42 @@ export async function contarAlertas(): Promise<{
   return comServicos((s) => s.comprovantes.contarAlertas(s.ctx));
 }
 
+/** Saldo previsto para os próximos `dias` (com as ocorrências e as atrasadas) e as recorrências ativas. */
+export async function carregarPrevisao(dias: number): Promise<{
+  previsao: PrevisaoDeSaldo;
+  recorrencias: Recorrencia[];
+}> {
+  return comServicos(async (s) => {
+    const [previsao, recorrencias] = await Promise.all([
+      s.previsao.prever(s.ctx, dias),
+      s.previsao.listarRecorrencias(s.ctx),
+    ]);
+    return { previsao, recorrencias };
+  });
+}
+
+/** Limites de gasto com o gasto do mês corrente (do mais estourado para o mais folgado). */
+export async function carregarLimitesDeGasto(): Promise<SituacaoDoLimite[]> {
+  return comServicos((s) => s.limitesDeGasto.situacao(s.ctx));
+}
+
+/** Contas da empresa com a origem (banco, extrato importado ou manual). */
+export async function carregarContas(): Promise<
+  Array<Conta & { origem: Conexao["provedor"] }>
+> {
+  return comServicos(async (s) => {
+    const [contas, conexoes] = await Promise.all([
+      s.lancamentos.listarContas(s.ctx),
+      s.conexoes.listarConexoes(s.ctx),
+    ]);
+    const origem = new Map(conexoes.map((c) => [c.id, c.provedor]));
+    return contas.map((c) => ({
+      ...c,
+      origem: origem.get(c.conexaoId) ?? "pluggy",
+    }));
+  });
+}
+
 /** Flags (ADR 0010/0016) que a interface precisa, lidas no servidor e passadas como props. */
 export async function carregarRecursos(): Promise<{
   anexos: boolean;
@@ -139,8 +179,10 @@ export async function carregarRecursos(): Promise<{
   incluirSandbox: boolean;
   openFinance: boolean;
   comprovantesIa: boolean;
+  cadastroAberto: boolean;
 }> {
   return {
+    cadastroAberto: ambiente.RECURSO_CADASTRO_ABERTO,
     anexos: ambiente.RECURSO_ANEXOS,
     categorizacaoIa: ambiente.RECURSO_CATEGORIZACAO_IA,
     incluirSandbox: ambiente.PLUGGY_INCLUIR_SANDBOX,

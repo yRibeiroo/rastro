@@ -110,14 +110,16 @@ async function ConteudoDoExtrato({
   }
 
   const { conexoes, openFinance, pagina, categorias, centros, anexos } = dados;
-  const conexao = conexoes.find((c) =>
-    openFinance ? c.provedor === "pluggy" : c.provedor !== "pluggy",
+  const conexao = conexoes.find(
+    (c) => c.provedor === (openFinance ? "pluggy" : "arquivo"),
   );
-  if (forcado === "vazio" || !conexao)
+  // Só lançamentos manuais (ADR 0017) também contam como extrato.
+  const temDados = conexao || conexoes.some((c) => c.provedor === "manual");
+  if (forcado === "vazio" || !temDados)
     return openFinance ? (
       <Vazio
         titulo="Nenhum banco conectado ainda"
-        descricao="Conecte a conta do Sicredi e as transações chegam aqui sozinhas, já categorizadas."
+        descricao="Conecte seu banco e as transações chegam aqui sozinhas, já categorizadas."
         acao={
           <Link href="/conexoes-bancarias" className={botao.primario}>
             Conectar banco
@@ -127,7 +129,7 @@ async function ConteudoDoExtrato({
     ) : (
       <Vazio
         titulo="Nenhum extrato importado ainda"
-        descricao="Exporte o extrato em OFX no Internet Banking do Sicredi e envie aqui. As transações entram já categorizadas."
+        descricao="Exporte o extrato em OFX no Internet Banking do seu banco e envie aqui, ou lance à mão em Contas. As transações entram já categorizadas."
         acao={
           <Link href="/importar" className={botao.primario}>
             Importar extrato
@@ -151,18 +153,29 @@ async function ConteudoDoExtrato({
           </span>{" "}
           {pagina.itens.length === 1 ? "transação" : "transações"}
         </p>
-        {openFinance ? (
-          <BotaoSincronizar
-            conexaoId={conexao.id}
-            banco={conexao.banco}
-            sincronizar={sincronizarAgora}
-          />
-        ) : (
-          <Link href="/importar" className={botao.secundario}>
-            <Icone nome="importar" className="size-4" />
-            Importar extrato
-          </Link>
-        )}
+        <div className="flex flex-wrap gap-2">
+          {/* <a> (não <Link>): é um download, sem navegação nem prefetch. Mesmos filtros da tela. */}
+          <a
+            href={`/extrato/exportar?${new URLSearchParams(Object.entries(textos(sp)).filter(([k]) => k !== "estado")).toString()}`}
+            download
+            className={botao.secundario}
+          >
+            <Icone nome="subir" className="size-4" />
+            Exportar CSV
+          </a>
+          {openFinance && conexao ? (
+            <BotaoSincronizar
+              conexaoId={conexao.id}
+              banco={conexao.banco}
+              sincronizar={sincronizarAgora}
+            />
+          ) : (
+            <Link href="/importar" className={botao.secundario}>
+              <Icone nome="importar" className="size-4" />
+              Importar extrato
+            </Link>
+          )}
+        </div>
       </div>
       <FiltrosDoExtrato
         periodo={periodo}

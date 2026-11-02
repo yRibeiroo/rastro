@@ -1,14 +1,22 @@
 "use server";
 import "server-only";
 import { refresh } from "next/cache";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import {
+  COOKIE_DO_PERFIL,
   enviarLinkMagico as enviarLink,
+  lerPerfil,
   sair as sairDaSessao,
 } from "../acesso";
 import type { NovaRegra, SugestaoDeRegra } from "../categorizacao";
 import type { ResultadoDaImportacao } from "../importacao-de-extrato";
+import type {
+  EdicaoDeLancamento,
+  NovaContaManual,
+  NovoLancamento,
+} from "../lancamentos";
+import type { EdicaoDeRecorrencia, NovaRecorrencia } from "../previsao";
 import { ErroDeNegocio, type ResultadoDaAcao } from "../erros";
 import { servicosDoUsuario } from "../montagem";
 import type {
@@ -19,6 +27,8 @@ import type {
   Conexao,
   DadosDoComprovante,
   Id,
+  LimiteDeGasto,
+  Recorrencia,
   Regra,
   TipoDeCategoria,
   Transacao,
@@ -41,14 +51,25 @@ async function mutacao<T>(
 
 // ── Entrada ─────────────────────────────────────────────────────────────────
 
-/** Resposta neutra: e-mail fora da allowlist recebe o mesmo { ok: true }. Rate limit por IP e e-mail. */
+/** Resposta neutra: e-mail fora da allowlist recebe o mesmo { ok: true }. Rate limit por IP e e-mail.
+ *  perfil (ADR 0017): guardado num cookie curto até o callback; só vale para quem ainda não tem conta. */
 export async function enviarLinkMagico(
   email: string,
+  perfil?: string,
 ): Promise<ResultadoDaAcao<null>> {
   return executarAcao("enviarLinkMagico", async () => {
     if (typeof email !== "string")
       throw new ErroDeNegocio("entrada_invalida", "Digite um e-mail válido.");
     await enviarLink(email, ipDaRequisicao(await headers()));
+    const escolhido = lerPerfil(perfil);
+    if (escolhido)
+      (await cookies()).set(COOKIE_DO_PERFIL, escolhido, {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+        path: "/entrar",
+        maxAge: 60 * 60, // o link vale menos que isso
+      });
     return null;
   });
 }
@@ -215,6 +236,113 @@ export async function removerAnexo(
 ): Promise<ResultadoDaAcao<null>> {
   return mutacao("removerAnexo", async (s) => {
     await s.anexos.remover(s.ctx, anexoId);
+    return null;
+  });
+}
+
+/** Tira (true) ou devolve (false) a transação dos totais do painel. */
+export async function ocultarTransacao(
+  transacaoId: Id,
+  oculta: boolean,
+): Promise<ResultadoDaAcao<Transacao>> {
+  return mutacao("ocultarTransacao", (s) =>
+    s.extrato.ocultar(s.ctx, transacaoId, oculta),
+  );
+}
+
+// ── Contas e lançamentos manuais (ADR 0017) ────────────────────────────────
+
+export async function criarContaManual(
+  dados: NovaContaManual,
+): Promise<ResultadoDaAcao<{ id: Id }>> {
+  return mutacao("criarContaManual", (s) =>
+    s.lancamentos.criarConta(s.ctx, dados),
+  );
+}
+
+/** valorCentavos negativo = saída. Sem categoria, as regras/IA categorizam em seguida. */
+export async function lancarManual(
+  dados: NovoLancamento,
+): Promise<ResultadoDaAcao<{ id: Id }>> {
+  return mutacao("lancarManual", (s) => s.lancamentos.lancar(s.ctx, dados));
+}
+
+/** Só lançamentos manuais e sem anexos. */
+export async function removerLancamentoManual(
+  transacaoId: Id,
+): Promise<ResultadoDaAcao<null>> {
+  return mutacao("removerLancamentoManual", async (s) => {
+    await s.lancamentos.remover(s.ctx, transacaoId);
+    return null;
+  });
+}
+
+/** Só lançamentos manuais: data, descrição e valor (o saldo é ajustado). */
+export async function editarLancamentoManual(
+  transacaoId: Id,
+  dados: EdicaoDeLancamento,
+): Promise<ResultadoDaAcao<null>> {
+  return mutacao("editarLancamentoManual", async (s) => {
+    await s.lancamentos.editar(s.ctx, transacaoId, dados);
+    return null;
+  });
+}
+
+// ── Recorrências e saldo previsto (ADR 0017) ───────────────────────────────
+
+export async function criarRecorrencia(
+  dados: NovaRecorrencia,
+): Promise<ResultadoDaAcao<Recorrencia>> {
+  return mutacao("criarRecorrencia", (s) =>
+    s.previsao.criarRecorrencia(s.ctx, dados),
+  );
+}
+
+/** Para de prever (as baixas já feitas ficam). */
+export async function encerrarRecorrencia(
+  recorrenciaId: Id,
+): Promise<ResultadoDaAcao<null>> {
+  return mutacao("encerrarRecorrencia", async (s) => {
+    await s.previsao.encerrarRecorrencia(s.ctx, recorrenciaId);
+    return null;
+  });
+}
+
+/** Vale para as próximas ocorrências. */
+export async function editarRecorrencia(
+  recorrenciaId: Id,
+  dados: EdicaoDeRecorrencia,
+): Promise<ResultadoDaAcao<Recorrencia>> {
+  return mutacao("editarRecorrencia", (s) =>
+    s.previsao.editarRecorrencia(s.ctx, recorrenciaId, dados),
+  );
+}
+
+/** "Paguei/Recebi" (lancar = true: lança na conta manual) ou "Pular" (lancar = false). */
+export async function baixarOcorrencia(dados: {
+  recorrenciaId: Id;
+  data: string;
+  lancar?: boolean;
+}): Promise<ResultadoDaAcao<{ transacaoId: Id | null }>> {
+  return mutacao("baixarOcorrencia", (s) => s.previsao.baixar(s.ctx, dados));
+}
+
+// ── Limites de gasto (ADR 0017) ─────────────────────────────────────────────
+
+/** Cria ou troca o limite mensal da categoria. */
+export async function definirLimiteDeGasto(
+  limite: LimiteDeGasto,
+): Promise<ResultadoDaAcao<LimiteDeGasto>> {
+  return mutacao("definirLimiteDeGasto", (s) =>
+    s.limitesDeGasto.definir(s.ctx, limite),
+  );
+}
+
+export async function removerLimiteDeGasto(
+  categoriaId: Id,
+): Promise<ResultadoDaAcao<null>> {
+  return mutacao("removerLimiteDeGasto", async (s) => {
+    await s.limitesDeGasto.remover(s.ctx, categoriaId);
     return null;
   });
 }

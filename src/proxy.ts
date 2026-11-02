@@ -8,6 +8,7 @@ import { ambientePublico } from "@/configuracao/ambiente-publico";
 function emailNaAllowlist(email: unknown): boolean {
   if (typeof email !== "string" || !email.trim()) return false;
   // Lido direto do ambiente: o proxy não importa módulos server-only.
+  if (process.env.RECURSO_CADASTRO_ABERTO === "1") return true; // ADR 0017
   return (process.env.EMAIL_AUTORIZADO ?? "")
     .split(",")
     .some((e) => e.trim().toLowerCase() === email.trim().toLowerCase());

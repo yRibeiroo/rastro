@@ -26,6 +26,8 @@ const TRACOS = {
   comprovante:
     "M3 6.5h3l1.5-2h5L14 6.5h3v9.5H3zM10 13.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z",
   importar: "M10 3.5v9M6 8.5l4 4 4-4M3.5 13v3.5h13V13",
+  contas: "M3.5 6.5h13v9.5h-13zM3.5 6.5l9-3v3M13 11.25h.01",
+  previsao: "M3.5 5h13v11.5h-13zM3.5 8.5h13M7 3.5v3M13 3.5v3M7 12l2 2 4-4",
   atencao: "M10 3.5L17 16H3zM10 8.5v3.5M10 14.25h.01",
 } as const;
 

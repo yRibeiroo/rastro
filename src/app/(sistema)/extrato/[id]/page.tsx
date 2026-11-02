@@ -12,6 +12,10 @@ import { ValorMonetario } from "@/componentes/extrato/ValorMonetario";
 import { botao } from "@/componentes/formulario/classes";
 import { ComprovantesDaTransacao } from "@/componentes/comprovantes/ComprovantesDaTransacao";
 import {
+  ApagarLancamento,
+  EditarLancamento,
+} from "@/componentes/contas/GerenciarContas";
+import {
   carregarCategoriasERegras,
   carregarCentrosDeCusto,
   carregarComprovantes,
@@ -23,7 +27,11 @@ import {
   criarRegra,
   gerarLinkTemporario,
   removerAnexo,
+  ocultarTransacao,
+  editarLancamentoManual,
+  removerLancamentoManual,
 } from "@/regras-de-negocio/interface-web/acoes";
+import { OcultarDosTotais } from "@/componentes/extrato/OcultarDosTotais";
 import {
   formatarData,
   formatarDataHora,
@@ -127,6 +135,8 @@ async function Conteudo({ params, searchParams }: PageProps<"/extrato/[id]">) {
   }
   const { t, anexos, categorias, centros, regras, comprovantes } = dados;
 
+  // Convenção da RPC lancar_manual (migração 20261102130000).
+  const manual = t.idExterno.startsWith("manual:");
   const regra = t.regraId ? regras.find((r) => r.id === t.regraId) : null;
   const categorizando =
     sp.estado === "categorizando" ||
@@ -166,18 +176,36 @@ async function Conteudo({ params, searchParams }: PageProps<"/extrato/[id]">) {
         criarRegra={criarRegra}
       />
 
+      <OcultarDosTotais
+        transacaoId={t.id}
+        oculta={t.oculta}
+        ocultar={ocultarTransacao}
+      />
+
       <section aria-labelledby="detalhes" className="grid gap-2">
         <h2 id="detalhes" className="text-xl font-semibold">
           Detalhes
         </h2>
         <dl className="divide-y divide-borda">
-          <Linha termo={t.valorCentavos >= 0 ? "Quem pagou" : "Quem recebeu"}>
-            {t.contraparte ?? "Não informado pelo banco"}
-          </Linha>
-          <Linha termo="Forma">{t.metodoDePagamento ?? "Não informada"}</Linha>
-          {t.descricaoOriginal && t.descricaoOriginal !== t.descricao && (
-            <Linha termo="Descrição no banco">{t.descricaoOriginal}</Linha>
+          {manual ? (
+            <Linha termo="Origem">Lançamento manual</Linha>
+          ) : (
+            <>
+              <Linha
+                termo={t.valorCentavos >= 0 ? "Quem pagou" : "Quem recebeu"}
+              >
+                {t.contraparte ?? "Não informado pelo banco"}
+              </Linha>
+              <Linha termo="Forma">
+                {t.metodoDePagamento ?? "Não informada"}
+              </Linha>
+            </>
           )}
+          {!manual &&
+            t.descricaoOriginal &&
+            t.descricaoOriginal !== t.descricao && (
+              <Linha termo="Descrição no banco">{t.descricaoOriginal}</Linha>
+            )}
           {t.categoriaDoProvedor && (
             <Linha termo="Categoria do banco">{t.categoriaDoProvedor}</Linha>
           )}
@@ -200,7 +228,9 @@ async function Conteudo({ params, searchParams }: PageProps<"/extrato/[id]">) {
               </span>
             </Linha>
           )}
-          <Linha termo="Recebida em">{formatarDataHora(t.criadaEm)}</Linha>
+          <Linha termo={manual ? "Lançada em" : "Recebida em"}>
+            {formatarDataHora(t.criadaEm)}
+          </Linha>
         </dl>
       </section>
 
@@ -217,6 +247,24 @@ async function Conteudo({ params, searchParams }: PageProps<"/extrato/[id]">) {
         gerarLinkTemporario={gerarLinkTemporario}
         removerAnexo={removerAnexo}
       />
+
+      {manual && (
+        <div className="grid gap-4">
+          <EditarLancamento
+            transacaoId={t.id}
+            data={t.data}
+            descricao={t.descricao}
+            valorCentavos={t.valorCentavos}
+            editar={editarLancamentoManual}
+          />
+          <div className="w-fit">
+            <ApagarLancamento
+              transacaoId={t.id}
+              remover={removerLancamentoManual}
+            />
+          </div>
+        </div>
+      )}
     </article>
   );
 }

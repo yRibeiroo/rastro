@@ -116,7 +116,7 @@ export function BotaoConectarBanco({
           <Carregando
             contexto="aguardando"
             tamanho="inline"
-            rotulo="Aguardando a autorização no app do Sicredi"
+            rotulo="Aguardando a autorização no app do banco"
           />
           <PluggyConnect
             connectToken={estado.token}

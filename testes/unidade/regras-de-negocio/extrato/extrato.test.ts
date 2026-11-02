@@ -84,3 +84,20 @@ describe("ServicoDeExtrato", () => {
     ).toBeNull();
   });
 });
+
+describe("ocultar dos totais (ADR 0017)", () => {
+  it("marca e desmarca só na empresa do ctx; id inválido ou valor não booleano é recusado", async () => {
+    const transacoes = new TransacoesEmMemoria();
+    const t = umaTransacao();
+    transacoes.linhas.push(t);
+    const servico = criarServicoDeExtrato({ transacoes });
+    expect((await servico.ocultar(ctx, t.id, true)).oculta).toBe(true);
+    expect((await servico.ocultar(ctx, t.id, false)).oculta).toBe(false);
+    await expect(servico.ocultar(ctx, "x", true)).rejects.toMatchObject({
+      codigo: "nao_encontrado",
+    });
+    await expect(
+      servico.ocultar(ctx, t.id, "sim" as never),
+    ).rejects.toMatchObject({ codigo: "entrada_invalida" });
+  });
+});

@@ -51,7 +51,7 @@ export const EsquemaDoComprovante = z.object({
 });
 
 // Fixo para aproveitar o cache de prompt.
-export const INSTRUCOES_DO_LEITOR = `Você lê comprovantes financeiros brasileiros de uma pequena empresa: comprovante de Pix, boleto pago, NFC-e (cupom fiscal eletrônico), DANFE (NF-e) ou recibo.
+export const INSTRUCOES_DO_LEITOR = `Você lê comprovantes financeiros brasileiros de uma pessoa ou pequena empresa: comprovante de Pix, boleto pago, NFC-e (cupom fiscal eletrônico), DANFE (NF-e) ou recibo.
 Extraia do documento anexado:
 - "legivel": false se não for um comprovante ou se não der para ler o valor.
 - "tipo": pix, boleto, nfce, nfe, recibo ou outro.

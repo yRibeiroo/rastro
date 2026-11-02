@@ -417,3 +417,34 @@ describe("RF-32: importação interrompida", () => {
     expect(m.importacoes.linhas).toHaveLength(1);
   });
 });
+
+describe("LeitorDeExtratoOfx (outros bancos, ADR 0017)", () => {
+  it("fatura de cartão (CCACCTFROM, sem BANKID) vira conta cartao_de_credito; só os 4 últimos dígitos saem", () => {
+    const lido = leitor.ler(bytes("nubank-cartao-sgml.ofx"));
+    expect(lido.banco).toBe("NU PAGAMENTOS S.A.");
+    expect(lido.conta).toMatchObject({
+      tipo: "cartao_de_credito",
+      numeroFinal: "9876",
+      saldoCentavos: -14580,
+    });
+    expect(lido.conta.nome).toBe("Cartão NU PAGAMENTOS S.A. •••• 9876");
+    expect(JSON.stringify(lido)).not.toContain("5162924712349876");
+    expect(lido.periodo).toEqual({ de: "2026-09-10", ate: "2026-10-09" });
+    expect(lido.transacoes.map((t) => [t.descricao, t.valorCentavos])).toEqual([
+      ["Ifood *Restaurante Bom Sabor", -8990],
+      ["Netflix.Com", -5590],
+      ["Pagamento recebido", 120000],
+    ]);
+  });
+
+  it("sem <FI><ORG>, o nome do banco vem do BANKID (bancos digitais incluídos)", () => {
+    const lido = leitor.ler(bytes("c6-corrente-sem-org.ofx"));
+    expect(lido.banco).toBe("C6 Bank");
+    expect(lido.conta).toMatchObject({
+      tipo: "corrente",
+      nome: "C6 Bank •••• 4321",
+      saldoCentavos: 338000,
+    });
+    expect(lido.transacoes).toHaveLength(2);
+  });
+});

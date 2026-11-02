@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { FormularioDeEntrada } from "@/componentes/entrada/FormularioDeEntrada";
 import { LinhaTrilha } from "@/componentes/estrutura/CabecalhoDaPagina";
+import { carregarRecursos } from "@/regras-de-negocio/interface-web";
 import { enviarLinkMagico } from "@/regras-de-negocio/interface-web/acoes";
 import { LogoRastro } from "@/identidade-visual/LogoRastro";
 import { caminhoDaTrilha } from "@/identidade-visual/rastro-movimento";
@@ -17,6 +18,7 @@ async function Formulario({
   searchParams,
 }: Pick<PageProps<"/entrar">, "searchParams">) {
   const { estado, erro } = await searchParams;
+  const { cadastroAberto } = await carregarRecursos();
   // ?estado= só em desenvolvimento, para revisar os estados da tela.
   const forcar =
     process.env.NODE_ENV !== "production" &&
@@ -27,6 +29,7 @@ async function Formulario({
     <FormularioDeEntrada
       enviar={enviarLinkMagico}
       forcar={forcar}
+      escolherPerfil={cadastroAberto}
       avisoInicial={typeof erro === "string" ? (AVISOS[erro] ?? null) : null}
     />
   );

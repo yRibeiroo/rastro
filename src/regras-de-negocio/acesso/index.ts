@@ -1,5 +1,5 @@
 import "server-only";
-import type { ContextoDoUsuario, Id } from "../tipos";
+import type { ContextoDoUsuario, Id, PerfilDaEmpresa } from "../tipos";
 import type { CredencialDoLink } from "./servico";
 import type { LimiteDeRequisicoes } from "./limites";
 
@@ -11,8 +11,11 @@ export type {
 } from "./servico";
 export {
   criarServicoDeAcesso,
+  COOKIE_DO_PERFIL,
   emailAutorizado,
+  lerPerfil,
   NOME_PADRAO_DA_EMPRESA,
+  nomePadrao,
 } from "./servico";
 export type { ConsumirLimite, LimiteDeRequisicoes } from "./limites";
 export {
@@ -42,8 +45,9 @@ export async function enviarLinkMagico(
 /** Callback: troca o code/token_hash pela sessão, confere a allowlist (signOut se falhar) e chama garantir_empresa. */
 export async function confirmarEntrada(
   credencial: CredencialDoLink,
+  perfil?: PerfilDaEmpresa,
 ): Promise<{ empresaId: Id }> {
-  return (await acesso()).confirmarEntrada(credencial);
+  return (await acesso()).confirmarEntrada(credencial, perfil);
 }
 
 export async function sair(): Promise<void> {

@@ -26,7 +26,7 @@ export const EsquemaDaResposta = z.object({
 });
 
 // Fixo (sem datas nem dados variáveis) para aproveitar o cache de prompt.
-export const INSTRUCOES = `Você classifica transações bancárias de uma pequena empresa brasileira de serviços técnicos (refrigeração, elétrica, prevenção contra incêndio).
+export const INSTRUCOES = `Você classifica transações bancárias de uma pessoa ou de uma pequena empresa brasileira; as categorias disponíveis mostram qual é o caso.
 A mensagem do usuário é um JSON com:
 - "categorias": opções { codigo, nome, tipo }. tipo "entrada" só serve para valor positivo, "saida" só para valor negativo, "ambos" para os dois.
 - "centrosDeCusto": opções { codigo, nome } (pode vir vazio).

@@ -10,15 +10,20 @@ import { lerEstadoForcado } from "@/componentes/estados/estado-forcado";
 import { CabecalhoDaPagina } from "@/componentes/estrutura/CabecalhoDaPagina";
 import { botao } from "@/componentes/formulario/classes";
 import { hojeISO } from "@/ferramentas-internas/formatar-data";
+import { BarrasDeLimite } from "@/componentes/limites/BarrasDeLimite";
+import { GerenciarLimites } from "@/componentes/limites/GerenciarLimites";
 import {
   carregarCategoriasERegras,
   carregarExtrato,
+  carregarLimitesDeGasto,
 } from "@/regras-de-negocio/interface-web";
 import {
   atualizarCategoria,
   atualizarRegra,
   criarCategoria,
   criarRegra,
+  definirLimiteDeGasto,
+  removerLimiteDeGasto,
   removerRegra,
 } from "@/regras-de-negocio/interface-web/acoes";
 import { Carregando } from "@/identidade-visual/Carregando";
@@ -59,12 +64,13 @@ async function Conteudo({
   try {
     if (forcado === "erro") throw new Error("forçado");
     // ponytail: "uso no mês" conta só as 200 primeiras transações do mês; um agregado no backend resolve se passar disso.
-    const [{ categorias, regras, centrosDeCusto: centros }, doMes] =
+    const [{ categorias, regras, centrosDeCusto: centros }, doMes, limites] =
       await Promise.all([
         carregarCategoriasERegras(),
         carregarExtrato({ dataDe: `${hojeISO().slice(0, 7)}-01`, limite: 200 }),
+        carregarLimitesDeGasto(),
       ]);
-    dados = { categorias, centros, regras, doMes };
+    dados = { categorias, centros, regras, doMes, limites };
   } catch (erro) {
     unstable_rethrow(erro);
     return (
@@ -80,12 +86,12 @@ async function Conteudo({
     );
   }
 
-  const { categorias, centros, regras, doMes } = dados;
+  const { categorias, centros, regras, doMes, limites } = dados;
   if (forcado === "vazio" || categorias.length === 0)
     return (
       <Vazio
-        titulo="Comece com as categorias de uma empresa de serviços"
-        descricao="Crie a primeira categoria abaixo. As sugestões padrão (Combustível, Material elétrico, Ferramentas, Folha, Impostos, Receita de serviços) entram quando o banco é configurado."
+        titulo="Comece criando suas categorias"
+        descricao="Crie a primeira categoria abaixo. As sugestões padrão do seu perfil (pessoal ou empresa) entram quando a conta é criada."
         acao={
           <div className="w-full max-w-xl pt-4">
             <GerenciarCategorias
@@ -119,6 +125,25 @@ async function Conteudo({
         atualizarRegra={atualizarRegra}
         removerRegra={removerRegra}
       />
+      <div className="grid gap-6 lg:col-span-2 lg:grid-cols-[1fr_1.15fr] lg:gap-16">
+        <GerenciarLimites
+          categorias={categorias}
+          limites={limites}
+          definir={definirLimiteDeGasto}
+          remover={removerLimiteDeGasto}
+        />
+        {limites.length > 0 && (
+          <section
+            aria-labelledby="limites-uso"
+            className="grid content-start gap-4"
+          >
+            <h2 id="limites-uso" className="text-xl font-semibold">
+              Uso neste mês
+            </h2>
+            <BarrasDeLimite limites={limites} />
+          </section>
+        )}
+      </div>
     </div>
   );
 }

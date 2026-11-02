@@ -99,7 +99,7 @@ async function Conteudo({
       <div className="grid gap-6">
         <Vazio
           titulo="Nenhum centro de custo ainda"
-          descricao="Crie um centro para cada serviço (ar-condicionado, elétrica, prevenção contra incêndio) e um para o administrativo."
+          descricao="Crie um centro para cada linha de negócio, serviço ou projeto (ex.: loja, delivery, obra da rua 10) e um para o administrativo."
         />
         <div className="max-w-xl">
           <NovoCentro criar={criarCentroDeCusto} />

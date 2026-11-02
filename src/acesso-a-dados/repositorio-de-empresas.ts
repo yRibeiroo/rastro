@@ -1,4 +1,5 @@
 import "server-only";
+import type { PerfilDaEmpresa } from "@/regras-de-negocio/tipos";
 import type { RepositorioDeEmpresas } from "./contratos";
 import { dadosOuFalha, falhaDoBanco } from "./erros-do-banco";
 import type { ClienteDoBanco } from "./supabase/cliente-do-usuario";
@@ -6,9 +7,15 @@ import type { ClienteDoBanco } from "./supabase/cliente-do-usuario";
 export class RepositorioDeEmpresasSupabase implements RepositorioDeEmpresas {
   constructor(private readonly banco: ClienteDoBanco) {}
 
-  async garantirEmpresaDoUsuario(nomeSugerido: string) {
+  async garantirEmpresaDoUsuario(
+    nomeSugerido: string,
+    perfil?: PerfilDaEmpresa,
+  ) {
     return dadosOuFalha(
-      await this.banco.rpc("garantir_empresa", { p_nome: nomeSugerido }),
+      await this.banco.rpc("garantir_empresa", {
+        p_nome: nomeSugerido,
+        ...(perfil ? { p_perfil: perfil } : {}),
+      }),
     );
   }
 

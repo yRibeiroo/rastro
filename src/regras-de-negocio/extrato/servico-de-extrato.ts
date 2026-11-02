@@ -33,6 +33,12 @@ export interface ServicoDeExtrato {
     filtros: FiltrosDoExtrato,
   ): Promise<PaginaDoExtrato>;
   obter(ctx: ContextoDoUsuario, transacaoId: Id): Promise<Transacao>; // 'nao_encontrado'
+  /** Tira (ou devolve) a transação dos totais do painel. */
+  ocultar(
+    ctx: ContextoDoUsuario,
+    transacaoId: Id,
+    oculta: boolean,
+  ): Promise<Transacao>;
 }
 
 export const LIMITE_PADRAO_DO_EXTRATO = 50;
@@ -106,6 +112,13 @@ export function criarServicoDeExtrato(deps: {
       if (!transacao)
         throw new ErroDeNegocio("nao_encontrado", "Transação não encontrada.");
       return transacao;
+    },
+
+    async ocultar(ctx, transacaoId, oculta) {
+      if (!z.uuid().safeParse(transacaoId).success)
+        throw new ErroDeNegocio("nao_encontrado", "Transação não encontrada.");
+      if (typeof oculta !== "boolean") throw entradaInvalida();
+      return deps.transacoes.definirOculta(ctx.empresaId, transacaoId, oculta);
     },
   };
 }

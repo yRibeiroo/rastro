@@ -93,7 +93,11 @@ describe("montagem (raiz de composição)", () => {
         "ctx",
         "extrato",
         "importacao",
+        "exportacao",
+        "lancamentos",
+        "limitesDeGasto",
         "painel",
+        "previsao",
         "sincronizacao",
       ].sort(),
     );

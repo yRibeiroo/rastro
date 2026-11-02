@@ -90,6 +90,7 @@ export function umaTransacao(parcial: Partial<Transacao> = {}): Transacao {
     regraId: null,
     confiancaIa: null,
     categorizacaoAutomaticaEm: null,
+    oculta: false,
     criadaEm: new Date("2026-10-01T12:00:00Z"),
     atualizadaEm: new Date("2026-10-01T12:00:00Z"),
     ...parcial,
@@ -264,6 +265,13 @@ export class TransacoesEmMemoria implements RepositorioDeTransacoes {
         !t.categoriaDefinidaPeloUsuario
       )
         t.categorizacaoAutomaticaEm = new Date();
+  }
+  async definirOculta(empresaId: string, id: string, oculta: boolean) {
+    const t = this.linhas.find(
+      (x) => x.id === id && x.empresaId === empresaId,
+    )!;
+    t.oculta = oculta;
+    return { ...t };
   }
   async definirCategoriaPeloUsuario(
     empresaId: string,

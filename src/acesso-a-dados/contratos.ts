@@ -25,18 +25,27 @@ import type {
   ErroDaConexao,
   Id,
   ImportacaoDeExtrato,
+  LimiteDeGasto,
+  OcorrenciaPrevista,
   PapelNaEmpresa,
+  PerfilDaEmpresa,
+  Recorrencia,
   Regra,
   SituacaoDoComprovante,
   StatusDaConexao,
   TipoDeCategoria,
+  TipoDeConta,
   Transacao,
 } from "@/regras-de-negocio/tipos";
 
 // Contratos dos repositórios (contratos.md §10). Todo método recebe empresaId explicitamente.
 
 export interface RepositorioDeEmpresas {
-  garantirEmpresaDoUsuario(nomeSugerido: string): Promise<Id>; // rpc garantir_empresa
+  /** rpc garantir_empresa. O perfil só vale na criação (ADR 0017). */
+  garantirEmpresaDoUsuario(
+    nomeSugerido: string,
+    perfil?: PerfilDaEmpresa,
+  ): Promise<Id>;
   obterMembershipDoUsuario(
     usuarioId: Id,
   ): Promise<{ empresaId: Id; papel: PapelNaEmpresa } | null>;
@@ -121,6 +130,12 @@ export interface RepositorioDeTransacoes {
     empresaId: Id,
     transacaoIds: readonly Id[],
   ): Promise<void>;
+  /** "Ocultar dos totais" (ADR 0017): só a coluna oculta. */
+  definirOculta(
+    empresaId: Id,
+    transacaoId: Id,
+    oculta: boolean,
+  ): Promise<Transacao>;
   definirCategoriaPeloUsuario(
     empresaId: Id,
     transacaoId: Id,
@@ -299,4 +314,66 @@ export interface RepositorioDeComprovantes {
   ): Promise<Comprovante>;
   /** Apaga também a linha do anexo (cascade); o arquivo no Storage fica com o serviço. */
   remover(empresaId: Id, comprovanteId: Id): Promise<void>;
+}
+
+/** Contas e lançamentos manuais (Fase 2, ADR 0017): RPCs security definer que conferem a membership. */
+export interface RepositorioDeLancamentos {
+  criarContaManual(
+    empresaId: Id,
+    dados: { nome: string; tipo: TipoDeConta; saldoInicialCentavos: Centavos },
+  ): Promise<Id>;
+  lancar(
+    empresaId: Id,
+    dados: {
+      contaId: Id;
+      data: DataISO;
+      descricao: string;
+      valorCentavos: Centavos;
+      categoriaId: Id | null;
+      centroDeCustoId: Id | null;
+    },
+  ): Promise<Id>;
+  remover(empresaId: Id, transacaoId: Id): Promise<void>;
+  /** O saldo da conta recebe a diferença. */
+  editar(
+    empresaId: Id,
+    transacaoId: Id,
+    dados: { data: DataISO; descricao: string; valorCentavos: Centavos },
+  ): Promise<void>;
+}
+
+/** Recorrências (Fase 4, ADR 0017). Sessão do usuário: RLS na tabela, RPC para a baixa. */
+export interface RepositorioDeRecorrencias {
+  listar(empresaId: Id): Promise<Recorrencia[]>;
+  criar(
+    empresaId: Id,
+    dados: Omit<Recorrencia, "id" | "empresaId" | "ativa">,
+  ): Promise<Recorrencia>;
+  encerrar(empresaId: Id, recorrenciaId: Id): Promise<void>;
+  atualizar(
+    empresaId: Id,
+    recorrenciaId: Id,
+    dados: Pick<Recorrencia, "descricao" | "valorCentavos" | "fim">,
+  ): Promise<Recorrencia>;
+  /** rpc ocorrencias_previstas: não baixadas entre de e ate (até ~2 anos). */
+  ocorrencias(
+    empresaId: Id,
+    de: DataISO,
+    ate: DataISO,
+  ): Promise<OcorrenciaPrevista[]>;
+  /** rpc baixar_ocorrencia: devolve o id do lançamento criado (conta manual) ou null. */
+  baixar(
+    empresaId: Id,
+    recorrenciaId: Id,
+    data: DataISO,
+    lancar: boolean,
+  ): Promise<Id | null>;
+}
+
+/** Limites de gasto por categoria (Fase 6, ADR 0017). Sessão do usuário (RLS). */
+export interface RepositorioDeLimitesDeGasto {
+  listar(empresaId: Id): Promise<LimiteDeGasto[]>;
+  /** Cria ou troca o valor do limite da categoria. */
+  definir(empresaId: Id, limite: LimiteDeGasto): Promise<LimiteDeGasto>;
+  remover(empresaId: Id, categoriaId: Id): Promise<void>;
 }

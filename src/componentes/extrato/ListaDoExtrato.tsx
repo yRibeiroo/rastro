@@ -165,6 +165,11 @@ export function ListaDoExtrato({
                               pendente no banco
                             </span>
                           )}
+                          {t.oculta && (
+                            <span className="rounded-full bg-superficie-2 px-2 font-medium">
+                              fora dos totais
+                            </span>
+                          )}
                           {comAnexo.has(t.id) && (
                             <span className="inline-flex items-center gap-0.5">
                               <Icone nome="clipe" className="size-3.5" />

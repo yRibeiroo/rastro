@@ -48,10 +48,10 @@ export function ResultadoPorCentro({
               <strong className="font-semibold text-texto">
                 {melhor.nome}
               </strong>{" "}
-              é o serviço que mais dá lucro no período.
+              é o centro que mais dá lucro no período.
             </>
           ) : (
-            "Nenhum serviço teve lucro no período."
+            "Nenhum centro teve lucro no período."
           )}
         </p>
       </figcaption>

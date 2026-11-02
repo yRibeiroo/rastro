@@ -8,6 +8,12 @@ export type Centavos = number; // inteiro; negativo = saída
 
 export type Sentido = "entrada" | "saida";
 export type PapelNaEmpresa = "dono" | "membro";
+/** ADR 0017: define as categorias e regras iniciais da conta. */
+export type PerfilDaEmpresa = "pessoal" | "empresa";
+export const PERFIS_DA_EMPRESA: readonly PerfilDaEmpresa[] = [
+  "pessoal",
+  "empresa",
+];
 
 export interface Empresa {
   id: Id;
@@ -38,7 +44,7 @@ export interface ErroDaConexao {
 export interface Conexao {
   id: Id;
   empresaId: Id;
-  provedor: "pluggy" | "arquivo"; // 'arquivo' = extrato importado (ADR 0016)
+  provedor: "pluggy" | "arquivo" | "manual"; // 'arquivo' = extrato importado (ADR 0016); 'manual' = contas manuais (ADR 0017)
   idExterno: string;
   banco: string | null;
   status: StatusDaConexao;
@@ -49,7 +55,8 @@ export interface Conexao {
   atualizadaEm: Date;
 }
 
-export type TipoDeConta = "corrente" | "poupanca" | "cartao_de_credito";
+export type TipoDeConta =
+  "corrente" | "poupanca" | "cartao_de_credito" | "dinheiro"; // dinheiro = carteira (manual)
 
 export interface Conta {
   id: Id;
@@ -86,6 +93,8 @@ export interface Transacao {
   regraId: Id | null;
   confiancaIa: number | null; // 0..1, só quando categoriaOrigem = 'ia'
   categorizacaoAutomaticaEm: Date | null;
+  /** Fora dos totais do painel (continua no extrato e no saldo). */
+  oculta: boolean;
   criadaEm: Date;
   atualizadaEm: Date;
 }
@@ -200,4 +209,52 @@ export interface Comprovante extends Omit<
   alerta: AlertaDoComprovante | null;
   criadoEm: Date;
   atualizadoEm: Date;
+}
+
+// ── Recorrências e saldo previsto (Fase 4, ADR 0017) ─────────────────────────
+
+export type FrequenciaDaRecorrencia = "semanal" | "mensal" | "anual";
+
+export interface Recorrencia {
+  id: Id;
+  empresaId: Id;
+  contaId: Id;
+  descricao: string;
+  /** Negativo = a pagar. */
+  valorCentavos: Centavos;
+  categoriaId: Id | null;
+  frequencia: FrequenciaDaRecorrencia;
+  inicio: DataISO;
+  fim: DataISO | null;
+  ativa: boolean;
+}
+
+/** Ocorrência ainda não baixada (calculada a partir da regra). */
+export interface OcorrenciaPrevista {
+  recorrenciaId: Id;
+  data: DataISO;
+  descricao: string;
+  valorCentavos: Centavos;
+  contaId: Id;
+  tipoDaConta: TipoDeConta;
+  contaManual: boolean;
+  categoriaId: Id | null;
+}
+
+// ── Limites de gasto por categoria (Fase 6, ADR 0017) ────────────────────────
+
+export interface LimiteDeGasto {
+  categoriaId: Id;
+  valorMensalCentavos: Centavos;
+}
+
+export type EstadoDoLimite = "ok" | "atencao" | "estourado";
+
+export interface SituacaoDoLimite extends LimiteDeGasto {
+  nome: string;
+  /** Gasto do mês corrente (positivo), sem ocultas, pendentes e transferências. */
+  gastoCentavos: Centavos;
+  /** 0..∞ (1 = 100%). */
+  proporcao: number;
+  estado: EstadoDoLimite;
 }

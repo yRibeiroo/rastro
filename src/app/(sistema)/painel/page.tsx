@@ -11,9 +11,12 @@ import { botao } from "@/componentes/formulario/classes";
 import { GraficoEntradasSaidas } from "@/componentes/graficos/GraficoEntradasSaidas";
 import { ParaOndeFoi } from "@/componentes/graficos/ParaOndeFoi";
 import { ResultadoPorCentro } from "@/componentes/graficos/ResultadoPorCentro";
+import { BarrasDeLimite } from "@/componentes/limites/BarrasDeLimite";
 import {
   carregarConexoes,
+  carregarLimitesDeGasto,
   carregarPainel,
+  carregarPrevisao,
   carregarRecursos,
   carregarSituacaoDoExtrato,
   contarAlertas,
@@ -25,6 +28,7 @@ import {
   formatarData,
   formatarDataHora,
   formatarTempoRelativo,
+  hojeISO,
 } from "@/ferramentas-internas/formatar-data";
 import { Carregando } from "@/identidade-visual/Carregando";
 import {
@@ -45,7 +49,7 @@ export default function Painel({ searchParams }: PageProps<"/painel">) {
     <>
       <CabecalhoDaPagina
         titulo="Painel"
-        descricao="Quanto entrou, para onde foi e qual serviço dá lucro."
+        descricao="Quanto entrou, para onde foi e o que sobrou."
       />
       <Suspense fallback={carregando}>
         <ConteudoDoPainel searchParams={searchParams} />
@@ -70,25 +74,51 @@ async function ConteudoDoPainel({
   try {
     if (forcado === "erro") throw new Error("forçado");
     // O gráfico mensal sempre mostra pelo menos 6 meses; o resto segue o período escolhido.
-    const [conexoes, { openFinance }, resumo, historico, situacao, alertas] =
-      await Promise.all([
-        carregarConexoes(),
-        carregarRecursos(),
-        carregarPainel(periodo),
-        carregarPainel(periodoDe(chave === "12m" ? "12m" : "6m")),
-        carregarSituacaoDoExtrato(),
-        contarAlertas(),
-      ]);
-    const daFonte = conexoes.filter((c) =>
-      openFinance ? c.provedor === "pluggy" : c.provedor !== "pluggy",
+    const [
+      conexoes,
+      { openFinance },
+      resumo,
+      historico,
+      situacao,
+      alertas,
+      previsto,
+      limites,
+    ] = await Promise.all([
+      carregarConexoes(),
+      carregarRecursos(),
+      carregarPainel(periodo),
+      carregarPainel(periodoDe(chave === "12m" ? "12m" : "6m")),
+      carregarSituacaoDoExtrato(),
+      contarAlertas(),
+      // Extra: se a previsão falhar, o painel continua (só some a linha).
+      carregarPrevisao(30).then(
+        (p) => p.previsao,
+        (erro) => {
+          unstable_rethrow(erro);
+          return null;
+        },
+      ),
+      // Idem para os limites do mês.
+      carregarLimitesDeGasto().catch((erro: unknown) => {
+        unstable_rethrow(erro);
+        return [];
+      }),
+    ]);
+    const conexao = conexoes.find(
+      (c) => c.provedor === (openFinance ? "pluggy" : "arquivo"),
     );
+    // Só lançamentos manuais (ADR 0017) também alimentam o painel.
+    const temDados = !!conexao || conexoes.some((c) => c.provedor === "manual");
     dados = {
-      conexao: daFonte[0] as (typeof daFonte)[number] | undefined,
+      conexao,
+      temDados,
       openFinance,
       situacao,
       semTransacao: alertas.comprovantesSemTransacao,
       resumo,
       historico,
+      previsto,
+      limites,
     };
   } catch (erro) {
     unstable_rethrow(erro);
@@ -105,9 +135,19 @@ async function ConteudoDoPainel({
     );
   }
 
-  const { conexao, openFinance, situacao, semTransacao, resumo, historico } =
-    dados;
-  if (forcado === "vazio" || !conexao)
+  const {
+    conexao,
+    temDados,
+    openFinance,
+    situacao,
+    semTransacao,
+    resumo,
+    historico,
+    previsto,
+    limites,
+  } = dados;
+  const mesAtual = `${hojeISO().slice(0, 7)}-01`;
+  if (forcado === "vazio" || !temDados)
     return <SemConexao openFinance={openFinance} />;
   const entradas = resumo.fluxoMensal.reduce(
     (s, m) => s + m.entradasCentavos,
@@ -117,13 +157,17 @@ async function ConteudoDoPainel({
   const extrato = (extra: string) =>
     `/extrato?de=${periodo.de}&ate=${periodo.ate}${extra}`;
   const semMovimento = entradas === 0 && saidas === 0;
+  // Sem nenhum centro de custo (ex.: perfil pessoal) o bloco seria só "Sem centro": não mostra.
+  const usaCentros = resumo.resultadoPorCentroDeCusto.some(
+    (c) => c.centroDeCustoId !== null,
+  );
 
   return (
     <div className="grid gap-12 pb-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <SeletorDePeriodo atual={chave} caminho="/painel" />
         {openFinance ? (
-          conexao.ultimaSincronizacaoEm && (
+          conexao?.ultimaSincronizacaoEm && (
             <p className="text-sm text-texto-suave">
               {conexao.banco} · sincronizou{" "}
               {formatarTempoRelativo(conexao.ultimaSincronizacaoEm)}
@@ -167,6 +211,18 @@ async function ConteudoDoPainel({
               Saldo do extrato em {formatarDataHora(resumo.saldoAtualizadoEm)}
             </p>
           )}
+          {previsto && previsto.ocorrencias.length > 0 && (
+            <Link
+              href="/previsao"
+              className="text-sm text-texto-suave underline-offset-4 hover:underline"
+            >
+              Previsto em 30 dias:{" "}
+              <ValorMonetario
+                centavos={previsto.saldoPrevistoCentavos}
+                className="font-semibold text-texto"
+              />
+            </Link>
+          )}
         </div>
         <dl className="flex flex-wrap gap-x-8 gap-y-3 text-sm md:justify-end">
           <div className="grid gap-0.5">
@@ -189,6 +245,26 @@ async function ConteudoDoPainel({
           </div>
         </dl>
       </section>
+
+      {limites.length > 0 && (
+        <section aria-labelledby="limites-do-mes" className="grid gap-4">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 id="limites-do-mes" className="text-xl font-semibold">
+              Limites do mês
+            </h2>
+            <Link
+              href="/categorias#limites"
+              className="text-sm text-texto-suave underline-offset-4 hover:underline"
+            >
+              Ajustar limites
+            </Link>
+          </div>
+          <BarrasDeLimite
+            limites={limites}
+            hrefDoExtrato={(id) => `/extrato?de=${mesAtual}&categoria=${id}`}
+          />
+        </section>
+      )}
 
       {semTransacao > 0 && (
         <p className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-m bg-alerta-suave px-4 py-3 text-sm">
@@ -235,17 +311,25 @@ async function ConteudoDoPainel({
           }
         />
       ) : (
-        <div className="grid gap-12 lg:grid-cols-[1.25fr_1fr] lg:gap-16">
+        <div
+          className={
+            usaCentros
+              ? "grid gap-12 lg:grid-cols-[1.25fr_1fr] lg:gap-16"
+              : "grid"
+          }
+        >
           <ParaOndeFoi
             gastos={resumo.gastosPorCategoria}
             hrefDaCategoria={(id) =>
               extrato(`&sentido=saida&categoria=${id ?? "nenhuma"}`)
             }
           />
-          <ResultadoPorCentro
-            centros={resumo.resultadoPorCentroDeCusto}
-            hrefSemCentro={extrato("&centro=nenhum")}
-          />
+          {usaCentros && (
+            <ResultadoPorCentro
+              centros={resumo.resultadoPorCentroDeCusto}
+              hrefSemCentro={extrato("&centro=nenhum")}
+            />
+          )}
         </div>
       )}
 
@@ -258,7 +342,7 @@ function SemConexao({ openFinance }: { openFinance: boolean }) {
   if (openFinance)
     return (
       <Vazio
-        titulo="Conecte a conta do Sicredi para ver para onde vai cada real"
+        titulo="Conecte seu banco para ver para onde vai cada real"
         descricao="A conexão é feita pelo Open Finance: o Rastro só lê o extrato, nunca movimenta dinheiro."
         acao={
           <Link href="/conexoes-bancarias" className={botao.primario}>
@@ -269,8 +353,8 @@ function SemConexao({ openFinance }: { openFinance: boolean }) {
     );
   return (
     <Vazio
-      titulo="Importe o extrato do Sicredi para ver para onde vai cada real"
-      descricao="Exporte o arquivo OFX no Internet Banking e envie aqui. Reenviar o mesmo período não duplica nada."
+      titulo="Importe o extrato do seu banco para ver para onde vai cada real"
+      descricao="Exporte o arquivo OFX no Internet Banking e envie aqui, ou lance à mão em Contas. Reenviar o mesmo período não duplica nada."
       acao={
         <Link href="/importar" className={botao.primario}>
           Importar extrato
