@@ -17,6 +17,7 @@ import type {
   NovoLancamento,
 } from "../lancamentos";
 import type { EdicaoDeRecorrencia, NovaRecorrencia } from "../previsao";
+import { MENSAGEM_DA_DEMO, modoDemo } from "@/configuracao/modo-demo";
 import { ErroDeNegocio, type ResultadoDaAcao } from "../erros";
 import { servicosDoUsuario } from "../montagem";
 import type {
@@ -42,11 +43,17 @@ async function mutacao<T>(
   nome: string,
   operacao: (s: Awaited<ReturnType<typeof servicosDoUsuario>>) => Promise<T>,
 ): Promise<ResultadoDaAcao<T>> {
-  const resultado = await executarAcao(nome, async () =>
-    operacao(await servicosDoUsuario()),
-  );
+  const resultado = await executarAcao(nome, async () => {
+    recusarNaDemo();
+    return operacao(await servicosDoUsuario());
+  });
   if (resultado.ok) refresh();
   return resultado;
+}
+
+/** MODO_DEMO: toda escrita para aqui, antes de tocar em qualquer serviço. */
+function recusarNaDemo(): void {
+  if (modoDemo()) throw new ErroDeNegocio("somente_leitura", MENSAGEM_DA_DEMO);
 }
 
 // ── Entrada ─────────────────────────────────────────────────────────────────
@@ -58,6 +65,7 @@ export async function enviarLinkMagico(
   perfil?: string,
 ): Promise<ResultadoDaAcao<null>> {
   return executarAcao("enviarLinkMagico", async () => {
+    recusarNaDemo();
     if (typeof email !== "string")
       throw new ErroDeNegocio("entrada_invalida", "Digite um e-mail válido.");
     await enviarLink(email, ipDaRequisicao(await headers()));
@@ -76,6 +84,8 @@ export async function enviarLinkMagico(
 
 /** Encerra a sessão e volta para /entrar. */
 export async function sair(): Promise<void> {
+  // Na demo a sessão é uma só, do servidor: encerrá-la derrubaria todos os visitantes.
+  if (modoDemo()) redirect("/painel");
   try {
     await sairDaSessao();
   } finally {
@@ -90,6 +100,7 @@ export async function iniciarConexao(opcoes?: {
   conexaoIdParaReconectar?: Id;
 }): Promise<ResultadoDaAcao<{ token: string }>> {
   return executarAcao("iniciarConexao", async () => {
+    recusarNaDemo();
     const s = await servicosDoUsuario();
     return s.conexoes.iniciarConexao(s.ctx, opcoes);
   });

@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { ambientePublico } from "@/configuracao/ambiente-publico";
+import { modoDemo } from "@/configuracao/modo-demo";
 
 // Next 16: o antigo middleware. Renova a sessão do Supabase e manda para /entrar quem não está
 // logado ou não está na allowlist (ADR 0008). Server Actions e páginas revalidam por conta própria.
@@ -15,6 +16,8 @@ function emailNaAllowlist(email: unknown): boolean {
 }
 
 export async function proxy(requisicao: NextRequest) {
+  // Demo pública: sem login. A sessão única fica no servidor (cliente-do-usuario.ts).
+  if (modoDemo()) return NextResponse.next({ request: requisicao });
   let resposta = NextResponse.next({ request: requisicao });
   const { NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY } =
     ambientePublico();

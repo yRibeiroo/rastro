@@ -146,3 +146,36 @@ Para desligar de novo: `RECURSO_OPEN_FINANCE=0` e redeploy. O webhook passa a re
 4. **Login não chega:** confira o SMTP próprio, as Redirect URLs e se o e-mail está em `EMAIL_AUTORIZADO`.
 5. **Suspeita de vazamento:** siga a seção 4 imediatamente para o segredo afetado.
 6. **Projeto pausado (Free):** Supabase → projeto → **Restore**. Para evitar, passe para o Pro.
+
+## 10. Demo pública (dados fictícios)
+
+A demo é um **segundo projeto** na Vercel e no Supabase. Os dados reais nunca dividem banco com ela.
+
+Como funciona com `MODO_DEMO=1`:
+
+- Não há login: o servidor entra uma vez como o usuário da demonstração e guarda a sessão em memória. O visitante não recebe token nenhum.
+- Toda escrita é recusada no app (código `somente_leitura`) e uma faixa avisa que os dados são fictícios.
+- O banco da demo também é trancado por `supabase/demo/somente-leitura.sql` (segunda tranca).
+
+Montar o banco de demonstração, nesta ordem:
+
+1. Aplicar todas as migrações de `supabase/migrations/`.
+2. Rodar `supabase/seed.sql` (empresa fictícia de climatização, 120 transações nos últimos 6 meses).
+3. Criar o usuário da demo (e-mail e senha) e vinculá-lo: `select privado.dev_vincular_usuario_a_demo('<e-mail>');`
+4. Rodar `supabase/demo/somente-leitura.sql`. **Nunca** rode este arquivo em produção.
+
+Variáveis do projeto de demonstração na Vercel:
+
+| Variável                                                           | Valor                                         |
+| ------------------------------------------------------------------ | --------------------------------------------- |
+| `MODO_DEMO`                                                        | `1`                                           |
+| `DEMO_EMAIL`, `DEMO_SENHA`                                         | o usuário criado no passo 3                   |
+| `EMAIL_AUTORIZADO`                                                 | o mesmo e-mail da demo                        |
+| `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | do projeto de **demonstração**                |
+| `SUPABASE_SERVICE_ROLE_KEY`                                        | do projeto de **demonstração**                |
+| `URL_DO_SITE`                                                      | a URL da demo, sem barra no fim               |
+| `RECURSO_OPEN_FINANCE`, `RECURSO_CADASTRO_ABERTO`                  | `0`                                           |
+
+O seed usa datas relativas ao dia em que roda e não sobrescreve o que já existe. Para renovar as datas, apague a empresa fictícia (`delete from public.empresas where id = '00000000-0000-4000-a000-000000000001';`) e repita os passos 2 a 4.
+
+`MODO_DEMO` é lido também no build: ao mudar a variável, faça um novo deploy.

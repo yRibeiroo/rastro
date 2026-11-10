@@ -4,6 +4,7 @@ import {
   COOKIE_DO_PERFIL,
   lerPerfil,
 } from "@/regras-de-negocio/acesso";
+import { modoDemo } from "@/configuracao/modo-demo";
 import { ErroDeNegocio, registrarFalha } from "@/regras-de-negocio/erros";
 
 // Callback do link mágico (ADR 0008): troca code/token_hash pela sessão, confere a allowlist
@@ -28,6 +29,9 @@ export async function GET(requisicao: NextRequest) {
   const tipo = parametros.get("type");
   const ir = (caminho: string) =>
     NextResponse.redirect(new URL(caminho, requisicao.url));
+
+  // Demo: trocar um link por sessão aqui substituiria a sessão única do servidor.
+  if (modoDemo()) return ir("/painel");
 
   // ADR 0017: perfil escolhido no formulário (mesmo navegador). Outro aparelho → padrão 'empresa'.
   const perfil = lerPerfil(requisicao.cookies.get(COOKIE_DO_PERFIL)?.value);
