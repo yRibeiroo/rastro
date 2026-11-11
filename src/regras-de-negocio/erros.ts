@@ -14,7 +14,8 @@ export type CodigoDeErro =
   | "recurso_desligado" // feature flag
   | "anexo_invalido"
   | "arquivo_invalido" // extrato/comprovante ilegível ou fora do formato
-  | "comprovante_duplicado"; // mesma chave de acesso já enviada
+  | "comprovante_duplicado" // mesma chave de acesso já enviada
+  | "somente_leitura"; // MODO_DEMO: nenhuma escrita
 
 export class ErroDeNegocio extends Error {
   constructor(

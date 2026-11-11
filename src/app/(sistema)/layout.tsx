@@ -11,6 +11,7 @@ import {
   SituacaoDoExtratoNoMenu,
   StatusDaConexao,
 } from "@/componentes/estrutura/StatusDaConexao";
+import { modoDemo } from "@/configuracao/modo-demo";
 import {
   carregarConexoes,
   carregarRecursos,
@@ -124,6 +125,14 @@ export default async function LayoutDoSistema({
         />
       </Suspense>
       <div className="flex min-w-0 flex-1 flex-col">
+        {modoDemo() && (
+          <p
+            role="note"
+            className="bg-alerta-suave px-4 py-2 text-center text-sm font-medium text-alerta"
+          >
+            Demonstração com dados fictícios. Somente leitura.
+          </p>
+        )}
         <Suspense fallback={null}>
           <Aviso openFinance={openFinance} />
         </Suspense>

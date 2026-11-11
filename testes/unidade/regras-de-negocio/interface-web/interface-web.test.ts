@@ -164,6 +164,32 @@ describe("Server Actions", () => {
     expect(navegacao.redirect).toHaveBeenCalledWith("/entrar");
   });
 
+  it("MODO_DEMO: escritas devolvem somente_leitura sem tocar nos serviços; sair não encerra a sessão", async () => {
+    vi.stubEnv("MODO_DEMO", "1");
+    try {
+      const montagem = await import("@/regras-de-negocio/montagem");
+      vi.mocked(montagem.servicosDoUsuario).mockClear();
+      const recusado = { ok: false, erro: { codigo: "somente_leitura" } };
+      expect(
+        await acoes.corrigirCategoria(novoId(), {
+          categoriaId: null,
+          centroDeCustoId: null,
+        }),
+      ).toMatchObject(recusado);
+      expect(await acoes.iniciarConexao()).toMatchObject(recusado);
+      expect(await acoes.enviarLinkMagico("a@b.co")).toMatchObject(recusado);
+      expect(montagem.servicosDoUsuario).not.toHaveBeenCalled();
+      expect(refresh).not.toHaveBeenCalled();
+      await expect(acoes.sair()).rejects.toThrow("NEXT_REDIRECT");
+      expect(navegacao.redirect).toHaveBeenCalledWith("/painel");
+      expect(
+        (servicos.acesso as { sair: ReturnType<typeof vi.fn> }).sair,
+      ).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it("sem sessão: toda ação devolve nao_autenticado, sem executar nada", async () => {
     servicos.atual = new ErroDeNegocio(
       "nao_autenticado",

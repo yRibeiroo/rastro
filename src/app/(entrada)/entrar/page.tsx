@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { Suspense } from "react";
+import { modoDemo } from "@/configuracao/modo-demo";
 import { FormularioDeEntrada } from "@/componentes/entrada/FormularioDeEntrada";
 import { LinhaTrilha } from "@/componentes/estrutura/CabecalhoDaPagina";
 import { carregarRecursos } from "@/regras-de-negocio/interface-web";
@@ -36,6 +38,7 @@ async function Formulario({
 }
 
 export default function Entrar({ searchParams }: PageProps<"/entrar">) {
+  if (modoDemo()) redirect("/painel"); // demo: não há login
   return (
     <main
       id="conteudo"
