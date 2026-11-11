@@ -11,6 +11,7 @@ export type CodigoDeErro =
   | "conexao_nao_encontrada" // itemId não existe na aplicação Pluggy ou é de outra empresa
   | "provedor_indisponivel" // Pluggy fora ou erro 5xx
   | "classificador_indisponivel"
+  | "assistente_indisponivel"
   | "recurso_desligado" // feature flag
   | "anexo_invalido"
   | "arquivo_invalido" // extrato/comprovante ilegível ou fora do formato

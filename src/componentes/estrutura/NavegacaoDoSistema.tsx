@@ -12,6 +12,12 @@ type Item = { href: string; rotulo: string; curto: string; icone: NomeDoIcone };
 
 const ITENS: Item[] = [
   { href: "/painel", rotulo: "Painel", curto: "Painel", icone: "painel" },
+  {
+    href: "/assistente",
+    rotulo: "Assistente",
+    curto: "Assistente",
+    icone: "assistente",
+  },
   { href: "/extrato", rotulo: "Extrato", curto: "Extrato", icone: "extrato" },
   {
     href: "/contas",

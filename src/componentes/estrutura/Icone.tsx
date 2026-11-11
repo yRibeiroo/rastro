@@ -28,6 +28,7 @@ const TRACOS = {
   importar: "M10 3.5v9M6 8.5l4 4 4-4M3.5 13v3.5h13V13",
   contas: "M3.5 6.5h13v9.5h-13zM3.5 6.5l9-3v3M13 11.25h.01",
   previsao: "M3.5 5h13v11.5h-13zM3.5 8.5h13M7 3.5v3M13 3.5v3M7 12l2 2 4-4",
+  assistente: "M3.5 4.5h13v9h-7l-3.5 3v-3h-2.5zM7 8h6M7 10.5h3.5",
   atencao: "M10 3.5L17 16H3zM10 8.5v3.5M10 14.25h.01",
 } as const;
 

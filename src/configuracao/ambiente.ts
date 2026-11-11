@@ -42,6 +42,8 @@ const esquemas = {
   RECURSO_CADASTRO_ABERTO: flag("0"), // ADR 0017: qualquer e-mail entra; EMAIL_AUTORIZADO deixa de valer
   RECURSO_OPEN_FINANCE: flag("0"), // ADR 0016: Pluggy (webhook, cron, "Conectar banco")
   RECURSO_COMPROVANTES_IA: flag("1"), // ADR 0016: leitura de comprovantes pelo Claude
+  RECURSO_ASSISTENTE: flag("1"), // chat com ferramentas somente leitura (usa ANTHROPIC_API_KEY)
+  IA_LIMITE_ASSISTENTE_DIA: z.coerce.number().int().min(0).default(100), // perguntas por empresa por dia
   // Só com MODO_DEMO=1 (src/configuracao/modo-demo.ts): usuário único da demonstração.
   DEMO_EMAIL: z.email(),
   DEMO_SENHA: texto,

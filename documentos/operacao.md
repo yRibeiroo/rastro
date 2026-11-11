@@ -175,7 +175,21 @@ Variáveis do projeto de demonstração na Vercel:
 | `SUPABASE_SERVICE_ROLE_KEY`                                        | do projeto de **demonstração**                |
 | `URL_DO_SITE`                                                      | a URL da demo, sem barra no fim               |
 | `RECURSO_OPEN_FINANCE`, `RECURSO_CADASTRO_ABERTO`                  | `0`                                           |
+| `ANTHROPIC_API_KEY` | chave da Anthropic (para o assistente) |
+| `RECURSO_ASSISTENTE` | `1` |
+| `IA_LIMITE_ASSISTENTE_DIA` | teto de perguntas por dia; na demo todos os visitantes dividem esse teto |
+| `RECURSO_CATEGORIZACAO_IA`, `RECURSO_COMPROVANTES_IA` | `0` (a demo não grava nada) |
 
 O seed usa datas relativas ao dia em que roda e não sobrescreve o que já existe. Para renovar as datas, apague a empresa fictícia (`delete from public.empresas where id = '00000000-0000-4000-a000-000000000001';`) e repita os passos 2 a 4.
 
 `MODO_DEMO` é lido também no build: ao mudar a variável, faça um novo deploy.
+
+## 11. Assistente financeiro
+
+Chat em `/assistente` que responde com tool use do Claude e cinco ferramentas somente leitura ([ADR 0018](arquitetura/decisoes/0018-assistente-com-ferramentas-somente-leitura.md)).
+
+- Precisa de `ANTHROPIC_API_KEY`. `ANTHROPIC_MODELO` troca o modelo (o padrão é o do código).
+- `RECURSO_ASSISTENTE=0` desliga a tela.
+- Limites: 20 perguntas por hora por IP e `IA_LIMITE_ASSISTENTE_DIA` (padrão 100) por empresa por dia. Se o banco de limites estiver fora, o assistente não responde.
+- O log registra só o tempo e o motivo de parada de cada pergunta, nunca o conteúdo.
+- "O assistente não conseguiu responder agora": a API da Anthropic falhou, recusou ou a pergunta precisou de consultas demais. Tente de novo; se persistir, confira a chave e o saldo da conta na Anthropic.
