@@ -86,6 +86,7 @@ describe("montagem (raiz de composição)", () => {
     expect(Object.keys(s).sort()).toEqual(
       [
         "anexos",
+        "assistente",
         "categorizacao",
         "centrosDeCusto",
         "comprovantes",

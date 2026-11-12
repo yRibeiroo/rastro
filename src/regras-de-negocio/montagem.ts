@@ -34,6 +34,8 @@ import {
   type ClienteDoBanco,
 } from "@/acesso-a-dados/supabase/cliente-do-usuario";
 import { ambiente } from "@/configuracao/ambiente";
+import { criarFerramentasDoAgente, criarServicoDoAgente } from "./agente";
+import { agenteClaude } from "./agente/adaptadores/claude/agente-claude";
 import {
   criarServicoDeAcesso,
   type ConsumirLimite,
@@ -96,6 +98,10 @@ import type { ContextoDoUsuario } from "./tipos";
 
 export interface ServicosDoUsuario {
   ctx: ContextoDoUsuario;
+  /** Assistente financeiro: as ferramentas já vêm presas ao ctx desta sessão. */
+  assistente: {
+    perguntar(mensagens: unknown, ip: string | null): Promise<string>;
+  };
   conexoes: ServicoDeConexaoBancaria;
   extrato: ServicoDeExtrato;
   sincronizacao: Pick<ServicoDeSincronizacao, "sincronizarAgora">;
@@ -275,8 +281,43 @@ export async function servicosDoUsuario(): Promise<ServicosDoUsuario> {
     contas: new RepositorioDeContasSupabase(banco),
     categorizacao,
   });
+  const painel = criarServicoDoPainel({
+    painel: new RepositorioDoPainelSupabase(banco),
+    contas: new RepositorioDeContasSupabase(banco),
+    transacoes,
+  });
+  const agente = criarServicoDoAgente({
+    // A chave da Anthropic só é lida quando uma pergunta chega de fato.
+    modelo: {
+      responder: (pedido) =>
+        agenteClaude({
+          apiKey: ambiente.ANTHROPIC_API_KEY,
+          modelo: ambiente.ANTHROPIC_MODELO,
+        }).responder(pedido),
+    },
+    consumirLimite,
+    hoje: () => hojeISO(),
+    ligado: () => ambiente.RECURSO_ASSISTENTE,
+    limiteDiarioPorEmpresa: () => ambiente.IA_LIMITE_ASSISTENTE_DIA,
+  });
   return {
     ctx,
+    assistente: {
+      perguntar: (mensagens, ip) =>
+        agente.perguntar(
+          ctx,
+          // Só leituras, pela sessão do usuário (RLS).
+          criarFerramentasDoAgente({
+            ctx,
+            painel,
+            extrato,
+            categorias: () =>
+              categorizacao.listarCategorias(ctx, { incluirArquivadas: true }),
+          }),
+          mensagens,
+          ip,
+        ),
+    },
     conexoes: criarServicoDeConexaoBancaria({
       provedor: doSistema.provedor,
       // conexoes não aceita insert pela sessão (RLS): service role, sempre filtrado por ctx.empresaId.
@@ -290,11 +331,7 @@ export async function servicosDoUsuario(): Promise<ServicosDoUsuario> {
     },
     categorizacao,
     centrosDeCusto,
-    painel: criarServicoDoPainel({
-      painel: new RepositorioDoPainelSupabase(banco),
-      contas: new RepositorioDeContasSupabase(banco),
-      transacoes,
-    }),
+    painel,
     anexos: criarServicoDeAnexos({
       anexos,
       armazenamento,

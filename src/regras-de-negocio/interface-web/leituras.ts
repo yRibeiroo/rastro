@@ -180,9 +180,11 @@ export async function carregarRecursos(): Promise<{
   openFinance: boolean;
   comprovantesIa: boolean;
   cadastroAberto: boolean;
+  assistente: boolean;
 }> {
   return {
     cadastroAberto: ambiente.RECURSO_CADASTRO_ABERTO,
+    assistente: ambiente.RECURSO_ASSISTENTE,
     anexos: ambiente.RECURSO_ANEXOS,
     categorizacaoIa: ambiente.RECURSO_CATEGORIZACAO_IA,
     incluirSandbox: ambiente.PLUGGY_INCLUIR_SANDBOX,

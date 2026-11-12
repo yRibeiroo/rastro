@@ -43,6 +43,7 @@ function servicosFalsos() {
   const f = () => vi.fn(async (..._a: unknown[]) => ({ ok: "dados" }) as never);
   return {
     ctx,
+    assistente: { perguntar: vi.fn(async () => "R$ 10,00 em outubro.") },
     conexoes: {
       iniciarConexao: f(),
       registrarConexao: f(),
@@ -188,6 +189,22 @@ describe("Server Actions", () => {
     } finally {
       vi.unstubAllEnvs();
     }
+  });
+
+  it("perguntarAoAssistente repassa a conversa e o IP, sem atualizar a tela; funciona no MODO_DEMO", async () => {
+    const conversa = [{ papel: "usuario" as const, texto: "Quanto gastei?" }];
+    const s = servicos.atual as ReturnType<typeof servicosFalsos>;
+    vi.stubEnv("MODO_DEMO", "1");
+    try {
+      expect(await acoes.perguntarAoAssistente(conversa)).toEqual({
+        ok: true,
+        dados: { resposta: "R$ 10,00 em outubro." },
+      });
+    } finally {
+      vi.unstubAllEnvs();
+    }
+    expect(s.assistente.perguntar).toHaveBeenCalledWith(conversa, "200.1.2.3");
+    expect(refresh).not.toHaveBeenCalled();
   });
 
   it("sem sessão: toda ação devolve nao_autenticado, sem executar nada", async () => {
@@ -339,6 +356,7 @@ describe("leituras para Server Components", () => {
     vi.stubEnv("RECURSO_COMPROVANTES_IA", "1");
     expect(await leituras.carregarRecursos()).toEqual({
       cadastroAberto: true,
+      assistente: true,
       anexos: false,
       categorizacaoIa: true,
       incluirSandbox: true,

@@ -9,6 +9,7 @@ import {
   lerPerfil,
   sair as sairDaSessao,
 } from "../acesso";
+import type { MensagemDoAgente } from "../agente";
 import type { NovaRegra, SugestaoDeRegra } from "../categorizacao";
 import type { ResultadoDaImportacao } from "../importacao-de-extrato";
 import type {
@@ -91,6 +92,23 @@ export async function sair(): Promise<void> {
   } finally {
     redirect("/entrar");
   }
+}
+
+// ── Assistente financeiro ───────────────────────────────────────────────────
+
+/** Pergunta em linguagem natural. Só lê (por isso funciona na demo); limite por IP e por empresa. */
+export async function perguntarAoAssistente(
+  mensagens: MensagemDoAgente[],
+): Promise<ResultadoDaAcao<{ resposta: string }>> {
+  return executarAcao("perguntarAoAssistente", async () => {
+    const s = await servicosDoUsuario();
+    return {
+      resposta: await s.assistente.perguntar(
+        mensagens,
+        ipDaRequisicao(await headers()),
+      ),
+    };
+  });
 }
 
 // ── Conexões bancárias ──────────────────────────────────────────────────────
