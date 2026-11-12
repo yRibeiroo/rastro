@@ -4,6 +4,33 @@ Todas as mudanças relevantes do Rastro ficam registradas aqui.
 
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto usa [versionamento semântico](https://semver.org/lang/pt-BR/).
 
+## [2.0.0] - 2026-11-12
+
+O Rastro deixa de ser só da HOMETECH: qualquer pessoa ou empresa pode usar, há uma demo pública e um assistente que responde perguntas com os números do extrato.
+
+### Adicionado
+
+- **Assistente financeiro** em `/assistente`: tool use do Claude com cinco ferramentas pré-definidas e somente leitura (resumo, gastos por categoria, comparação de períodos, maiores gastos e busca de transações). O modelo nunca escreve SQL, as consultas passam pela sessão do usuário (RLS) e há limite por IP e por empresa ao dia ([ADR 0018](documentos/arquitetura/decisoes/0018-assistente-com-ferramentas-somente-leitura.md)).
+- **Demo pública** com `MODO_DEMO=1`: sem login, com dados fictícios e somente leitura. O servidor guarda a sessão, toda escrita é recusada no app e o banco da demo é trancado por `supabase/demo/somente-leitura.sql` ([operacao.md](documentos/operacao.md), seção 10).
+- **Justificativa da IA** em cada categorização, mostrada no detalhe da transação, e **correções do usuário como exemplos** nas chamadas seguintes ao Claude ([ADR 0019](documentos/arquitetura/decisoes/0019-justificativa-exemplos-e-saldo-no-tempo.md)).
+- **Saldo ao longo do tempo** no painel: saldo das contas no fim de cada mês.
+- **Cadastro aberto e perfil da conta** (pessoal ou empresa), com categorias iniciais por perfil ([ADR 0017](documentos/arquitetura/decisoes/0017-cadastro-aberto-e-perfil.md)).
+- **Contas e lançamentos manuais**, com edição e remoção.
+- **Ocultar dos totais**: a transação continua no extrato e no saldo, mas sai do painel.
+- **Recorrências e saldo previsto** (contas a pagar e a receber).
+- **Exportação do extrato em CSV**.
+- **Limites de gasto** por categoria.
+- **OFX de qualquer banco**, não só do Sicredi.
+
+### Alterado
+
+- O painel só mostra "Resultado por centro de custo" quando a conta usa centros de custo.
+- README reescrito para apresentar o projeto, com prints da demo e diagrama de arquitetura.
+
+### Banco
+
+- Migrações `20261102120000` a `20261102170000` (v2) e `20261112120000` (justificativa e movimento mensal). Todas aplicadas em produção e no banco de demonstração.
+
 ## [1.0.0] - 2026-10-11
 
 Primeira versão. Reescreve o protótipo em Flask + SQLite (`prototipo-flask/`) como aplicação Next.js + Supabase + Vercel ([ADR 0001](documentos/arquitetura/decisoes/0001-nextjs-supabase-vercel.md)). Especificação em [documentos/especificacao/](documentos/especificacao/).
@@ -51,4 +78,5 @@ Primeira versão. Reescreve o protótipo em Flask + SQLite (`prototipo-flask/`) 
 
 Ver [documentos/evolucao/roteiro.md](documentos/evolucao/roteiro.md).
 
+[2.0.0]: https://github.com/yRibeiroo/rastro/compare/v1.0.0...main
 [1.0.0]: https://github.com/yRibeiroo/rastro/releases/tag/v1.0.0

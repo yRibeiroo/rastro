@@ -1,28 +1,31 @@
 ---
 tags: [rastro, projeto, open-finance, pluggy, hometec]
 criado: 2026-10-09
-status: v1.0.0 em produção
-atualizado: 2026-10-11
+status: v2.0.0 em produção
+atualizado: 2026-11-12
 ---
 
 # Rastro — Contexto do projeto
 
 > _"Rastro: saiba para onde vai cada real."_
 
-Sistema de controle financeiro da **HOMETEC SERVIÇOS** que puxa o extrato da conta PJ **automaticamente**, sem precisar enviar comprovantes, e categoriza cada gasto. Começa como ferramenta interna e pode virar um SaaS regional (Tocantins → Brasil).
+Sistema de controle financeiro da **HOMETECH** (razão social HOMETEC SERVIÇOS) que puxa o extrato da conta PJ **automaticamente**, sem precisar enviar comprovantes, e categoriza cada gasto. Começa como ferramenta interna e pode virar um SaaS regional (Tocantins → Brasil).
 
 ---
 
-## 0. Estado atual (11/10/2026)
+## 0. Estado atual (12/11/2026)
 
-- **v1.0.0 pronta** e revisada pelo QA ([documentos/qualidade/revisoes.md](documentos/qualidade/revisoes.md)). Mudanças em [CHANGELOG.md](CHANGELOG.md).
-- **Local:** `C:\projetos\rastro` (a pasta antiga no OneDrive pode ser apagada).
-- **GitHub:** repositório privado **yRibeiroo/rastro**, pull request #1 (`funcionalidade/v1-em-andamento` → `main`).
+- **v2.0.0 no ar.** Mudanças em [CHANGELOG.md](CHANGELOG.md).
+- **Local:** `OneDrive\Área de Trabalho\VscodeProjects\rastro`.
+- **GitHub:** **yRibeiroo/rastro**.
 - **Stack:** Next.js 16 + TypeScript + Tailwind 4, Supabase (Postgres com RLS, Auth, Storage), Vercel, Claude ([ADR 0001](documentos/arquitetura/decisoes/0001-nextjs-supabase-vercel.md)). O protótipo Flask descrito nas seções 1 a 7 ficou em `prototipo-flask/` como referência.
-- **Fonte dos dados:** extrato **OFX** do Sicredi + comprovantes lidos pelo Claude ([ADR 0016](documentos/arquitetura/decisoes/0016-extrato-ofx-e-comprovantes-com-ia.md)). A Pluggy está no código, desligada (`RECURSO_OPEN_FINANCE=0`), porque custaria no mínimo R$ 2.500/mês.
-- **Supabase de produção:** projeto `sdglxhgxofttirwfuzlh` (sa-east-1, plano Free) com as migrações aplicadas, **exceto** `supabase/migrations/20261009120600_eventos_webhook_e_limites.sql`, que o Davi precisa rodar no SQL Editor.
-- **Produção:** https://rastro-wheat-pi.vercel.app (Vercel, gru1, deploy automático a cada push na main). Supabase prod com as 10 migrações aplicadas; variáveis cadastradas; Auth com Site URL e redirect configurados.
-- **Próximos passos:** [documentos/PARA-O-DAVI.md](documentos/PARA-O-DAVI.md) (o que o dono faz), [documentos/operacao.md](documentos/operacao.md) (operação) e [documentos/evolucao/roteiro.md](documentos/evolucao/roteiro.md) (próximas versões).
+- **Fonte dos dados:** extrato **OFX** + comprovantes lidos pelo Claude ([ADR 0016](documentos/arquitetura/decisoes/0016-extrato-ofx-e-comprovantes-com-ia.md)). A Pluggy está no código, desligada (`RECURSO_OPEN_FINANCE=0`), porque custaria no mínimo R$ 2.500/mês.
+- **Dois ambientes**, cada um com seu projeto na Vercel e seu banco no Supabase, os dois seguindo a `main`:
+  - **Privado (dados reais, com login):** https://rastro-wheat-pi.vercel.app
+  - **Demo pública (dados fictícios, somente leitura):** https://rastro-demo-iota.vercel.app
+- **Migrações:** são aplicadas à parte, nos dois bancos. Na demo, rodar `supabase/demo/somente-leitura.sql` de novo depois de cada uma.
+- **IA:** categorização com justificativa e exemplos ([ADR 0019](documentos/arquitetura/decisoes/0019-justificativa-exemplos-e-saldo-no-tempo.md)), leitura de comprovantes e assistente com ferramentas somente leitura ([ADR 0018](documentos/arquitetura/decisoes/0018-assistente-com-ferramentas-somente-leitura.md)).
+- **Próximos passos:** [documentos/operacao.md](documentos/operacao.md) (operação) e [documentos/evolucao/roteiro.md](documentos/evolucao/roteiro.md) (próximas versões).
 
 > As seções 1 a 8 abaixo registram o início do projeto (protótipo Flask + Pluggy) e ficam como histórico.
 
