@@ -7,6 +7,9 @@
 --   3. criar o usuário da demo e vinculá-lo: select privado.dev_vincular_usuario_a_demo('<e-mail>');
 --   4. este arquivo.
 --
+-- Rode de novo depois de cada migração aplicada no banco da demo: migrações novas
+-- trazem grants de escrita (colunas, funções) que este arquivo retira.
+--
 -- O app já recusa escritas com MODO_DEMO=1 e o visitante nunca recebe o token do usuário.
 -- Isto é a segunda tranca: mesmo com um token, a sessão não consegue escrever. Pode rodar de novo.
 
@@ -39,6 +42,7 @@ grant execute on function
   public.painel_por_categoria(uuid, date, date),
   public.painel_por_centro_de_custo(uuid, date, date),
   public.ocorrencias_previstas(uuid, date, date),
+  public.movimento_mensal(uuid, date, date),
   public.candidatos_para_conciliacao(uuid, bigint, date, integer),
   public.leituras_de_comprovante_desde(uuid, timestamptz)
 to authenticated;

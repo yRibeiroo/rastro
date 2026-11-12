@@ -92,6 +92,8 @@ export interface Transacao {
   categoriaDefinidaPeloUsuario: boolean;
   regraId: Id | null;
   confiancaIa: number | null; // 0..1, só quando categoriaOrigem = 'ia'
+  /** Frase curta da IA dizendo por que escolheu a categoria (só quando categoriaOrigem = 'ia'). */
+  justificativaIa: string | null;
   categorizacaoAutomaticaEm: Date | null;
   /** Fora dos totais do painel (continua no extrato e no saldo). */
   oculta: boolean;

@@ -258,6 +258,7 @@ describe("EstrategiaPorIa", () => {
         { codigo: "c2", nome: "Receita de serviços", tipo: "entrada" },
       ],
       centrosDeCusto: [], // P-12: a IA não escolhe centro de custo
+      exemplos: [], // sem correções do usuário
     });
     expect(r).toEqual([
       {
@@ -267,6 +268,7 @@ describe("EstrategiaPorIa", () => {
         origem: "ia",
         regraId: null,
         confianca: 0.91,
+        justificativa: null,
       },
       {
         transacaoId: b.id,
@@ -275,6 +277,7 @@ describe("EstrategiaPorIa", () => {
         origem: "ia",
         regraId: null,
         confianca: 0.6,
+        justificativa: null,
       },
     ]);
   });
@@ -363,5 +366,53 @@ describe("EstrategiaPorIa", () => {
     await expect(
       new EstrategiaPorIa(classificador).categorizar([umaTransacao()], ctxIa),
     ).rejects.toThrow("fora");
+  });
+});
+
+describe("EstrategiaPorIa: exemplos e justificativa (ADR 0019)", () => {
+  it("usa as correções do usuário como exemplos (mascaradas, sem repetir, só de categorias disponíveis) e guarda a justificativa", async () => {
+    const combustivel = umaCategoria();
+    const arquivada = umaCategoria({ nome: "Antiga" });
+    const classificar = vi.fn<Classificador["classificar"]>(async () => [
+      {
+        referencia: "0",
+        categoriaCodigo: "c1",
+        centroDeCustoCodigo: null,
+        confianca: 0.91,
+        justificativa: `  ${"x".repeat(300)}  `,
+      },
+    ]);
+    const nova = umaTransacao({ descricao: "POSTO ESTRELA" });
+    const r = await new EstrategiaPorIa({ classificar }).categorizar(
+      [nova],
+      contexto({
+        categorias: [combustivel],
+        correcoes: [
+          umaTransacao({
+            descricao: "POSTO SAO JOAO CPF 123.456.789-09",
+            valorCentavos: -19971,
+            categoriaId: combustivel.id,
+          }),
+          // Mesma descrição: só a mais recente (a primeira) vira exemplo.
+          umaTransacao({
+            descricao: "POSTO SAO JOAO CPF 123.456.789-09",
+            categoriaId: combustivel.id,
+          }),
+          // Categoria que não está mais entre as opções: fora.
+          umaTransacao({ descricao: "LOJA", categoriaId: arquivada.id }),
+        ],
+      }),
+    );
+    const exemplos = classificar.mock.calls[0][1].exemplos ?? [];
+    expect(exemplos).toEqual([
+      {
+        descricao: expect.stringContaining("POSTO SAO JOAO"),
+        valorCentavos: -19971,
+        contraparte: null,
+        categoriaCodigo: "c1",
+      },
+    ]);
+    expect(exemplos[0].descricao).not.toContain("123.456.789-09");
+    expect(r[0].justificativa).toHaveLength(200);
   });
 });

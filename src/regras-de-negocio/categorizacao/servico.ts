@@ -108,6 +108,9 @@ export interface ServicoDeCategorizacao {
 }
 
 export const LIMITE_PADRAO_DE_PENDENTES = 200;
+
+/** Quantas correções recentes são lidas; a estratégia da IA tira as repetidas e usa até 20. */
+export const CORRECOES_PARA_EXEMPLOS = 60;
 export const PRIORIDADE_DO_USUARIO = 50;
 /** Teto de transações reavaliadas ao sugerir/aplicar uma regra. */
 export const LIMITE_DE_CORRESPONDENTES = 5000;
@@ -224,8 +227,23 @@ export function criarServicoDeCategorizacao(deps: {
       deps.categorias.listar(empresaId),
       deps.centrosDeCusto.listar(empresaId),
     ]);
-    const contexto = { empresaId, regras, categorias, centrosDeCusto };
     const iaLigada = deps.iaLigada();
+    // Exemplos para a IA: só busca se ela vai rodar; falha aqui não impede a categorização.
+    const correcoes = iaLigada
+      ? await deps.transacoes
+          .listarCorrecoesRecentes(empresaId, CORRECOES_PARA_EXEMPLOS)
+          .catch((erro: unknown) => {
+            registrarFalha("correções recentes para a IA", erro);
+            return [];
+          })
+      : [];
+    const contexto = {
+      empresaId,
+      regras,
+      categorias,
+      centrosDeCusto,
+      correcoes,
+    };
 
     let restantes: readonly Transacao[] = pendentes;
     const resultados: ResultadoDeCategorizacao[] = [];

@@ -49,6 +49,7 @@ export function paraTransacao(linha: Tables<"transacoes">): Transacao {
     regraId: linha.regra_id,
     confiancaIa:
       linha.confianca_ia === null ? null : Number(linha.confianca_ia),
+    justificativaIa: linha.justificativa_ia,
     categorizacaoAutomaticaEm: paraDataOuNulo(
       linha.categorizacao_automatica_em,
     ),
@@ -260,6 +261,20 @@ export class RepositorioDeTransacoesSupabase implements RepositorioDeTransacoes 
     return linhas.map(paraTransacao);
   }
 
+  async listarCorrecoesRecentes(empresaId: string, limite: number) {
+    const linhas = dadosOuFalha(
+      await this.banco
+        .from("transacoes")
+        .select()
+        .eq("empresa_id", empresaId)
+        .eq("categoria_definida_pelo_usuario", true)
+        .not("categoria_id", "is", null)
+        .order("atualizado_em", { ascending: false })
+        .limit(limite),
+    );
+    return linhas.map(paraTransacao);
+  }
+
   async aplicarCategorizacaoAutomatica(
     empresaId: string,
     resultados: readonly ResultadoDeCategorizacao[],
@@ -275,6 +290,7 @@ export class RepositorioDeTransacoesSupabase implements RepositorioDeTransacoes 
           origem: r.origem,
           regra_id: r.regraId,
           confianca: r.confianca,
+          justificativa: r.justificativa ?? null,
         })),
       }),
     );
@@ -325,6 +341,7 @@ export class RepositorioDeTransacoesSupabase implements RepositorioDeTransacoes 
           categoria_definida_pelo_usuario: true,
           regra_id: null,
           confianca_ia: null,
+          justificativa_ia: null,
         })
         .eq("empresa_id", empresaId)
         .eq("id", transacaoId)

@@ -85,6 +85,11 @@ describe("ServicoDoPainel", () => {
         },
       ]),
       resultadoPorCentroDeCusto: vi.fn(async () => []),
+      movimentoMensal: vi.fn(async () => [
+        { mes: "2026-08", liquidoCentavos: 50_000 },
+        { mes: "2026-09", liquidoCentavos: -20_000 },
+        { mes: "2026-10", liquidoCentavos: 30_000 },
+      ]),
     };
     const contas = new ContasEmMemoria();
     const transacoes = new TransacoesEmMemoria();
@@ -95,6 +100,25 @@ describe("ServicoDoPainel", () => {
       servico: criarServicoDoPainel({ painel, contas, transacoes }),
     };
   }
+
+  it("saldoPorMes parte do saldo atual e desfaz o movimento de cada mês, do mais recente para trás", async () => {
+    const { servico, painel, contas } = montar();
+    vi.spyOn(contas, "obterSaldoTotal").mockResolvedValue({
+      saldoCentavos: 100_000,
+      atualizadoEm: new Date("2026-10-20T12:00:00Z"),
+    });
+    const periodo = { de: "2026-08-01", ate: "2026-10-20" };
+    // Movimentos: ago +500, set −200, out +300. Outubro fecha no saldo de hoje (1.000).
+    expect(await servico.saldoPorMes(ctx, periodo)).toEqual([
+      { mes: "2026-08", saldoCentavos: 90_000 },
+      { mes: "2026-09", saldoCentavos: 70_000 },
+      { mes: "2026-10", saldoCentavos: 100_000 },
+    ]);
+    expect(painel.movimentoMensal).toHaveBeenCalledWith(ctx.empresaId, periodo);
+    await expect(
+      servico.saldoPorMes(ctx, { de: "2026-10-01", ate: "2026-01-01" }),
+    ).rejects.toMatchObject({ codigo: "entrada_invalida" });
+  });
 
   it("junta agregações, saldo e quantidade sem categoria no período", async () => {
     const { servico, painel, transacoes } = montar();

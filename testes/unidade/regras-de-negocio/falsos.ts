@@ -89,6 +89,7 @@ export function umaTransacao(parcial: Partial<Transacao> = {}): Transacao {
     categoriaDefinidaPeloUsuario: false,
     regraId: null,
     confiancaIa: null,
+    justificativaIa: null,
     categorizacaoAutomaticaEm: null,
     oculta: false,
     criadaEm: new Date("2026-10-01T12:00:00Z"),
@@ -228,6 +229,17 @@ export class TransacoesEmMemoria implements RepositorioDeTransacoes {
       )
       .slice(0, limite);
   }
+  async listarCorrecoesRecentes(empresaId: string, limite: number) {
+    return this.linhas
+      .filter(
+        (t) =>
+          t.empresaId === empresaId &&
+          t.categoriaDefinidaPeloUsuario &&
+          t.categoriaId !== null,
+      )
+      .toSorted((a, b) => b.atualizadaEm.getTime() - a.atualizadaEm.getTime())
+      .slice(0, limite);
+  }
   async aplicarCategorizacaoAutomatica(
     empresaId: string,
     resultados: readonly {
@@ -237,6 +249,7 @@ export class TransacoesEmMemoria implements RepositorioDeTransacoes {
       origem: "regra" | "ia" | "pluggy";
       regraId: string | null;
       confianca: number | null;
+      justificativa?: string | null;
     }[],
   ) {
     let n = 0;
@@ -251,6 +264,7 @@ export class TransacoesEmMemoria implements RepositorioDeTransacoes {
         categoriaOrigem: r.origem,
         regraId: r.regraId,
         confiancaIa: r.origem === "ia" ? r.confianca : null,
+        justificativaIa: r.origem === "ia" ? (r.justificativa ?? null) : null,
         categorizacaoAutomaticaEm: new Date(),
       });
       n++;
@@ -287,6 +301,7 @@ export class TransacoesEmMemoria implements RepositorioDeTransacoes {
       categoriaDefinidaPeloUsuario: true,
       regraId: null,
       confiancaIa: null,
+      justificativaIa: null,
     });
     return { ...t };
   }

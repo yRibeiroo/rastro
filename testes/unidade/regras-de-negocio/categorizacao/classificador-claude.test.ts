@@ -65,6 +65,7 @@ describe("ClassificadorClaude (API simulada)", () => {
     expect(JSON.parse(pedido.messages[0].content)).toEqual({
       categorias: opcoes.categorias,
       centrosDeCusto: [],
+      exemplos: [],
       itens: [
         {
           referencia: "0",
@@ -129,5 +130,48 @@ describe("ClassificadorClaude (API simulada)", () => {
     const a = classificadorClaude({ apiKey: "sk-teste" });
     expect(classificadorClaude({ apiKey: "outra" })).toBe(a);
     expect(MODELO_DO_CLASSIFICADOR).toBe("claude-opus-5-5");
+  });
+});
+
+describe("ClassificadorClaude: exemplos e justificativa (ADR 0019)", () => {
+  it("manda as correções do usuário como exemplos e devolve a justificativa", async () => {
+    vi.spyOn(console, "info").mockImplementation(() => {});
+    const sugestao = {
+      referencia: "0",
+      categoriaCodigo: "c1",
+      centroDeCustoCodigo: null,
+      confianca: 0.9,
+      justificativa: "Igual a um exemplo do usuário",
+    };
+    const { cliente, parse } = clienteFalso({
+      stop_reason: "end_turn",
+      parsed_output: { sugestoes: [sugestao] },
+    });
+    const r = await new ClassificadorClaude(cliente).classificar(lote, {
+      ...opcoes,
+      exemplos: [
+        {
+          descricao: "POSTO SAO JOAO",
+          valorCentavos: -19971,
+          contraparte: null,
+          categoriaCodigo: "c1",
+        },
+      ],
+    });
+    expect(r).toEqual([sugestao]);
+    const pedido = parse.mock.calls[0][0] as {
+      system: string;
+      messages: Array<{ content: string }>;
+    };
+    expect(JSON.parse(pedido.messages[0].content).exemplos).toEqual([
+      {
+        descricao: "POSTO SAO JOAO",
+        valor: -199.71,
+        contraparte: null,
+        categoriaCodigo: "c1",
+      },
+    ]);
+    expect(pedido.system).toContain('"exemplos"');
+    expect(pedido.system).toContain('"justificativa"');
   });
 });

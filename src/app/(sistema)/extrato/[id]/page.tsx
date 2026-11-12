@@ -228,6 +228,9 @@ async function Conteudo({ params, searchParams }: PageProps<"/extrato/[id]">) {
               </span>
             </Linha>
           )}
+          {t.justificativaIa && t.categoriaOrigem === "ia" && (
+            <Linha termo="Motivo da IA">{t.justificativaIa}</Linha>
+          )}
           <Linha termo={manual ? "Lançada em" : "Recebida em"}>
             {formatarDataHora(t.criadaEm)}
           </Linha>
