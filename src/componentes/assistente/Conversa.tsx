@@ -68,16 +68,16 @@ export function Conversa({
   }
 
   return (
-    <div className="grid gap-4">
+    <div className="grid min-w-0 gap-4">
       {mensagens.length === 0 && !pensando && (
-        <div className="grid gap-3">
+        <div className="grid min-w-0 gap-3">
           <p className="text-sm text-texto-suave">Experimente perguntar:</p>
           <ul className="flex flex-wrap gap-2">
             {SUGESTOES.map((s) => (
               <li key={s}>
                 <button
                   type="button"
-                  className={`${botao.secundario} h-auto min-h-11 whitespace-normal py-2 text-left md:min-h-10`}
+                  className="min-h-11 rounded-full border border-borda-controle bg-superficie px-4 py-2 text-left text-sm font-medium text-texto transition-colors hover:bg-superficie-2 md:min-h-10"
                   onClick={() => enviar(s)}
                 >
                   {s}
