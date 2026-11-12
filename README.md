@@ -108,9 +108,10 @@ A fonte dos dados é o extrato **OFX**, formato aberto que todo banco exporta. A
 
 ## Impacto
 
-O fechamento da semana virou uma exportação: os lançamentos acumulam no banco durante a semana e, no fim dela, um arquivo OFX é importado no Rastro. A categorização, a conciliação dos comprovantes e os totais do painel saem dali, sem digitação.
+Antes, organizar comprovantes e digitar lançamentos tomava **horas toda semana**. Hoje o fechamento é uma exportação: basta emitir o extrato OFX da semana (ou do dia) no banco e enviar ao Rastro. A categorização, a conciliação dos comprovantes e os totais do painel saem dali, sem digitação.
 
-<!-- PENDENTE: tempo economizado por semana, com o número informado pelo Davi. Não estimar. -->
+- **Antes:** comprovantes acumulados, lançamentos digitados um a um e nenhuma visão de para onde o dinheiro foi.
+- **Agora:** um arquivo por semana; o resto é automático, e as perguntas que sobram vão para o assistente.
 
 ## Stack
 
