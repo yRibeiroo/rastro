@@ -6,7 +6,7 @@ import { ErroDeNegocio } from "../erros";
 import type { FiltrosDoExtrato, PaginaDoExtrato } from "../extrato";
 import type { SituacaoDoExtrato } from "../importacao-de-extrato";
 import { servicosDoUsuario, type ServicosDoUsuario } from "../montagem";
-import type { PeriodoDoPainel, ResumoDoPainel } from "../painel";
+import type { PeriodoDoPainel, ResumoDoPainel, SaldoDoMes } from "../painel";
 import type { PrevisaoDeSaldo } from "../previsao";
 import type {
   Anexo,
@@ -56,6 +56,13 @@ export async function carregarPainel(
   periodo: PeriodoDoPainel,
 ): Promise<ResumoDoPainel> {
   return comServicos((s) => s.painel.obterResumo(s.ctx, periodo));
+}
+
+/** Saldo no fim de cada mês; o período precisa terminar hoje. */
+export async function carregarSaldoPorMes(
+  periodo: PeriodoDoPainel,
+): Promise<SaldoDoMes[]> {
+  return comServicos((s) => s.painel.saldoPorMes(s.ctx, periodo));
 }
 
 /** Extrato paginado por cursor (limite padrão 50, máximo 200). */

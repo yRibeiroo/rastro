@@ -15,6 +15,7 @@ export {
   carregarPainel,
   carregarPrevisao,
   carregarRecursos,
+  carregarSaldoPorMes,
   carregarSituacaoDoExtrato,
   carregarTransacao,
   contarAlertas,

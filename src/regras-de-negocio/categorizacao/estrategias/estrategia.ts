@@ -13,6 +13,8 @@ export interface ContextoDeCategorizacao {
   regras: readonly Regra[]; // só ativas, já ordenadas por prioridade asc, criadaEm asc
   categorias: readonly Categoria[]; // não arquivadas
   centrosDeCusto: readonly CentroDeCusto[]; // não arquivados
+  /** Correções recentes do usuário (mais recentes primeiro): exemplos para a IA. */
+  correcoes?: readonly Transacao[];
 }
 
 export interface ResultadoDeCategorizacao {
@@ -22,6 +24,7 @@ export interface ResultadoDeCategorizacao {
   origem: Exclude<OrigemDaCategoria, "usuario">;
   regraId: Id | null;
   confianca: number | null; // só para 'ia'
+  justificativa?: string | null; // só para 'ia'
 }
 
 export interface EstrategiaDeCategorizacao {

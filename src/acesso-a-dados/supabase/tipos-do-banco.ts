@@ -391,14 +391,14 @@ isOneToOne: false
                   ]
                 },"transacoes": {
                   Row: {
-                    "atualizado_em": string,"categoria_definida_pelo_usuario": boolean,"categoria_do_provedor": string | null,"categoria_id": string | null,"categoria_origem": string | null,"categorizacao_automatica_em": string | null,"centro_de_custo_id": string | null,"conexao_id": string,"confianca_ia": number | null,"conta_id": string,"contraparte": string | null,"criado_em": string,"data": string,"descricao": string,"descricao_original": string | null,"empresa_id": string,"id": string,"id_externo": string,"metodo_de_pagamento": string | null,"oculta": boolean,"pendente": boolean,"regra_id": string | null,"valor": number
+                    "atualizado_em": string,"categoria_definida_pelo_usuario": boolean,"categoria_do_provedor": string | null,"categoria_id": string | null,"categoria_origem": string | null,"categorizacao_automatica_em": string | null,"centro_de_custo_id": string | null,"conexao_id": string,"confianca_ia": number | null,"conta_id": string,"contraparte": string | null,"criado_em": string,"data": string,"descricao": string,"descricao_original": string | null,"empresa_id": string,"id": string,"id_externo": string,"justificativa_ia": string | null,"metodo_de_pagamento": string | null,"oculta": boolean,"pendente": boolean,"regra_id": string | null,"valor": number
                   }
                   ComputedFields: never
                   Insert: {
-                    "atualizado_em"?: string,"categoria_definida_pelo_usuario"?: boolean,"categoria_do_provedor"?: string | null,"categoria_id"?: string | null,"categoria_origem"?: string | null,"categorizacao_automatica_em"?: string | null,"centro_de_custo_id"?: string | null,"conexao_id": string,"confianca_ia"?: number | null,"conta_id": string,"contraparte"?: string | null,"criado_em"?: string,"data": string,"descricao": string,"descricao_original"?: string | null,"empresa_id": string,"id"?: string,"id_externo": string,"metodo_de_pagamento"?: string | null,"oculta"?: boolean,"pendente"?: boolean,"regra_id"?: string | null,"valor": number
+                    "atualizado_em"?: string,"categoria_definida_pelo_usuario"?: boolean,"categoria_do_provedor"?: string | null,"categoria_id"?: string | null,"categoria_origem"?: string | null,"categorizacao_automatica_em"?: string | null,"centro_de_custo_id"?: string | null,"conexao_id": string,"confianca_ia"?: number | null,"conta_id": string,"contraparte"?: string | null,"criado_em"?: string,"data": string,"descricao": string,"descricao_original"?: string | null,"empresa_id": string,"id"?: string,"id_externo": string,"justificativa_ia"?: string | null,"metodo_de_pagamento"?: string | null,"oculta"?: boolean,"pendente"?: boolean,"regra_id"?: string | null,"valor": number
                   }
                   Update: {
-                    "atualizado_em"?: string,"categoria_definida_pelo_usuario"?: boolean,"categoria_do_provedor"?: string | null,"categoria_id"?: string | null,"categoria_origem"?: string | null,"categorizacao_automatica_em"?: string | null,"centro_de_custo_id"?: string | null,"conexao_id"?: string,"confianca_ia"?: number | null,"conta_id"?: string,"contraparte"?: string | null,"criado_em"?: string,"data"?: string,"descricao"?: string,"descricao_original"?: string | null,"empresa_id"?: string,"id"?: string,"id_externo"?: string,"metodo_de_pagamento"?: string | null,"oculta"?: boolean,"pendente"?: boolean,"regra_id"?: string | null,"valor"?: number
+                    "atualizado_em"?: string,"categoria_definida_pelo_usuario"?: boolean,"categoria_do_provedor"?: string | null,"categoria_id"?: string | null,"categoria_origem"?: string | null,"categorizacao_automatica_em"?: string | null,"centro_de_custo_id"?: string | null,"conexao_id"?: string,"confianca_ia"?: number | null,"conta_id"?: string,"contraparte"?: string | null,"criado_em"?: string,"data"?: string,"descricao"?: string,"descricao_original"?: string | null,"empresa_id"?: string,"id"?: string,"id_externo"?: string,"justificativa_ia"?: string | null,"metodo_de_pagamento"?: string | null,"oculta"?: boolean,"pendente"?: boolean,"regra_id"?: string | null,"valor"?: number
                   }
                   Relationships: [
                     {
@@ -473,6 +473,11 @@ isOneToOne: false
                            },
 "leituras_de_comprovante_desde":
 { Args: { "p_desde": string,"p_empresa": string }; Returns: number
+                           },
+"movimento_mensal":
+{ Args: { "p_ate": string,"p_de": string,"p_empresa": string }; Returns: {
+              "liquido_centavos": number,"mes": string
+            }[]
                            },
 "ocorrencias_previstas":
 { Args: { "p_ate": string,"p_de": string,"p_empresa": string }; Returns: {

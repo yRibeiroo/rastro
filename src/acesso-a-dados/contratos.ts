@@ -121,6 +121,8 @@ export interface RepositorioDeTransacoes {
     empresaId: Id,
     limite: number,
   ): Promise<Transacao[]>;
+  /** Últimas transações cuja categoria o usuário definiu à mão (exemplos para a IA), mais recentes primeiro. */
+  listarCorrecoesRecentes(empresaId: Id, limite: number): Promise<Transacao[]>;
   /** UPDATE ... WHERE categoria_definida_pelo_usuario = false. Também marca categorizacao_automatica_em = now(). */
   aplicarCategorizacaoAutomatica(
     empresaId: Id,
@@ -257,6 +259,11 @@ export interface RepositorioDoPainel {
     empresaId: Id,
     periodo: PeriodoDoPainel,
   ): Promise<ResumoDoPainel["resultadoPorCentroDeCusto"]>;
+  /** rpc movimento_mensal: líquido de TUDO o que mexe no saldo (inclui transferências e ocultas), um item por mês. */
+  movimentoMensal(
+    empresaId: Id,
+    periodo: PeriodoDoPainel,
+  ): Promise<Array<{ mes: string; liquidoCentavos: Centavos }>>;
 }
 
 export interface RepositorioDeLimites {

@@ -116,6 +116,19 @@ export class RepositorioDoPainelSupabase implements RepositorioDoPainel {
     });
   }
 
+  async movimentoMensal(empresaId: string, periodo: PeriodoDoPainel) {
+    const linhas = dadosOuFalha(
+      await this.banco.rpc(
+        "movimento_mensal",
+        this.parametros(empresaId, periodo),
+      ),
+    );
+    return linhas.map((l) => ({
+      mes: l.mes,
+      liquidoCentavos: Number(l.liquido_centavos),
+    }));
+  }
+
   async gastosPorCategoria(
     empresaId: string,
     periodo: PeriodoDoPainel,

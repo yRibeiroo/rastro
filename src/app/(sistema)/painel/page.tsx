@@ -9,6 +9,7 @@ import { CabecalhoDaPagina } from "@/componentes/estrutura/CabecalhoDaPagina";
 import { ValorMonetario } from "@/componentes/extrato/ValorMonetario";
 import { botao } from "@/componentes/formulario/classes";
 import { GraficoEntradasSaidas } from "@/componentes/graficos/GraficoEntradasSaidas";
+import { GraficoSaldo } from "@/componentes/graficos/GraficoSaldo";
 import { ParaOndeFoi } from "@/componentes/graficos/ParaOndeFoi";
 import { ResultadoPorCentro } from "@/componentes/graficos/ResultadoPorCentro";
 import { BarrasDeLimite } from "@/componentes/limites/BarrasDeLimite";
@@ -17,6 +18,7 @@ import {
   carregarLimitesDeGasto,
   carregarPainel,
   carregarPrevisao,
+  carregarSaldoPorMes,
   carregarRecursos,
   carregarSituacaoDoExtrato,
   contarAlertas,
@@ -83,6 +85,7 @@ async function ConteudoDoPainel({
       alertas,
       previsto,
       limites,
+      saldos,
     ] = await Promise.all([
       carregarConexoes(),
       carregarRecursos(),
@@ -103,6 +106,13 @@ async function ConteudoDoPainel({
         unstable_rethrow(erro);
         return [];
       }),
+      // Idem para o saldo ao longo do tempo (mesmos meses do gráfico mensal).
+      carregarSaldoPorMes(periodoDe(chave === "12m" ? "12m" : "6m")).catch(
+        (erro: unknown) => {
+          unstable_rethrow(erro);
+          return [];
+        },
+      ),
     ]);
     const conexao = conexoes.find(
       (c) => c.provedor === (openFinance ? "pluggy" : "arquivo"),
@@ -119,6 +129,7 @@ async function ConteudoDoPainel({
       historico,
       previsto,
       limites,
+      saldos,
     };
   } catch (erro) {
     unstable_rethrow(erro);
@@ -145,6 +156,7 @@ async function ConteudoDoPainel({
     historico,
     previsto,
     limites,
+    saldos,
   } = dados;
   const mesAtual = `${hojeISO().slice(0, 7)}-01`;
   if (forcado === "vazio" || !temDados)
@@ -334,6 +346,9 @@ async function ConteudoDoPainel({
       )}
 
       <GraficoEntradasSaidas fluxo={historico.fluxoMensal} />
+
+      {/* Com um mês só não há linha para mostrar. */}
+      {saldos.length > 1 && <GraficoSaldo saldos={saldos} />}
     </div>
   );
 }

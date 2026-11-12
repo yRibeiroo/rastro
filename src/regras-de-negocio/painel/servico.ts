@@ -39,7 +39,21 @@ export interface ResumoDoPainel {
   transacoesSemCategoria: number;
 }
 
+export interface SaldoDoMes {
+  mes: string; // 'YYYY-MM'
+  /** Saldo das contas no fim do mês (no mês atual, o saldo de hoje). */
+  saldoCentavos: Centavos;
+}
+
 export interface ServicoDoPainel {
+  /**
+   * Saldo no fim de cada mês do período. O período precisa terminar hoje: a conta parte do saldo
+   * atual e desfaz o movimento de cada mês, do mais recente para o mais antigo.
+   */
+  saldoPorMes(
+    ctx: ContextoDoUsuario,
+    periodo: PeriodoDoPainel,
+  ): Promise<SaldoDoMes[]>;
   obterResumo(
     ctx: ContextoDoUsuario,
     periodo: PeriodoDoPainel,
@@ -63,11 +77,32 @@ export function criarServicoDoPainel(deps: {
   contas: RepositorioDeContas;
   transacoes: RepositorioDeTransacoes;
 }): ServicoDoPainel {
+  const validar = (periodoInformado: PeriodoDoPainel) => {
+    const r = esquemaDoPeriodo.safeParse(periodoInformado);
+    if (!r.success)
+      throw entradaInvalida("Escolha um período de até 24 meses.");
+    return { de: r.data.de, ate: r.data.ate };
+  };
+
   return {
+    async saldoPorMes(ctx, periodoInformado) {
+      const periodo = validar(periodoInformado);
+      const [movimento, saldo] = await Promise.all([
+        deps.painel.movimentoMensal(ctx.empresaId, periodo),
+        deps.contas.obterSaldoTotal(ctx.empresaId),
+      ]);
+      // Do mês mais recente para trás: saldo no fim do mês anterior = saldo no fim deste − movimento deste.
+      let corrente = saldo.saldoCentavos;
+      const saldos: SaldoDoMes[] = [];
+      for (const m of movimento.toReversed()) {
+        saldos.unshift({ mes: m.mes, saldoCentavos: corrente });
+        corrente -= m.liquidoCentavos;
+      }
+      return saldos;
+    },
+
     async obterResumo(ctx, periodoInformado) {
-      const r = esquemaDoPeriodo.safeParse(periodoInformado);
-      if (!r.success)
-        throw entradaInvalida("Escolha um período de até 24 meses.");
+      const r = { data: validar(periodoInformado) };
       const periodo = { de: r.data.de, ate: r.data.ate };
       const [
         fluxoMensal,
